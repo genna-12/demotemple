@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="it">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tiny Temple | Sound Sanctuary</title>
+
+    <!-- Font Import: Playfair Display (Titoli) e Lato (Testi) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400&family=Playfair+Display:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body class="loading-state">
+
+    <!-- Schermata Intro / Overlay Logo -->
+    <div id="intro-layer">
+        <div class="logo-wrapper" id="main-logo">
+            <!-- SVG Inline o Img per il logo -->
+            <img src="assets/nero.png" alt="Tiny Temple Logo" class="temple-logo">
+        </div>
+    </div>
+
+    <!-- Navigazione (Appare dopo l'intro) -->
+    <nav id="navbar" class="hidden-nav">
+        <div class="nav-links">
+            <a href="portfolio.html" class="nav-pill">Portfolio</a>
+            <a href="servizi.html" class="nav-pill">Servizi</a>
+            <a href="contatti.html" class="nav-pill">Contatti</a>
+        </div>
+    </nav>
+
+    <!-- Contenuto Principale -->
+    <main>
+
+        <!-- Hero Section -->
+        <section id="hero" class="hero-section">
+            <div class="hero-overlay"></div>
+            <!-- L'immagine viene iniettata via JS -->
+            <div id="hero-image-container"></div>
+            <div class="hero-content">
+                <!-- La classe fade-in-up è gestita ora anche via JS per il timing -->
+                <h1>Il Suono è un Rituale.</h1>
+            </div>
+        </section>
+
+        <!-- Sezione Narrativa -->
+        <section id="narrative" class="narrative-section">
+
+            <!-- Blocco 1: La Genesi -->
+            <article class="story-block text-left">
+                <div class="content-box scroll-reveal">
+                    <h2>L'Origine</h2>
+                    <p>
+                        Tiny Temple non è nato come uno studio, ma come una necessità.
+                        In un mondo che urla, abbiamo cercato un angolo di silenzio dove il suono
+                        potesse tornare ad essere sacro. Qui, le pareti respirano e la tecnologia
+                        si inchina all'espressione umana.
+                    </p>
+                </div>
+                <div class="image-box scroll-reveal parallax-target">
+                    <img src="assets/home_details/dettaglio1.jpg" alt="Dettaglio studio" class="detail-img">
+                </div>
+            </article>
+
+            <!-- Blocco 2: Lo Spirito -->
+            <article class="story-block text-right">
+                <div class="image-box scroll-reveal parallax-target">
+                    <img src="assets/home_details/dettaglio2.jpg" alt="Atmosfera luci" class="detail-img">
+                </div>
+                <div class="content-box scroll-reveal">
+                    <h2>L'Alchimia</h2>
+                    <p>
+                        Non catturiamo solo frequenze. Cerchiamo l'imperfezione che rende una performance
+                        irripetibile. Luce calda, legno vivo e un approccio analogico al tempo:
+                        questo è il nostro spazio, sospeso tra il classico e l'avanguardia.
+                    </p>
+                </div>
+            </article>
+
+        </section>
+
+        <!-- Footer -->
+        <footer>
+            <p>&copy; 2025 Tiny Temple. All rights reserved.</p>
+        </footer>
+
+    </main>
+
+    <!-- Scripts -->
+    <script src="main.js"></script>
+    <script src="home.js"></script>
+</body>
+
+</html>
