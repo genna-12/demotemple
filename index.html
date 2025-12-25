@@ -6,7 +6,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tiny Temple | Sound Sanctuary</title>
 
-    <!-- Font Import: Playfair Display (Titoli) e Lato (Testi) -->
+    <!-- 1. PRELOAD CRITICO: Diciamo al browser di scaricare subito il LOGO e i FONT 
+         prima ancora di analizzare tutto il CSS. Fondamentale per evitare scatti all'avvio. -->
+    <link rel="preload" href="assets/nero.png" as="image">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400&family=Playfair+Display:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
@@ -16,15 +18,14 @@
 
 <body class="loading-state">
 
-    <!-- Schermata Intro / Overlay Logo -->
+    <!-- Schermata Intro -->
     <div id="intro-layer">
         <div class="logo-wrapper" id="main-logo">
-            <!-- SVG Inline o Img per il logo -->
-            <img src="assets/nero.png" alt="Tiny Temple Logo" class="temple-logo">
+            <!-- decoding="sync" forza la decodifica immediata per l'intro -->
+            <img src="assets/nero.png" alt="Tiny Temple Logo" class="temple-logo" decoding="sync">
         </div>
     </div>
 
-    <!-- Navigazione (Appare dopo l'intro) -->
     <nav id="navbar" class="hidden-nav">
         <div class="nav-links">
             <a href="portfolio.html" class="nav-pill">Portfolio</a>
@@ -33,16 +34,13 @@
         </div>
     </nav>
 
-    <!-- Contenuto Principale -->
     <main>
-
         <!-- Hero Section -->
         <section id="hero" class="hero-section">
             <div class="hero-overlay"></div>
-            <!-- L'immagine viene iniettata via JS -->
+            <!-- L'immagine verrà caricata in background via JS -->
             <div id="hero-image-container"></div>
             <div class="hero-content">
-                <!-- La classe fade-in-up è gestita ora anche via JS per il timing -->
                 <h1>Il Suono è un Rituale.</h1>
             </div>
         </section>
@@ -50,7 +48,7 @@
         <!-- Sezione Narrativa -->
         <section id="narrative" class="narrative-section">
 
-            <!-- Blocco 1: La Genesi -->
+            <!-- Blocco 1 -->
             <article class="story-block text-left">
                 <div class="content-box scroll-reveal">
                     <h2>L'Origine</h2>
@@ -62,14 +60,16 @@
                     </p>
                 </div>
                 <div class="image-box scroll-reveal parallax-target">
-                    <img src="assets/home_details/dettaglio1.jpg" alt="Dettaglio studio" class="detail-img">
+                    <!-- 2. LAZY LOADING: Questa immagine non bloccherà l'intro. 
+                         Verrà scaricata solo quando serve. decoding="async" evita blocchi della CPU. -->
+                    <img src="assets/home_details/dettaglio1.jpg" alt="Dettaglio studio" class="detail-img" loading="lazy" decoding="async">
                 </div>
             </article>
 
-            <!-- Blocco 2: Lo Spirito -->
+            <!-- Blocco 2 -->
             <article class="story-block text-right">
                 <div class="image-box scroll-reveal parallax-target">
-                    <img src="assets/home_details/dettaglio2.jpg" alt="Atmosfera luci" class="detail-img">
+                    <img src="assets/home_details/dettaglio2.jpg" alt="Atmosfera luci" class="detail-img" loading="lazy" decoding="async">
                 </div>
                 <div class="content-box scroll-reveal">
                     <h2>L'Alchimia</h2>
@@ -83,16 +83,13 @@
 
         </section>
 
-        <!-- Footer -->
         <footer>
             <p>&copy; 2025 Tiny Temple. All rights reserved.</p>
         </footer>
 
     </main>
 
-    <!-- Scripts -->
     <script src="main.js"></script>
     <script src="home.js"></script>
 </body>
-
 </html>
