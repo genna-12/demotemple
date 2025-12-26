@@ -370,6 +370,43 @@ footer { text-align: center; padding: 30px; color: #333; font-size: 0.8rem; marg
 
     .social-btn:active { transform: scale(0.95); }
     .floating-btn:active { transform: scale(0.95); }
+
+    /* --- AGGIUNTE PORTFOLIO PAGE --- */
+    .portfolio-grid {
+        grid-template-columns: repeat(2, 1fr); /* 2 colonne mobile */
+        gap: 15px; /* Gap ridotto */
+    }
+    
+    .portfolio-hero {
+        height: 30vh;
+        margin-top: 60px;
+    }
+    
+    .portfolio-hero h1 {
+        font-size: 1.5rem;
+    }
+    
+    /* Mobile: niente hover overlay complesso, click diretto */
+    .cover-overlay {
+        display: none; 
+    }
+    
+    .cover-card:active {
+        transform: scale(0.96);
+    }
+    
+    .visual-break p {
+        font-size: 1.4rem;
+    }
+    
+    .playlist-content h2 {
+        font-size: 1.8rem;
+    }
+
+    .playlist-cover-img {
+        width: 200px;
+        height: 200px;
+    }
 }
 
 /* --- AGGIUNTE PER PAGINA SERVIZI --- */
@@ -430,4 +467,185 @@ footer { text-align: center; padding: 30px; color: #333; font-size: 0.8rem; marg
 /* 4. Fix specifico per le immagini servizi se necessario */
 .detail-img {
     transition: transform 0.1s linear; /* Smooth parallax */
+}
+
+/* --- AGGIUNTE PORTFOLIO PAGE --- */
+
+/* Hero Portfolio */
+.portfolio-hero {
+    height: 40vh; /* Non full screen, più discreto */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    padding: 0 20px;
+    margin-top: 80px; /* Spazio per la nav fissa */
+}
+
+.portfolio-hero h1 {
+    font-size: 2.2rem;
+    font-weight: 300;
+    color: var(--text-muted);
+    font-family: var(--font-text); /* Meno pomposo del titolo home */
+    letter-spacing: 1px;
+    opacity: 0; /* Gestito da JS */
+    transform: translateY(20px);
+    transition: opacity 1.2s ease, transform 1.2s ease;
+}
+.portfolio-hero h1.is-visible { opacity: 1; transform: translateY(0); }
+
+/* Griglia Portfolio */
+.portfolio-grid-section {
+    padding: 0 5% 100px 5%;
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+.portfolio-grid {
+    display: grid;
+    /* Desktop: 3 colonne fluide */
+    grid-template-columns: repeat(3, 1fr);
+    gap: 40px;
+}
+
+/* Card Copertina */
+.cover-card {
+    position: relative;
+    display: block;
+    width: 100%;
+    aspect-ratio: 1 / 1; /* Forza il quadrato perfetto */
+    overflow: hidden;
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94), box-shadow 0.4s ease;
+    cursor: pointer;
+    background: #111; /* Fallback mentre carica */
+    
+    /* Reveal animation setup */
+    opacity: 0;
+    transform: translateY(30px);
+}
+
+.cover-card.is-visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.cover-card:hover {
+    transform: scale(1.03) translateY(-5px); /* Leggero lift */
+    box-shadow: 0 20px 40px rgba(0,0,0,0.7);
+    z-index: 2;
+}
+
+.cover-card img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: filter 0.4s ease;
+}
+
+/* Overlay Titolo (Visibile solo hover desktop) */
+.cover-overlay {
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    padding: 20px;
+    text-align: center;
+}
+
+.cover-card:hover .cover-overlay {
+    opacity: 1;
+}
+
+.project-title {
+    color: #fff;
+    font-family: var(--font-title);
+    font-size: 1.2rem;
+    font-style: italic;
+    transform: translateY(10px);
+    transition: transform 0.3s ease;
+}
+
+.cover-card:hover .project-title {
+    transform: translateY(0);
+}
+
+/* Visual Break (Testo Centrale) */
+.visual-break {
+    padding: 100px 20px;
+    text-align: center;
+}
+
+.visual-break p {
+    font-family: var(--font-title);
+    font-size: 1.8rem;
+    color: var(--text-primary);
+    opacity: 0.8;
+}
+
+/* Sezione Playlist */
+.playlist-section {
+    background: radial-gradient(circle at center, rgba(74, 59, 50, 0.2) 0%, rgba(5, 5, 5, 1) 70%);
+    padding: 120px 20px;
+    text-align: center;
+    border-top: 1px solid rgba(255,255,255,0.05);
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+
+.playlist-content h2 {
+    font-family: var(--font-title);
+    font-size: 2.5rem;
+    margin-bottom: 40px;
+    color: var(--text-primary);
+}
+
+/* --- STILE PLAYLIST & BOTTONE --- */
+
+.playlist-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 30px; /* Spazio verticale tra gli elementi */
+}
+
+/* Immagine Playlist */
+.playlist-cover-img {
+    width: 280px;
+    height: 280px;
+    object-fit: cover;
+    box-shadow: 0 15px 40px rgba(0,0,0,0.6);
+    transition: transform 0.4s ease;
+    border-radius: 4px; 
+}
+
+.playlist-cover-img:hover {
+    transform: scale(1.03); /* Leggero zoom quando passi sull'immagine */
+}
+
+/* Bottone Spotify Arancione */
+.spotify-btn {
+    display: inline-block;
+    text-decoration: none;
+    color: #fff;
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    padding: 15px 45px;
+    border-radius: 50px;
+    font-family: var(--font-text);
+    font-weight: 300;
+    letter-spacing: 1px;
+    transition: all 0.3s ease;
+}
+
+.spotify-btn:hover {
+    background: var(--accent-orange); /* Arancione Tiny Temple */
+    border-color: var(--accent-orange);
+    color: #fff;
+    transform: scale(1.05);
+    box-shadow: 0 0 25px rgba(207, 92, 54, 0.4); /* Glow arancione */
 }
