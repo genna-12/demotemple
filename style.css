@@ -274,14 +274,43 @@ footer { text-align: center; padding: 30px; color: #333; font-size: 0.8rem; marg
     transform: translateY(0) !important;
 }
 
-/* --- MOBILE RESPONSIVE (Versione Semplice + Nav Fix) --- */
+/* --- MOBILE RESPONSIVE --- */
 @media (max-width: 768px) {
     
-    /* 1. GRIGLIA NAVIGAZIONE (Mantenuta come da tua conferma) */
-    #navbar {
-        padding: 25px 0 15px 0 !important; 
+    /* 1. LAYOUT GENERALE & RIDUZIONE SPAZI */
+    h1 { font-size: 2rem; padding: 0 10px; line-height: 1.2; }
+    
+    /* RIDUZIONE SPAZI 1: Tra Hero e Testi (Home/Servizi) */
+    .narrative-section {
+        padding-top: 40px !important;   /* Desktop era 100px */
+        padding-bottom: 40px !important;
+        padding-left: 20px;
+        padding-right: 20px;
+    }
+
+    /* RIDUZIONE SPAZI 2: Tra i vari blocchi di storia */
+    .story-block, .text-right { 
+        flex-direction: column; 
+        gap: 20px; 
+        margin-bottom: 50px !important; /* Desktop era 150px */
         width: 100%; 
-        background: transparent !important; /* Rimuove sfondo navbar generale se presente */
+    }
+    
+    /* RIDUZIONE SPAZI 3: Prima della Connect Section (Fine pagina) */
+    .connect-section {
+        padding-top: 50px !important;    /* Desktop era 100px */
+        padding-bottom: 120px !important; /* Spazio per i bottoni fluttuanti */
+    }
+
+    .content-box { order: 1; padding: 20px; width: 100%; }
+    /* L'immagine ora è meno alta per rubare meno spazio verticale */
+    .image-box { order: 2; width: 100%; height: 250px; margin: 0; transform: none !important; opacity: 1; }
+    
+    /* 2. NAVIGAZIONE (SOLO TESTO, NO BORDI/SFONDI) */
+    #navbar {
+        padding: 25px 0 10px 0 !important; 
+        width: 100%; 
+        background: transparent !important; 
         backdrop-filter: none !important;
     }
 
@@ -295,13 +324,11 @@ footer { text-align: center; padding: 30px; color: #333; font-size: 0.8rem; marg
     }
 
     .nav-pill { 
-        /* Rimuove tutto il "box" */
         background: transparent !important;
         border: none !important;
         box-shadow: none !important;
         backdrop-filter: none !important;
         
-        /* Stile Testo */
         padding: 10px 0 !important; 
         width: 100%; 
         font-size: 0.8rem; 
@@ -313,114 +340,52 @@ footer { text-align: center; padding: 30px; color: #333; font-size: 0.8rem; marg
         transition: transform 0.1s ease, text-shadow 0.2s ease;
     }
     
-    /* EFFETTO TAP (SCALE + GLOW) */
+    /* EFFETTO TAP NAVIGAZIONE */
     .nav-pill:active {
-        transform: scale(1.2); /* Ingrandimento al tocco */
-        text-shadow: 0 0 15px rgba(255, 255, 255, 1); /* Glow bianco intenso */
+        transform: scale(1.2); 
+        text-shadow: 0 0 15px rgba(255, 255, 255, 1); 
         color: #fff;
         background: transparent !important;
     }
-    
-    /* 2. FIX LOGO (Mantenuto Allineamento Perfetto) */
-    .logo-wrapper.in-nav,
-    .logo-wrapper.static-nav {
-        position: fixed !important; 
-        top: 45px !important;       
-        left: 12.5% !important;     
-        transform: translate(-50%, -50%) scale(0.6) !important;
-        
-        width: 100px; 
-        height: 100px;
-        margin: 0 !important;
-        background: transparent; 
-        box-shadow: none;
-        pointer-events: auto;
-        z-index: 10000; 
-    }
 
-    .logo-wrapper.in-nav::after,
-    .logo-wrapper.static-nav::after {
-        content: ''; position: absolute; width: 70px; height: 70px;
-        background: rgba(0,0,0,0.6); border-radius: 50%;
-        z-index: -1; top: 50%; left: 50%; transform: translate(-50%, -50%);
-    }
-
-    /* 3. PROCESS BAR (Ritorno alla semplicità - Natural Wrap) */
+    /* 3. PROCESS BAR (SERVIZI) - RIDUZIONE SPAZI */
     .process-bar {
-        padding: 40px 20px 50px;
+        /* Ridotto drasticamente il padding verticale */
+        padding: 20px 20px 30px !important; 
         text-align: center;
         width: 100%;
         box-sizing: border-box;
-        overflow: visible; /* Importante: permette al testo di espandersi verticalmente */
+        overflow: visible;
     }
     
     .process-bar span {
         font-family: var(--font-title);
-        font-size: 1.3rem; /* Leggermente ridotto per mobile */
-        line-height: 1.5;  /* Aumenta lo spazio tra le righe quando va a capo */
+        font-size: 1.3rem; 
         color: var(--accent-orange);
-        
+        white-space: normal !important; /* Va a capo */
+        line-height: 1.4; 
         display: block;
-        width: 100%;
-        
-        /* MODIFICA FONDAMENTALE: Permette di andare a capo */
-        white-space: normal !important; 
-        word-wrap: break-word;
+    }
+    
+    /* 4. LOGO & ALTRI ELEMENTI */
+    .logo-wrapper.in-nav,
+    .logo-wrapper.static-nav {
+        top: 45px !important;       
+        left: 10% !important;     
+        transform: translate(-50%, -50%) scale(0.6) !important;
     }
 
-    /* 4. LAYOUT GENERALE */
-    h1 { font-size: 2rem; padding: 0 10px; line-height: 1.2; }
-    
-    .story-block, .text-right { flex-direction: column; gap: 25px; margin-bottom: 80px; width: 100%; }
-    .content-box { order: 1; padding: 25px; width: 100%; }
-    .image-box { order: 2; width: 100%; height: 280px; margin: 0; transform: none !important; opacity: 1; }
-    .detail-img { transform: none !important; position: relative; top: 0; height: 100%; }
-
-    .connect-title { font-size: 1.5rem; }
+    .connect-title { font-size: 1.5rem; margin-bottom: 30px; }
     
     .floating-btn { bottom: 20px; width: 50px; height: 50px; }
     .float-left { left: 20px; }
     .float-right { right: 20px; }
-
-    .social-btn:active { transform: scale(0.95); }
-    .floating-btn:active { transform: scale(0.95); }
-
-    /* --- AGGIUNTE PORTFOLIO PAGE --- */
-    .portfolio-grid {
-        grid-template-columns: repeat(2, 1fr); /* 2 colonne mobile */
-        gap: 15px; /* Gap ridotto */
-    }
     
-    .portfolio-hero {
-        height: 30vh;
-        margin-top: 60px;
-    }
-    
-    .portfolio-hero h1 {
-        font-size: 1.5rem;
-    }
-    
-    /* Mobile: niente hover overlay complesso, click diretto */
-    .cover-overlay {
-        display: none; 
-    }
-    
-    .cover-card:active {
-        transform: scale(0.96);
-    }
-    
-    .visual-break p {
-        font-size: 1.4rem;
-    }
-    
-    .playlist-content h2 {
-        font-size: 1.8rem;
-    }
-
-    .playlist-cover-img {
-        width: 200px;
-        height: 200px;
-    }
+    /* Portfolio Mobile Fixes */
+    .portfolio-grid { grid-template-columns: repeat(2, 1fr); gap: 15px; }
+    .portfolio-hero { height: 30vh; margin-top: 40px; } /* Ridotto margine top */
+    .cover-overlay { display: none; }
+    .playlist-cover-img { width: 200px; height: 200px; }
 }
 
 /* --- AGGIUNTE PER PAGINA SERVIZI --- */
@@ -664,5 +629,37 @@ footer { text-align: center; padding: 30px; color: #333; font-size: 0.8rem; marg
     box-shadow: 0 0 25px rgba(207, 92, 54, 0.4); /* Glow arancione */
 }
 
+/* --- AGGIUNTE PER PAGINA CONTATTI --- */
 
+/* Ruolo Team (es. Produttore) */
+.role-text {
+    color: var(--accent-orange);
+    font-family: var(--font-title);
+    font-style: italic;
+    font-size: 1.1rem;
+    margin-bottom: 20px;
+    letter-spacing: 0.5px;
+}
 
+/* Griglia social mini dentro la bio */
+.bio-socials {
+    display: flex;
+    gap: 15px;
+    margin-top: 25px;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    padding-top: 20px;
+}
+
+/* Variante pulsante social più piccolo e discreto */
+.social-btn.mini-btn {
+    width: 40px;
+    height: 40px;
+    background: rgba(255, 255, 255, 0.05);
+    border: none;
+}
+
+.social-btn.mini-btn:hover {
+    background: var(--accent-orange);
+    color: #fff;
+    transform: scale(1.1);
+}
