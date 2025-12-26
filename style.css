@@ -274,11 +274,10 @@ footer { text-align: center; padding: 30px; color: #333; font-size: 0.8rem; marg
     transform: translateY(0) !important;
 }
 
-/* --- MOBILE RESPONSIVE (Versione Definitiva Scaletta + Fix Logo) --- */
+/* --- MOBILE RESPONSIVE (Versione Semplice + Nav Fix) --- */
 @media (max-width: 768px) {
     
-    /* 1. GRIGLIA NAVIGAZIONE (Simmetria Matematica) */
-    /* Divide lo schermo in 4 quarti invisibili */
+    /* 1. GRIGLIA NAVIGAZIONE (Mantenuta come da tua conferma) */
     #navbar {
         padding: 25px 0 15px 0 !important; 
         width: 100%; 
@@ -287,12 +286,11 @@ footer { text-align: center; padding: 30px; color: #333; font-size: 0.8rem; marg
         box-sizing: border-box;
     }
 
-    /* I link occupano esattamente gli ultimi 3 quarti (75%) */
     .nav-links { 
         margin-left: 25%; 
         width: 75%; 
         display: grid; 
-        grid-template-columns: 1fr 1fr 1fr; /* 3 celle identiche */
+        grid-template-columns: 1fr 1fr 1fr; 
         gap: 0 !important; 
         justify-items: center; 
         align-items: center; 
@@ -300,23 +298,23 @@ footer { text-align: center; padding: 30px; color: #333; font-size: 0.8rem; marg
 
     .nav-pill { 
         padding: 8px 0 !important; 
-        width: 90%; /* Larghezza bottone */
+        width: 95%; 
         font-size: 0.75rem; 
         white-space: nowrap; 
         text-align: center;
         display: flex; justify-content: center;
     }
     
-    /* 2. FIX LOGO (Coordinate Assolute per Home e Servizi) */
-    /* Il logo si piazza esattamente al centro del primo quarto (12.5%) */
+    /* 2. FIX LOGO (Mantenuto Allineamento Perfetto) */
     .logo-wrapper.in-nav,
     .logo-wrapper.static-nav {
         position: fixed !important; 
-        top: 45px !important;       /* Allineamento ottico verticale ai tasti */
-        left: 12.5% !important;     /* Centro matematico della prima colonna */
+        top: 45px !important;       
+        left: 12.5% !important;     
         transform: translate(-50%, -50%) scale(0.6) !important;
         
-        width: 100px; height: 100px;
+        width: 100px; 
+        height: 100px;
         margin: 0 !important;
         background: transparent; 
         box-shadow: none;
@@ -331,32 +329,30 @@ footer { text-align: center; padding: 30px; color: #333; font-size: 0.8rem; marg
         z-index: -1; top: 50%; left: 50%; transform: translate(-50%, -50%);
     }
 
-    /* 3. SCALETTA DIAGONALE ("Ascolto -> Costruzione -> Cura") */
+    /* 3. PROCESS BAR (Ritorno alla semplicità - Natural Wrap) */
     .process-bar {
-        padding: 50px 0 60px 0; 
-        display: flex;
-        justify-content: center; /* Centra il blocco nello schermo */
+        padding: 40px 20px 50px; /* Padding standard laterale per non toccare i bordi */
+        text-align: center;
         width: 100%;
-        overflow: hidden;
+        box-sizing: border-box; /* Assicura che il padding non allarghi la pagina */
     }
     
     .process-bar span {
-        display: block;
+        display: inline-block; /* Comportamento testo standard */
+        white-space: normal;   /* Permette di andare a capo se non c'è spazio */
+        
         font-family: var(--font-title);
-        font-size: 1.3rem;
-        line-height: 1.6;  
+        font-size: 1.4rem;     /* Dimensione leggibile */
+        line-height: 1.4;      /* Spaziatura interlinea se va a capo */
         color: var(--accent-orange);
         
-        /* IL SEGRETO: Rispetta gli spazi e gli 'a capo' che metteremo nel JS */
-        white-space: pre; 
-        text-align: left;
+        width: 100%;           /* Usa tutto lo spazio disponibile */
+        max-width: 100%;       /* Mai oltre lo schermo */
         
-        /* Assicuriamo che non esca dallo schermo se troppo indentato */
-        max-width: 100%;
-        overflow-x: auto; /* Scroll orizzontale solo se strettamente necessario */
+        /* Nessun bordo, nessuna forzatura */
+        border: none;
+        padding: 0;
     }
-    /* Nasconde la scrollbar della scritta se dovesse comparire */
-    .process-bar span::-webkit-scrollbar { display: none; }
 
     /* 4. LAYOUT GENERALE */
     h1 { font-size: 2rem; padding: 0 10px; line-height: 1.2; }
@@ -367,13 +363,17 @@ footer { text-align: center; padding: 30px; color: #333; font-size: 0.8rem; marg
     .detail-img { transform: none !important; position: relative; top: 0; height: 100%; }
 
     .connect-title { font-size: 1.5rem; }
+    
     .floating-btn { bottom: 20px; width: 50px; height: 50px; }
     .float-left { left: 20px; }
     .float-right { right: 20px; }
-    .social-btn:active, .floating-btn:active { transform: scale(0.95); }
+
+    .social-btn:active { transform: scale(0.95); }
+    .floating-btn:active { transform: scale(0.95); }
 }
 
 /* --- AGGIUNTE PER PAGINA SERVIZI --- */
+
 /* 1. Sottotitolo Hero */
 .hero-subtitle {
     font-family: var(--font-text);
@@ -431,8 +431,3 @@ footer { text-align: center; padding: 30px; color: #333; font-size: 0.8rem; marg
 .detail-img {
     transition: transform 0.1s linear; /* Smooth parallax */
 }
-
-
-
-
-
