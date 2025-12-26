@@ -13,103 +13,43 @@
     --ease-cinematic: cubic-bezier(0.65, 0, 0.35, 1);
 }
 
-/* --- NASCONDERE SCROLLBAR (SOLUZIONE UNIVERSALE) --- */
-
-/* 1. Firefox e IE/Edge (Legacy) */
-html, body {
-    scrollbar-width: none;  /* Firefox */
-    -ms-overflow-style: none;  /* IE e Edge */
-}
-
-html {
-  scroll-behavior: smooth;
-}
-
-
-/* 2. WebKit (Chrome, Safari, Opera, New Edge) */
-/* Colpiamo sia html che body specificamente */
-html::-webkit-scrollbar,
-body::-webkit-scrollbar {
-    display: none;
-    width: 0;
-    height: 0;
-    background: transparent;
-}
-
-/* 3. Sicurezza Totale: Rimuove scrollbar da QUALSIASI elemento interno */
-*::-webkit-scrollbar {
-    display: none;
-    width: 0;
-    height: 0;
+/* --- SCROLLBAR HIDDEN --- */
+html, body { scrollbar-width: none; -ms-overflow-style: none; }
+html { scroll-behavior: smooth; }
+html::-webkit-scrollbar, body::-webkit-scrollbar, *::-webkit-scrollbar {
+    display: none; width: 0; height: 0;
 }
 
 /* --- BASE STYLES --- */
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-}
-
+* { margin: 0; padding: 0; box-sizing: border-box; }
 body {
     background-color: var(--bg-color);
     color: var(--text-primary);
     font-family: var(--font-text);
-    
-    /* Importante: overflow-x nascosto, ma y auto per permettere lo scroll */
     overflow-x: hidden;
     overflow-y: auto; 
-    
     background-image: 
         radial-gradient(circle at 20% 30%, rgba(74, 59, 50, 0.15) 0%, transparent 50%),
         radial-gradient(circle at 80% 80%, rgba(207, 92, 54, 0.08) 0%, transparent 60%);
     background-attachment: fixed;
 }
+body.no-scroll { overflow: hidden; }
 
-body.no-scroll {
-    overflow: hidden;
-}
-
-/* --- INTRO & LOGO ANIMATION (CINEMATIC FIX) --- */
+/* --- INTRO & LOGO --- */
 #intro-layer {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
-    z-index: 9999;
-    background-color: var(--bg-color); /* Sfondo gestito qui per il fade-out */
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    /* Transizione solo sul colore per rivelare il sito */
+    position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 9999;
+    background-color: var(--bg-color);
+    display: flex; justify-content: center; align-items: center;
     transition: background-color 1.5s ease-out;
 }
-
-#intro-layer.intro-complete {
-    background-color: rgba(8, 8, 8, 0); /* Diventa trasparente */
-    pointer-events: none;
-}
+#intro-layer.intro-complete { background-color: rgba(8, 8, 8, 0); pointer-events: none; }
 
 .logo-wrapper {
-    /* POSIZIONAMENTO FISSO DALL'INIZIO per evitare salti */
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    /* Centratura perfetta */
+    position: fixed; top: 50%; left: 50%;
     transform: translate(-50%, -50%) scale(1);
-    
-    width: 100px;
-    height: 100px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 10000;
-
-    /* PRESTAZIONI SAFARI/MOBILE: */
-    /* Avvisa il browser che queste proprietà cambieranno, prevenendo glitch grafici */
+    width: 100px; height: 100px;
+    display: flex; justify-content: center; align-items: center; z-index: 10000;
     will-change: top, left, transform;
-    
-    /* Gestione unificata di tutte le proprietà che cambiano */
     transition: 
         top 1.2s var(--ease-cinematic),
         left 1.2s var(--ease-cinematic),
@@ -118,406 +58,247 @@ body.no-scroll {
         box-shadow 0.5s ease;
 }
 
-/* STATO FINALE (Nav Button) */
-/* --- CORREZIONE POSIZIONAMENTO LOGO --- */
-
-/* STATO FINALE DESKTOP (POSIZIONAMENTO CORRETTO) */
 .logo-wrapper.in-nav {
-    /* CALCOLO CENTRATURA VERTICALE:
-       Navbar padding-top: 35px.
-       Altezza tasti (incluso padding/font): circa 46px.
-       Centro dei tasti = 35px + (46px / 2) = 58px.
-       
-       Impostiamo top a 58px per allineare i centri.
-    */
-    top: 58px; 
-    
-    /* Spostiamo leggermente più a destra per dare respiro dall'angolo */
-    left: 50px; 
-    
-    /* FLUIDITÀ: Manteniamo l'ancoraggio centrale */
-    transform: translate(-50%, -50%) scale(0.5); 
-    
-    background: #000;
-    border-radius: 50%;
-    
-    /* Ombra base */
+    top: 58px; left: 50px;
+    transform: translate(-50%, -50%) scale(0.5);
+    background: #000; border-radius: 50%;
     box-shadow: 0 4px 20px rgba(0,0,0,0.5);
-    
-    cursor: pointer;
-    pointer-events: auto;
-    
-    /* Aggiungiamo transizione per l'effetto hover */
+    cursor: pointer; pointer-events: auto;
     transition: 
-        top 1.2s cubic-bezier(0.65, 0, 0.35, 1),
-        left 1.2s cubic-bezier(0.65, 0, 0.35, 1),
-        transform 0.3s cubic-bezier(0.65, 0, 0.35, 1), /* Transform più veloce per l'hover */
+        top 1.2s var(--ease-cinematic),
+        left 1.2s var(--ease-cinematic),
+        transform 0.3s var(--ease-cinematic),
         background-color 0.3s ease,
         box-shadow 0.3s ease;
 }
-
-/* --- EFFETTO HOVER SUL LOGO --- */
 .logo-wrapper.in-nav:hover {
-    /* 
-       IMPORTANTE: Dobbiamo ripetere il translate(-50%, -50%) 
-       altrimenti il logo salta via dal centro quando ingrandiamo.
-       Aumentiamo la scala da 0.5 a 0.55 (10% più grande).
-    */
     transform: translate(-50%, -50%) scale(0.55);
-    
-    /* Aumentiamo l'ombra per dare effetto "galleggiamento" */
     box-shadow: 0 8px 30px rgba(0,0,0,0.7);
-    
-    /* Opzionale: bordo sottile luminoso come i tasti */
     border: 1px solid rgba(255, 255, 255, 0.2);
 }
-
-.temple-logo {
-    width: 100%;
-    height: 100%;
-    transition: fill 0.5s ease;
-}
-
-/* Pulsazione Iniziale */
+.temple-logo { width: 100%; height: 100%; transition: fill 0.5s ease; }
 @keyframes heartbeat {
     0% { transform: translate(-50%, -50%) scale(1); }
     50% { transform: translate(-50%, -50%) scale(1.15); filter: drop-shadow(0 0 15px rgba(255,255,255,0.2)); }
     100% { transform: translate(-50%, -50%) scale(1); }
 }
+.pulse-anim { animation: heartbeat 0.8s ease-in-out forwards; }
 
-.pulse-anim {
-    /* Animation deve preservare il translate centrale */
-    animation: heartbeat 0.8s ease-in-out forwards;
-}
-
+/* --- NAVIGATION --- */
 #navbar {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    
-    /* MODIFICA: Aumentato spazio sopra e sotto per un'area più "alta" e ariosa */
-    padding: 35px 40px 20px 120px; /* 120px a sinistra lascia spazio al logo */
-    
+    position: fixed; top: 0; left: 0; width: 100%;
+    padding: 35px 40px 20px 120px;
     z-index: 9000;
     transition: transform 0.4s ease, opacity 0.8s ease;
     mix-blend-mode: exclusion;
-    
-    /* Assicura che i box shadow non vengano tagliati */
     box-sizing: border-box; 
 }
-
-.hidden-nav {
-    opacity: 0;
-    pointer-events: none;
-    transform: translateY(-10px);
-}
-
-.nav-visible {
-    opacity: 1;
-    pointer-events: auto;
-    transform: translateY(0);
-}
-
+.hidden-nav { opacity: 0; pointer-events: none; transform: translateY(-10px); }
+.nav-visible { opacity: 1; pointer-events: auto; transform: translateY(0); }
 .nav-hidden-scroll { transform: translateY(-100%); }
-
-.nav-links {
-    display: flex;
-    gap: 20px; /* Spazio tra i tasti desktop */
-}
-
-/* TASTI AD ALTO CONTRASTO (Già modificati prima, li confermo per sicurezza) */
+.nav-links { display: flex; gap: 20px; }
 .nav-pill {
-    text-decoration: none;
-    color: #ffffff;
+    text-decoration: none; color: #ffffff;
     background: rgba(10, 10, 10, 0.9);
-    padding: 12px 28px; /* Un po' più grandi su desktop */
+    padding: 12px 28px;
     border-radius: 50px;
-    font-size: 0.95rem;
-    font-weight: 400;
-    letter-spacing: 1px;
+    font-size: 0.95rem; font-weight: 400; letter-spacing: 1px;
     backdrop-filter: blur(8px);
     border: 1px solid rgba(255, 255, 255, 0.25);
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
     text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
     transition: transform 0.3s ease, background 0.3s ease;
 }
+.nav-pill:hover { background: #000; border-color: rgba(255, 255, 255, 0.5); transform: scale(1.05); }
 
-.nav-pill:hover {
-    background: #000;
-    border-color: rgba(255, 255, 255, 0.5);
-    transform: scale(1.05);
-}
-
-/* --- HERO SECTION --- */
-.hero-section {
-    height: 100vh;
-    width: 100%;
-    position: relative;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    overflow: hidden;
-}
-
-#hero-image-container {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-size: cover;
-    background-position: center;
-    opacity: 0; 
-    transition: opacity 2s ease-in-out;
-    z-index: 0;
-}
-
-.hero-overlay {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(to bottom, rgba(8,8,8,0.3) 0%, rgba(8,8,8,1) 95%);
-    z-index: 1;
-}
-
-.hero-content {
-    position: relative;
-    z-index: 2;
-    text-align: center;
-}
-
-/* FIX TITOLO */
+/* --- HERO --- */
+.hero-section { height: 100vh; width: 100%; position: relative; display: flex; justify-content: center; align-items: center; overflow: hidden; }
+#hero-image-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-size: cover; background-position: center; opacity: 0; transition: opacity 2s ease-in-out; z-index: 0; }
+.hero-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(to bottom, rgba(8,8,8,0.3) 0%, rgba(8,8,8,1) 95%); z-index: 1; }
+.hero-content { position: relative; z-index: 2; text-align: center; }
 h1 {
-    font-family: var(--font-title);
-    font-size: 4rem;
-    font-weight: 400;
-    letter-spacing: -1px;
-    color: var(--text-primary);
-    text-shadow: 0 10px 30px rgba(0,0,0,0.5);
-    
-    /* Stato iniziale invisibile */
-    opacity: 0;
-    transform: translateY(30px);
+    font-family: var(--font-title); font-size: 4rem; font-weight: 400; letter-spacing: -1px;
+    color: var(--text-primary); text-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    opacity: 0; transform: translateY(30px);
     transition: opacity 1.5s ease-out, transform 1.5s ease-out;
 }
+h1.is-visible { opacity: 1; transform: translateY(0); }
 
-/* Classe attivata via JS per il fade-in */
-h1.is-visible {
-    opacity: 1;
-    transform: translateY(0);
-}
-
-/* --- NARRATIVE SECTION (IMAGE & PARALLAX FIX) --- */
-.narrative-section {
-    position: relative;
-    padding: 100px 5%;
-    max-width: 1200px;
-    margin: 0 auto;
-    z-index: 10;
-}
-
-.story-block {
-    display: flex;
-    align-items: center;
-    gap: 60px;
-    margin-bottom: 150px;
-}
-
+/* --- NARRATIVE --- */
+.narrative-section { position: relative; padding: 100px 5%; max-width: 1200px; margin: 0 auto; z-index: 10; }
+.story-block { display: flex; align-items: center; gap: 60px; margin-bottom: 150px; }
 .text-right { flex-direction: row-reverse; }
-
 .content-box {
-    flex: 1;
-    background: rgba(20, 15, 12, 0.4);
-    padding: 40px;
-    border-radius: 30px;
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px); /* Safari support */
-    border: 1px solid rgba(255, 255, 255, 0.03);
-    box-shadow: 0 20px 40px rgba(0,0,0,0.4);
-    transform: translateY(20px);
-    opacity: 0;
-    transition: all 1s ease-out;
+    flex: 1; background: rgba(20, 15, 12, 0.4); padding: 40px; border-radius: 30px;
+    backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.03); box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+    transform: translateY(20px); opacity: 0; transition: all 1s ease-out;
 }
+.content-box h2 { font-family: var(--font-title); font-size: 2.5rem; margin-bottom: 20px; color: var(--accent-orange); }
+.content-box p { font-size: 1.1rem; line-height: 1.8; color: var(--text-muted); }
+.image-box {
+    flex: 1; height: 400px; border-radius: 30px; position: relative; overflow: hidden;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.6); opacity: 0; transform: translateY(40px);
+    transition: opacity 1.2s ease-out, transform 1.2s ease-out; background: #000;
+    transform: translateZ(0); -webkit-mask-image: -webkit-radial-gradient(white, black); mask-image: -webkit-radial-gradient(white, black);
+}
+.detail-img { position: absolute; top: -10%; left: 0; width: 100%; height: 120%; object-fit: cover; will-change: transform; }
 
-.content-box h2 {
-    font-family: var(--font-title);
-    font-size: 2.5rem;
-    margin-bottom: 20px;
+/* --- CONNECT SECTION --- */
+.connect-section {
+    position: relative; padding: 100px 5% 150px 5%; /* Padding bottom extra per i pulsanti fluttuanti */
+    text-align: center; z-index: 10;
+    
+    /* SFONDO SCURO */
+    background-color: #050505; 
+    border-top: 1px solid rgba(255,255,255,0.05);
+
+    /* Animazione Scroll Reveal */
+    opacity: 0; 
+    transform: translateY(30px);
+    transition: opacity 1s ease-out, transform 1s ease-out;
+}
+.connect-title {
+    font-family: var(--font-title); font-size: 2rem; color: var(--text-primary);
+    margin-bottom: 40px; text-shadow: 0 2px 10px rgba(0,0,0,0.5);
+}
+.social-grid { display: flex; justify-content: center; gap: 30px; flex-wrap: wrap; }
+.social-btn {
+    width: 60px; height: 60px; border-radius: 50%;
+    background: rgba(20, 20, 20, 0.8);
+    border: 1px solid rgba(255,255,255,0.1);
+    display: flex; justify-content: center; align-items: center;
+    color: #fff; transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+}
+.social-btn:hover {
+    transform: scale(1.1); background: #000;
+    border-color: rgba(255,255,255,0.4);
+    box-shadow: 0 0 15px rgba(255,255,255,0.2);
     color: var(--accent-orange);
 }
 
-.content-box p {
-    font-size: 1.1rem;
-    line-height: 1.8;
-    color: var(--text-muted);
-}
-
-/* FIX BUG IMMAGINI E SAFARI */
-.image-box {
-    flex: 1;
-    height: 400px;
-    border-radius: 30px;
-    position: relative; /* Contenitore relativo */
-    overflow: hidden; /* Maschera il contenuto extra */
-    box-shadow: 0 20px 50px rgba(0,0,0,0.6);
-    opacity: 0;
-    transform: translateY(40px);
-    transition: opacity 1.2s ease-out, transform 1.2s ease-out;
+/* --- FLOATING BUTTONS (FIX DIMENSIONE) --- */
+.floating-btn {
+    position: fixed; 
+    bottom: 30px; 
+    width: 55px; 
+    height: 55px; 
+    z-index: 9500;
+    
+    border-radius: 50%; 
     background: #000;
-
-    /* SAFARI FIX: Forza il mascheramento durante animazioni 3D */
-    transform: translateZ(0); 
-    -webkit-mask-image: -webkit-radial-gradient(white, black);
-    mask-image: -webkit-radial-gradient(white, black);
+    
+    /* FIX 1: Rimuovi qualsiasi padding che restringa l'immagine */
+    padding: 0;
+    
+    /* FIX 2: Nascondi ciò che esce dal cerchio (permette di zoomare l'immagine) */
+    overflow: hidden;
+    
+    display: flex; 
+    justify-content: center; 
+    align-items: center;
+    
+    border: 1px solid rgba(255,255,255,0.15);
+    box-shadow: 0 5px 20px rgba(0,0,0,0.5);
+    transition: transform 0.4s ease, opacity 0.4s ease, box-shadow 0.3s ease;
+    
+    opacity: 0; 
+    pointer-events: none; 
+    transform: translateY(20px);
 }
 
-.detail-img {
-    position: absolute;
-    /* Estendiamo l'immagine sopra e sotto per permettere il movimento parallax */
-    top: -10%; 
-    left: 0;
-    width: 100%;
-    height: 120%; 
-    object-fit: cover;
-    will-change: transform;
-    /* La trasformazione avviene via JS */
+.floating-btn.nav-visible { opacity: 1; pointer-events: auto; transform: translateY(0); }
+.floating-btn.nav-hidden-scroll { transform: translateY(150%); }
+
+.float-left { left: 30px; }
+.float-right { right: 30px; }
+
+/* Effetto Hover del bottone */
+.floating-btn:hover { 
+    transform: scale(1.05); 
 }
 
-/* Reveal Animation Class */
+/* --- FIX ICONA LINGUA (ZOOM FORZATO) --- */
+.lang-icon { 
+    /* Occupa tutto lo spazio disponibile nel bottone */
+    width: 100%; 
+    height: 100%; 
+    
+    /* Mantiene le proporzioni senza deformare */
+    object-fit: cover; 
+    
+    opacity: 0.95; 
+    transition: transform 0.5s ease;
+    
+    /* 
+       FIX 3: ZOOM DIGITALE
+       Se l'icona è piccola, aumenta questo numero (es. 1.2, 1.4, 1.6).
+       Questo ingrandisce l'immagine OLTRE i bordi del contenitore.
+       Poiché il bottone ha 'overflow: hidden', l'eccesso viene tagliato
+       e l'icona sembrerà molto più grande.
+    */
+    transform: scale(1.3); 
+}
+
+/* Animazione rotazione (sovrascrive lo scale momentaneamente) */
+.rotate-anim {
+    /* Manteniamo lo scale anche durante la rotazione */
+    transform: scale(1.3) rotate(360deg) !important;
+}
+
+/* Specifico WhatsApp */
+#wa-btn:hover {
+    box-shadow: 0 0 20px rgba(37, 211, 102, 0.4);
+    border-color: rgba(37, 211, 102, 0.4);
+}
+#lang-btn:hover {
+    box-shadow: 0 0 20px rgba(255, 255, 255, 0.2);
+}
+
+footer { text-align: center; padding: 30px; color: #333; font-size: 0.8rem; margin-bottom: 60px; }
+
+/* --- IMPORTANT: REVEAL CLASS DEFINITIVE --- */
+/* Messa alla fine per sovrascrivere l'opacity:0 delle sezioni */
 .is-visible {
-    opacity: 1;
-    transform: translateY(0);
+    opacity: 1 !important;
+    transform: translateY(0) !important;
 }
 
-footer {
-    text-align: center;
-    padding: 50px;
-    color: #333;
-    font-size: 0.8rem;
-}
-
-/* --- MOBILE RESPONSIVE FIX (DEFINITIVO) --- */
+/* --- MOBILE RESPONSIVE --- */
 @media (max-width: 768px) {
-    
-    /* 1. NAVBAR LAYOUT (Spazio sicuro per Logo + Tasti) */
     #navbar {
-        /* Aumentiamo l'altezza dell'area */
-        padding-top: 30px; 
-        padding-bottom: 20px;
-        
-        /* SPAZIO LOGO: Riserviamo 85px a sinistra solo per il logo */
-        padding-left: 85px; 
-        
-        /* SPAZIO DESTRO: Margine di sicurezza */
-        padding-right: 15px;
-        
-        width: 100%;
-        display: flex;
-        align-items: center;
-        box-sizing: border-box; /* Fondamentale per il calcolo dei padding */
+        padding-top: 30px; padding-bottom: 20px; padding-left: 85px; padding-right: 15px;
+        width: 100%; display: flex; align-items: center; box-sizing: border-box;
     }
-
-    .nav-links {
-        display: flex;
-        width: 100%;
-        /* Distribuisce i tasti equamente nello spazio RIMANENTE (dopo gli 85px) */
-        justify-content: space-between; 
-        align-items: center;
-        gap: 5px; /* Piccolo gap minimo di sicurezza */
-    }
-
-    .nav-pill {
-        /* FIX OVERFLOW: Padding laterale ridotto per farli entrare in schermi stretti */
-        padding: 10px 10px; 
-        font-size: 0.75rem; /* Testo leggibile ma compatto */
-        white-space: nowrap; /* Vietato andare a capo */
-        min-width: auto; /* Lasciamo che si adattino al contenuto */
-    }
+    .nav-links { display: flex; width: 100%; justify-content: space-between; align-items: center; gap: 5px; }
+    .nav-pill { padding: 10px 10px; font-size: 0.75rem; white-space: nowrap; min-width: auto; }
     
-    /* 2. LOGO POSITIONING & FLUIDITÀ SAFARI */
     .logo-wrapper.in-nav {
-        /* POSIZIONE VERTICALE: 
-           Deve cadere al centro della riga dei tasti. 
-           Navbar padding-top: 30px. Tasti alti circa 36px.
-           Centro approssimativo: 30px + (36/2) = 48px dall'alto. */
-        top: 48px; 
-        
-        /* POSIZIONE ORIZZONTALE:
-           Centro dello spazio riservato (85px). 
-           Metà di 85 è 42.5px. */
-        left: 42.5px; 
-        
-        /* ANIMAZIONE FLUIDA (IL SEGRETO):
-           Manteniamo l'ancoraggio al centro (-50%, -50%) come nello stato iniziale.
-           Cambiamo solo la scala. 
-           Safari interpolerà perfettamente le coordinate numeriche di top/left
-           senza scatti perché la matrice di trasformazione (translate) non cambia tipo. */
+        top: 48px; left: 42.5px;
         transform: translate(-50%, -50%) scale(0.6) !important;
-        
-        /* Manteniamo dimensioni base per il calcolo del centro */
-        width: 100px; 
-        height: 100px;
-        
-        background: transparent;
-        box-shadow: none;
+        width: 100px; height: 100px;
+        background: transparent; box-shadow: none;
         pointer-events: auto;
     }
-    
-    /* Sfondo nero per il logo mobile */
     .logo-wrapper.in-nav::after {
-        content: '';
-        position: absolute;
-        width: 70px; /* Un po' più grande del logo visivo */
-        height: 70px;
-        background: rgba(0,0,0,0.6); /* Sfondo scuro per contrasto */
-        border-radius: 50%;
-        z-index: -1;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
+        content: ''; position: absolute; width: 70px; height: 70px;
+        background: rgba(0,0,0,0.6); border-radius: 50%;
+        z-index: -1; top: 50%; left: 50%; transform: translate(-50%, -50%);
     }
 
-    /* 3. HERO TITLE */
-    h1 { 
-        font-size: 2rem; 
-        padding: 0 10px;
-        line-height: 1.2;
-    }
+    h1 { font-size: 2rem; padding: 0 10px; line-height: 1.2; }
     
-    /* 4. STORY BLOCKS ORDER */
-    .story-block, .text-right {
-        flex-direction: column;
-        gap: 25px;
-        margin-bottom: 80px;
-        width: 100%;
-    }
-    
-    /* Testo prima */
-    .content-box {
-        order: 1; 
-        padding: 25px;
-        width: 100%;
-    }
+    .story-block, .text-right { flex-direction: column; gap: 25px; margin-bottom: 80px; width: 100%; }
+    .content-box { order: 1; padding: 25px; width: 100%; }
+    .image-box { order: 2; width: 100%; height: 280px; margin: 0; transform: none !important; opacity: 1; }
+    .detail-img { transform: none !important; position: relative; top: 0; height: 100%; }
 
-    /* Immagine dopo */
-    .image-box {
-        order: 2;
-        width: 100%;
-        height: 280px;
-        margin: 0;
-        transform: none !important; /* No parallax mobile */
-        opacity: 1;
-    }
-    
-    .detail-img {
-        transform: none !important;
-        position: relative;
-        top: 0; 
-        height: 100%;
-    }
+    .connect-title { font-size: 1.5rem; }
+    .floating-btn { bottom: 20px; width: 50px; height: 50px; }
+    .float-left { left: 20px; }
+    .float-right { right: 20px; }
+
+    .social-btn:active { transform: scale(0.95); }
+    .floating-btn:active { transform: scale(0.95); }
 }
-
-
