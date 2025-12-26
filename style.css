@@ -116,25 +116,17 @@ body.no-scroll {
 /* STATO FINALE (Nav Button) */
 /* --- CORREZIONE POSIZIONAMENTO LOGO --- */
 
-/* STATO FINALE (Nav Button) */
+/* STATO FINALE DESKTOP */
 .logo-wrapper.in-nav {
-    /* 
-       CALCOLO MATEMATICO PER POSIZIONE PERFETTA:
-       Il box è 100px. Lo scaliamo a 0.5 (diventa visivamente 50px).
-       La scalatura avviene dal centro, creando 25px di spazio vuoto per lato.
-       
-       Impostando top: 0 e left: 0, il logo visibile apparirà esattamente 
-       a 25px dall'alto e 25px da sinistra (grazie allo spazio vuoto).
-       
-       Questo corrisponde perfettamente al padding-top: 25px della navbar.
-    */
-    top: 0; 
-    left: 0; 
+    /* Posizione calcolata in base al padding-top (35px) della navbar */
+    /* Il centro del logo (50px visivi) si allinea col centro dei tasti */
+    top: 35px; 
+    left: 40px; 
     
-    /* Manteniamo la scala fluida senza cambiare l'origine */
-    transform: translate(0, 0) scale(0.5);
+    /* FLUIDITÀ SAFARI: Manteniamo translate(-50%, -50%) per non cambiare l'anchor point */
+    /* Spostiamo l'elemento cambiando top/left, ma l'origine resta il centro */
+    transform: translate(-50%, -50%) scale(0.5); 
     
-    /* Stili estetici */
     background: #000;
     border-radius: 50%;
     box-shadow: 0 4px 20px rgba(0,0,0,0.5);
@@ -160,16 +152,21 @@ body.no-scroll {
     animation: heartbeat 0.8s ease-in-out forwards;
 }
 
-/* --- NAVIGATION --- */
 #navbar {
     position: fixed;
     top: 0;
     left: 0;
     width: 100%;
-    padding: 25px 0 0 90px;
+    
+    /* MODIFICA: Aumentato spazio sopra e sotto per un'area più "alta" e ariosa */
+    padding: 35px 40px 20px 120px; /* 120px a sinistra lascia spazio al logo */
+    
     z-index: 9000;
     transition: transform 0.4s ease, opacity 0.8s ease;
     mix-blend-mode: exclusion;
+    
+    /* Assicura che i box shadow non vengano tagliati */
+    box-sizing: border-box; 
 }
 
 .hidden-nav {
@@ -186,37 +183,30 @@ body.no-scroll {
 
 .nav-hidden-scroll { transform: translateY(-100%); }
 
-.nav-links { display: flex; gap: 15px; }
+.nav-links {
+    display: flex;
+    gap: 20px; /* Spazio tra i tasti desktop */
+}
 
-/* --- STILE TASTI (VISIBILITÀ MIGLIORATA) --- */
+/* TASTI AD ALTO CONTRASTO (Già modificati prima, li confermo per sicurezza) */
 .nav-pill {
     text-decoration: none;
-    color: #ffffff; /* Bianco puro per contrasto */
-    
-    /* Sfondo molto più scuro e meno trasparente */
-    background: rgba(10, 10, 10, 0.9); 
-    
-    padding: 10px 24px;
+    color: #ffffff;
+    background: rgba(10, 10, 10, 0.9);
+    padding: 12px 28px; /* Un po' più grandi su desktop */
     border-radius: 50px;
-    font-size: 0.9rem;
+    font-size: 0.95rem;
     font-weight: 400;
     letter-spacing: 1px;
     backdrop-filter: blur(8px);
-    
-    /* Bordo leggermente più visibile per staccare dallo sfondo */
     border: 1px solid rgba(255, 255, 255, 0.25);
-    
-    /* Ombra forte per far "galleggiare" il tasto sopra le foto chiare */
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
-    
-    /* Ombra testo per leggibilità estrema */
     text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
-    
     transition: transform 0.3s ease, background 0.3s ease;
 }
 
 .nav-pill:hover {
-    background: #000; /* Nero assoluto all'hover */
+    background: #000;
     border-color: rgba(255, 255, 255, 0.5);
     transform: scale(1.05);
 }
@@ -371,49 +361,65 @@ footer {
     font-size: 0.8rem;
 }
 
-/* --- MOBILE RESPONSIVE FIX (FLUIDITÀ TOTALE) --- */
+/* --- MOBILE RESPONSIVE FIX (DEFINITIVO) --- */
 @media (max-width: 768px) {
     
-    /* 1. NAVBAR GRID */
+    /* 1. NAVBAR LAYOUT (Spazio sicuro per Logo + Tasti) */
     #navbar {
-        padding: 0;
-        padding-top: 35px; /* Spazio per non toccare la notch/bordo alto */
-        padding-bottom: 15px;
-        padding-left: 25%; /* Lasciamo il primo 25% libero per il logo */
+        /* Aumentiamo l'altezza dell'area */
+        padding-top: 30px; 
+        padding-bottom: 20px;
+        
+        /* SPAZIO LOGO: Riserviamo 85px a sinistra solo per il logo */
+        padding-left: 85px; 
+        
+        /* SPAZIO DESTRO: Margine di sicurezza */
+        padding-right: 15px;
+        
         width: 100%;
-        box-sizing: border-box;
         display: flex;
-        align-items: center; 
+        align-items: center;
+        box-sizing: border-box; /* Fondamentale per il calcolo dei padding */
     }
 
     .nav-links {
         display: flex;
         width: 100%;
-        justify-content: space-around;
+        /* Distribuisce i tasti equamente nello spazio RIMANENTE (dopo gli 85px) */
+        justify-content: space-between; 
         align-items: center;
+        gap: 5px; /* Piccolo gap minimo di sicurezza */
     }
 
-    /* 2. LOGO POSITIONING FIX (SOLO GPU) */
+    .nav-pill {
+        /* FIX OVERFLOW: Padding laterale ridotto per farli entrare in schermi stretti */
+        padding: 10px 10px; 
+        font-size: 0.75rem; /* Testo leggibile ma compatto */
+        white-space: nowrap; /* Vietato andare a capo */
+        min-width: auto; /* Lasciamo che si adattino al contenuto */
+    }
+    
+    /* 2. LOGO POSITIONING & FLUIDITÀ SAFARI */
     .logo-wrapper.in-nav {
-        /* POSIZIONE VERTICALE:
-           Allineato al centro della navbar (che inizia a 35px).
-           Circa 40-45px dall'alto è il punto dolce visivo. */
-        top: 42px; 
+        /* POSIZIONE VERTICALE: 
+           Deve cadere al centro della riga dei tasti. 
+           Navbar padding-top: 30px. Tasti alti circa 36px.
+           Centro approssimativo: 30px + (36/2) = 48px dall'alto. */
+        top: 48px; 
         
         /* POSIZIONE ORIZZONTALE:
-           Invece di width: 25%, posizioniamo il centro del logo
-           esattamente al centro della prima colonna immaginaria (12.5%). */
-        left: 12.5%; 
+           Centro dello spazio riservato (85px). 
+           Metà di 85 è 42.5px. */
+        left: 42.5px; 
         
-        /* DIMENSIONE E FLUIDITÀ:
-           1. translate(-50%, -50%): Centra il logo sul punto left:12.5% / top:42px
-           2. scale(0.6): Rimpicciolisce il logo (da 100px a 60px visivi)
-           
-           Poiché stiamo usando scale() invece di width, il browser interpola
-           fluidamente da scale(1) a scale(0.6) senza scatti. */
+        /* ANIMAZIONE FLUIDA (IL SEGRETO):
+           Manteniamo l'ancoraggio al centro (-50%, -50%) come nello stato iniziale.
+           Cambiamo solo la scala. 
+           Safari interpolerà perfettamente le coordinate numeriche di top/left
+           senza scatti perché la matrice di trasformazione (translate) non cambia tipo. */
         transform: translate(-50%, -50%) scale(0.6) !important;
         
-        /* Manteniamo le dimensioni originali del box per non rompere il calcolo del centro */
+        /* Manteniamo dimensioni base per il calcolo del centro */
         width: 100px; 
         height: 100px;
         
@@ -422,13 +428,13 @@ footer {
         pointer-events: auto;
     }
     
-    /* Cerchietto nero di sfondo (opzionale, per contrasto) */
+    /* Sfondo nero per il logo mobile */
     .logo-wrapper.in-nav::after {
         content: '';
         position: absolute;
-        width: 60px; /* Adattato alla scala */
-        height: 60px;
-        background: rgba(0,0,0,0.4); /* Leggero sfondo per contrasto */
+        width: 70px; /* Un po' più grande del logo visivo */
+        height: 70px;
+        background: rgba(0,0,0,0.6); /* Sfondo scuro per contrasto */
         border-radius: 50%;
         z-index: -1;
         top: 50%;
@@ -443,7 +449,7 @@ footer {
         line-height: 1.2;
     }
     
-    /* 4. STORY BLOCKS (Order Fix) */
+    /* 4. STORY BLOCKS ORDER */
     .story-block, .text-right {
         flex-direction: column;
         gap: 25px;
@@ -451,18 +457,20 @@ footer {
         width: 100%;
     }
     
+    /* Testo prima */
     .content-box {
-        order: 1; /* Testo sempre sopra */
+        order: 1; 
         padding: 25px;
         width: 100%;
     }
 
+    /* Immagine dopo */
     .image-box {
-        order: 2; /* Immagine sempre sotto */
+        order: 2;
         width: 100%;
         height: 280px;
         margin: 0;
-        transform: none !important;
+        transform: none !important; /* No parallax mobile */
         opacity: 1;
     }
     
@@ -473,3 +481,4 @@ footer {
         height: 100%;
     }
 }
+
