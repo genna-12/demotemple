@@ -21,6 +21,11 @@ html, body {
     -ms-overflow-style: none;  /* IE e Edge */
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
+
 /* 2. WebKit (Chrome, Safari, Opera, New Edge) */
 /* Colpiamo sia html che body specificamente */
 html::-webkit-scrollbar,
@@ -116,22 +121,55 @@ body.no-scroll {
 /* STATO FINALE (Nav Button) */
 /* --- CORREZIONE POSIZIONAMENTO LOGO --- */
 
-/* STATO FINALE DESKTOP */
+/* STATO FINALE DESKTOP (POSIZIONAMENTO CORRETTO) */
 .logo-wrapper.in-nav {
-    /* Posizione calcolata in base al padding-top (35px) della navbar */
-    /* Il centro del logo (50px visivi) si allinea col centro dei tasti */
-    top: 35px; 
-    left: 40px; 
+    /* CALCOLO CENTRATURA VERTICALE:
+       Navbar padding-top: 35px.
+       Altezza tasti (incluso padding/font): circa 46px.
+       Centro dei tasti = 35px + (46px / 2) = 58px.
+       
+       Impostiamo top a 58px per allineare i centri.
+    */
+    top: 58px; 
     
-    /* FLUIDITÀ SAFARI: Manteniamo translate(-50%, -50%) per non cambiare l'anchor point */
-    /* Spostiamo l'elemento cambiando top/left, ma l'origine resta il centro */
+    /* Spostiamo leggermente più a destra per dare respiro dall'angolo */
+    left: 50px; 
+    
+    /* FLUIDITÀ: Manteniamo l'ancoraggio centrale */
     transform: translate(-50%, -50%) scale(0.5); 
     
     background: #000;
     border-radius: 50%;
+    
+    /* Ombra base */
     box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+    
     cursor: pointer;
     pointer-events: auto;
+    
+    /* Aggiungiamo transizione per l'effetto hover */
+    transition: 
+        top 1.2s cubic-bezier(0.65, 0, 0.35, 1),
+        left 1.2s cubic-bezier(0.65, 0, 0.35, 1),
+        transform 0.3s cubic-bezier(0.65, 0, 0.35, 1), /* Transform più veloce per l'hover */
+        background-color 0.3s ease,
+        box-shadow 0.3s ease;
+}
+
+/* --- EFFETTO HOVER SUL LOGO --- */
+.logo-wrapper.in-nav:hover {
+    /* 
+       IMPORTANTE: Dobbiamo ripetere il translate(-50%, -50%) 
+       altrimenti il logo salta via dal centro quando ingrandiamo.
+       Aumentiamo la scala da 0.5 a 0.55 (10% più grande).
+    */
+    transform: translate(-50%, -50%) scale(0.55);
+    
+    /* Aumentiamo l'ombra per dare effetto "galleggiamento" */
+    box-shadow: 0 8px 30px rgba(0,0,0,0.7);
+    
+    /* Opzionale: bordo sottile luminoso come i tasti */
+    border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 .temple-logo {
@@ -481,4 +519,5 @@ footer {
         height: 100%;
     }
 }
+
 
