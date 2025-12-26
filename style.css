@@ -274,11 +274,10 @@ footer { text-align: center; padding: 30px; color: #333; font-size: 0.8rem; marg
     transform: translateY(0) !important;
 }
 
-/* --- MOBILE RESPONSIVE --- */
+/* --- MOBILE RESPONSIVE (Versione Definitiva) --- */
 @media (max-width: 768px) {
     
-    /* --- NAVIGATION GRID SYSTEM (Logo + 3 Tasti) --- */
-    /* Resetta il padding per usare la logica a griglia */
+    /* 1. GRIGLIA NAVIGAZIONE (Logo + 3 Tasti) */
     #navbar {
         padding: 25px 0 15px 0 !important; 
         width: 100%; 
@@ -287,36 +286,33 @@ footer { text-align: center; padding: 30px; color: #333; font-size: 0.8rem; marg
         box-sizing: border-box;
     }
 
-    /* 3 Tasti a destra (occupano il 75% dello schermo) */
+    /* I link occupano il 75% a destra */
     .nav-links { 
         margin-left: 25%; 
         width: 75%; 
         display: grid; 
-        grid-template-columns: 1fr 1fr 1fr; /* 3 colonne identiche */
+        grid-template-columns: 1fr 1fr 1fr; 
         gap: 0 !important; 
         justify-items: center; 
         align-items: center; 
     }
 
-    /* Stile pulsanti mobile */
     .nav-pill { 
         padding: 8px 0 !important; 
         width: 95%; 
         font-size: 0.75rem; 
         white-space: nowrap; 
-        min-width: auto; 
         text-align: center;
-        display: flex;
-        justify-content: center;
+        display: flex; justify-content: center;
     }
     
-    /* --- FIX LOGO (Home & Servizi Identici) --- */
-    /* Posizionamento assoluto basato sulla griglia matematica (12.5% è il centro della prima colonna) */
+    /* 2. FIX LOGO (Identico per Home e Servizi) */
+    /* Assicuriamo che static-nav erediti le stesse coordinate */
     .logo-wrapper.in-nav,
     .logo-wrapper.static-nav {
-        position: fixed !important;
-        top: 45px !important; /* Allineamento ottico verticale coi tasti */
-        left: 12.5% !important; /* Centro esatto del primo quarto di schermo */
+        position: fixed !important; /* Forza posizione fissa */
+        top: 45px !important;       /* Altezza identica alla griglia tasti */
+        left: 12.5% !important;     /* Centro esatto della prima colonna */
         transform: translate(-50%, -50%) scale(0.6) !important;
         
         width: 100px; 
@@ -325,9 +321,10 @@ footer { text-align: center; padding: 30px; color: #333; font-size: 0.8rem; marg
         background: transparent; 
         box-shadow: none;
         pointer-events: auto;
+        z-index: 10000; /* Z-index alto per stare sopra a tutto */
     }
 
-    /* Sfondo scuro dietro il logo per leggibilità */
+    /* Sfondo scuro dietro il logo */
     .logo-wrapper.in-nav::after,
     .logo-wrapper.static-nav::after {
         content: ''; position: absolute; width: 70px; height: 70px;
@@ -335,10 +332,39 @@ footer { text-align: center; padding: 30px; color: #333; font-size: 0.8rem; marg
         z-index: -1; top: 50%; left: 50%; transform: translate(-50%, -50%);
     }
 
-    /* --- GLOBAL TYPOGRAPHY & LAYOUT --- */
+    /* 3. TOTEM VERTICALE (Ascolto -> Costruzione -> Cura) */
+    .process-bar {
+        padding: 40px 0 50px 0; /* Spazio verticale */
+        display: flex;
+        justify-content: center;
+        width: 100%;
+    }
+    
+    .process-bar span {
+        display: block;
+        
+        /* IL TRUCCO: La larghezza si adatta alla parola più lunga ("Costruzione") */
+        /* Questo forza gli spazi ad andare a capo automaticamente */
+        width: min-content; 
+        
+        margin: 0 auto;
+        text-align: center;
+        white-space: normal; /* Permette il ritorno a capo */
+        
+        font-family: var(--font-title);
+        font-size: 1.4rem; /* Dimensione grande e leggibile */
+        line-height: 1.6;  /* Spaziatura tra le parole */
+        color: var(--accent-orange);
+        
+        /* Linee decorative sopra e sotto la pila di parole */
+        border-top: 1px solid rgba(207, 92, 54, 0.4);
+        border-bottom: 1px solid rgba(207, 92, 54, 0.4);
+        padding: 20px 0;
+    }
+
+    /* 4. GLOBAL TYPOGRAPHY & LAYOUT */
     h1 { font-size: 2rem; padding: 0 10px; line-height: 1.2; }
     
-    /* Stack verticale per le storie */
     .story-block, .text-right { flex-direction: column; gap: 25px; margin-bottom: 80px; width: 100%; }
     .content-box { order: 1; padding: 25px; width: 100%; }
     .image-box { order: 2; width: 100%; height: 280px; margin: 0; transform: none !important; opacity: 1; }
@@ -346,44 +372,16 @@ footer { text-align: center; padding: 30px; color: #333; font-size: 0.8rem; marg
 
     .connect-title { font-size: 1.5rem; }
     
-    /* --- FLOATING UI --- */
     .floating-btn { bottom: 20px; width: 50px; height: 50px; }
     .float-left { left: 20px; }
     .float-right { right: 20px; }
 
     .social-btn:active { transform: scale(0.95); }
     .floating-btn:active { transform: scale(0.95); }
-
-    /* --- PAGINA SERVIZI SPECIFIC --- */
-    
-    /* FIX ESTETICO: Totem Verticale */
-    .process-bar {
-        padding: 40px 20px 40px; 
-        display: flex;
-        justify-content: center;
-    }
-    
-    .process-bar span {
-        /* Questo trucco forza le parole ad andare a capo creando una colonna */
-        width: 10px; /* Larghezza minima forza il wrap ad ogni spazio */
-        word-wrap: break-word;
-        white-space: normal; /* Permette a capo */
-        display: table-caption; /* Centra il blocco */
-        
-        text-align: center;
-        font-size: 1.3rem; /* Dimensione ben leggibile */
-        line-height: 1.8;  /* Spaziatura verticale elegante */
-        letter-spacing: 2px;
-        text-transform: uppercase;
-        
-        border-top: 1px solid rgba(207, 92, 54, 0.3); /* Linea decorativa sopra */
-        border-bottom: 1px solid rgba(207, 92, 54, 0.3); /* Linea decorativa sotto */
-        padding: 20px 0;
-    }
 }
 
-/* --- AGGIUNTE PER PAGINA SERVIZI --- */
 
+/* --- AGGIUNTE PER PAGINA SERVIZI --- */
 /* 1. Sottotitolo Hero */
 .hero-subtitle {
     font-family: var(--font-text);
@@ -441,4 +439,5 @@ footer { text-align: center; padding: 30px; color: #333; font-size: 0.8rem; marg
 .detail-img {
     transition: transform 0.1s linear; /* Smooth parallax */
 }
+
 
