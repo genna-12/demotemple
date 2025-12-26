@@ -47,51 +47,54 @@ document.addEventListener('DOMContentLoaded', () => {
     runIntro();
 
 
-    // 2. HERO IMAGE - CARICAMENTO INTELLIGENTE (Non bloccante)
+    // 2. HERO IMAGE - SMART LOAD (Mobile/Desktop + Random N)
     const loadHeroImageAsync = () => {
         const heroContainer = document.getElementById('hero-image-container');
         
-        // Elenco immagini
-        const images = [
-            'assets/home_main/foto1.jpg',
-            'assets/home_main/foto2.jpg',
-            'assets/home_main/foto3.jpg'
-        ];
+        // --- CONFIGURAZIONE ---
+        const totalImages = 3; // <--- CAMBIA QUESTO NUMERO se aggiungi foto (es. 5, 10)
+        // ----------------------
 
-        // Selezione Random
-        let selectedIndex = sessionStorage.getItem('heroImageIndex');
-        if (selectedIndex === null) {
-            selectedIndex = Math.floor(Math.random() * images.length);
-            sessionStorage.setItem('heroImageIndex', selectedIndex);
+        // 1. Rileva dispositivo
+        const isMobile = window.innerWidth <= 768;
+        
+        // 2. Scegli prefisso file
+        // Se mobile: "mobile_1.jpg", Se desktop: "desktop_1.jpg"
+        const prefix = isMobile ? 'mobile_' : 'desktop_';
+
+        // 3. Genera numero casuale tra 1 e totalImages
+        // Utilizziamo sessionStorage per mantenere la stessa immagine durante la navigazione
+        // finché non si chiude il browser.
+        let randomNum = sessionStorage.getItem('heroImgNum');
+        
+        if (!randomNum) {
+            randomNum = Math.floor(Math.random() * totalImages) + 1; // Genera da 1 a N
+            sessionStorage.setItem('heroImgNum', randomNum);
         }
-        const imageUrl = images[selectedIndex];
 
-        // --- TECNICA PRELOADER JS ---
-        // Creiamo un oggetto immagine in memoria. 
-        // Il browser scaricherà i dati senza bloccare l'interfaccia.
+        // Costruisci il percorso
+        const imageUrl = `assets/home_main/${prefix}${randomNum}.jpg`;
+
+        // 4. Preload e Visualizzazione
         const imgPreloader = new Image();
         
         imgPreloader.onload = () => {
-            // Questo codice viene eseguito SOLO quando l'immagine è pronta (scaricata)
-            // Usiamo requestAnimationFrame per sincronizzarci col refresh rate dello schermo ed evitare scatti
             requestAnimationFrame(() => {
                 heroContainer.style.backgroundImage = `url('${imageUrl}')`;
-                // Ora possiamo fare il fade-in sicuro
                 heroContainer.style.opacity = '0.6'; 
             });
         };
 
         imgPreloader.onerror = () => {
-            console.error("Errore caricamento immagine Hero");
-            // Fallback: mostra almeno un colore di sfondo se l'immagine fallisce
-            heroContainer.style.backgroundColor = '#1a1a1a';
+            console.error(`Impossibile caricare: ${imageUrl}. Verifica che il file esista.`);
+            // Fallback di sicurezza: carica la numero 1 desktop se tutto fallisce
+            heroContainer.style.backgroundImage = `url('assets/home_main/desktop_1.jpg')`;
+             heroContainer.style.opacity = '0.6';
         };
 
-        // Avvia il download
         imgPreloader.src = imageUrl;
     };
 
-    // Chiamiamo la funzione. Il download avverrà in parallelo all'intro.
     loadHeroImageAsync();
 
 
