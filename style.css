@@ -209,7 +209,7 @@ h1.is-visible { opacity: 1; transform: translateY(0); }
 }
 
 .floating-btn.nav-visible { opacity: 1; pointer-events: auto; transform: translateY(0); }
-.floating-btn.nav-hidden-scroll { transform: translateY(150%); }
+.floating-btn.nav-hidden-scroll { transform: translateY(150%) !important; }
 
 .float-left { left: 30px; }
 .float-right { right: 30px; }
@@ -258,6 +258,15 @@ h1.is-visible { opacity: 1; transform: translateY(0); }
 
 footer { text-align: center; padding: 30px; color: #333; font-size: 0.8rem; margin-bottom: 60px; }
 
+.footer-address {
+    color: var(--text-muted);
+    font-family: var(--font-title);
+    font-style: italic;
+    font-size: 1rem;
+    margin-bottom: 10px;
+    letter-spacing: 0.5px;
+}
+
 /* --- IMPORTANT: REVEAL CLASS DEFINITIVE --- */
 /* Messa alla fine per sovrascrivere l'opacity:0 delle sezioni */
 .is-visible {
@@ -302,3 +311,4 @@ footer { text-align: center; padding: 30px; color: #333; font-size: 0.8rem; marg
     .social-btn:active { transform: scale(0.95); }
     .floating-btn:active { transform: scale(0.95); }
 }
+
