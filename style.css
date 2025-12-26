@@ -274,7 +274,7 @@ footer { text-align: center; padding: 30px; color: #333; font-size: 0.8rem; marg
     transform: translateY(0) !important;
 }
 
-/* --- MOBILE RESPONSIVE (Versione Definitiva 2.0) --- */
+/* --- MOBILE RESPONSIVE (Versione Definitiva v2) --- */
 @media (max-width: 768px) {
     
     /* 1. GRIGLIA NAVIGAZIONE (Logo + 3 Tasti) */
@@ -286,6 +286,7 @@ footer { text-align: center; padding: 30px; color: #333; font-size: 0.8rem; marg
         box-sizing: border-box;
     }
 
+    /* I link occupano il 75% a destra */
     .nav-links { 
         margin-left: 25%; 
         width: 75%; 
@@ -329,56 +330,36 @@ footer { text-align: center; padding: 30px; color: #333; font-size: 0.8rem; marg
         z-index: -1; top: 50%; left: 50%; transform: translate(-50%, -50%);
     }
 
-    /* 3. TOTEM VERTICALE (Ascolto -> Costruzione -> Cura) - Soluzione DEFINITIVA */
+    /* 3. TOTEM VERTICALE PERMANENTE (Ascolto -> Costruzione -> Cura) */
     .process-bar {
-        padding: 40px 15px 50px 15px; /* Aggiunto padding laterale per evitare attacchi ai bordi */
+        padding: 40px 0 50px 0; 
         display: flex;
-        justify-content: center; /* Centra il blocco */
+        justify-content: center;
         width: 100%;
-        overflow: hidden; /* Prevenzione overflow */
+        overflow: hidden; /* Fondamentale per evitare overflow orizzontale */
     }
     
     .process-bar span {
-        /* Impostazioni Flexbox per creare la colonna verticale */
-        display: flex;
+        display: inline-flex; /* Usa flexbox per il nesting */
         flex-direction: column; /* Impila gli elementi verticalmente */
-        align-items: center;    /* Centra orizzontalmente ogni parola */
+        align-items: center; /* Centra orizzontalmente ogni parola */
         
-        width: auto; /* Larghezza automatica basata sul contenuto */
-        margin: 0 auto; /* Centra l'intero blocco span */
+        text-align: center;
         
         font-family: var(--font-title);
-        font-size: 1.4rem; 
-        line-height: 1.4;  /* Spaziatura verticale leggermente ridotta */
+        font-size: 1.3rem; 
+        line-height: 1.6;  
         color: var(--accent-orange);
-        text-align: center; /* Centra il testo dentro ogni "riga" */
         
+        /* Gestione del contenuto spezzato */
+        width: auto; /* Lascia che la larghezza si adatti al contenuto */
+        max-width: calc(100% - 40px); /* Limita la larghezza massima per evitare bordi */
+        white-space: normal; /* Permette il ritorno a capo */
+
         border-top: 1px solid rgba(207, 92, 54, 0.4);
         border-bottom: 1px solid rgba(207, 92, 54, 0.4);
         padding: 20px 0;
-        
-        /* Forza la parola '→' a stare da sola */
-        white-space: nowrap; 
     }
-
-    /* Gestione specifica per la freccia '→' */
-    .process-bar span::before,
-    .process-bar span::after { /* Usiamo pseudo-elementi per isolare le parole */
-        content: "→"; /* O il carattere che desideri */
-        display: block;
-        white-space: nowrap; /* Evita wrap solo per la freccia */
-        font-size: 1.2rem; /* Leggermente più piccola della parola */
-        margin: 5px 0;
-    }
-
-    /* Rimuoviamo le frecce se sono troppe o non volute */
-    .process-bar span:nth-child(2)::before, /* Rimuove la prima freccia (se c'è un secondo span) */
-    .process-bar span:nth-child(2)::after  { display: none; } /* Rimuove la freccia dopo il secondo span */
-
-    /* Opzionale: Rimuovere le frecce se NON vuoi che appaiano */
-    /* Il modo più semplice è riscrivere la stringa in HTML senza '->' */
-    /* .process-bar span { white-space: normal; } */ /* Se usi questo, rimuovi tutto il blocco ::before/::after */
-
 
     /* 4. GLOBAL TYPOGRAPHY & LAYOUT */
     h1 { font-size: 2rem; padding: 0 10px; line-height: 1.2; }
@@ -456,6 +437,7 @@ footer { text-align: center; padding: 30px; color: #333; font-size: 0.8rem; marg
 .detail-img {
     transition: transform 0.1s linear; /* Smooth parallax */
 }
+
 
 
 
