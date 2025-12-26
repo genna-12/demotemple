@@ -277,7 +277,7 @@ footer { text-align: center; padding: 30px; color: #333; font-size: 0.8rem; marg
 /* --- MOBILE RESPONSIVE --- */
 @media (max-width: 768px) {
     
-    /* 1. LAYOUT GENERALE & RIDUZIONE SPAZI */
+    /* 1. LAYOUT GENERALE */
     h1 { font-size: 2rem; padding: 0 10px; line-height: 1.2; }
     
     .narrative-section {
@@ -301,44 +301,42 @@ footer { text-align: center; padding: 30px; color: #333; font-size: 0.8rem; marg
 
     .content-box { order: 1; padding: 20px; width: 100%; }
 
-    /* --- FIX IMMAGINI + ANIMAZIONE ELEGANTE --- */
+    /* --- FIX IMMAGINI (ELEGANTE + VISIBILE) --- */
     
     .image-box { 
         order: 2; 
         width: 100%; 
-        height: 250px; /* Altezza fissa per mobile */
+        height: 250px; /* Altezza fissa mobile */
         margin: 0; 
         
-        /* Layout stabile */
         position: relative !important; 
         display: block !important;
         overflow: hidden;
-        background: #111; /* Sfondo scuro mentre carica */
+        background: #000; /* Fondo nero se l'immagine tarda a caricare */
         
-        /* Rimuovi la maschera che causava il bug invisibile */
+        /* Reset maschere problematiche */
         mask-image: none !important;
         -webkit-mask-image: none !important;
 
-        /* RIPRISTINO ANIMAZIONE (State Iniziale) */
-        opacity: 0; /* Parte invisibile */
-        transform: translateY(30px); /* Parte leggermente spostata in basso */
+        /* ANIMAZIONE ENTRATA (Stato Iniziale) */
+        opacity: 0; 
+        transform: translateY(30px); 
         transition: opacity 1.2s ease-out, transform 1.2s ease-out !important;
     }
 
-    /* STATO FINALE ANIMAZIONE (Gestito dal JS) */
+    /* STATO VISIBILE (Attivato da JS) */
     .image-box.is-visible {
         opacity: 1 !important;
         transform: translateY(0) !important;
     }
 
-    /* Gestione universale immagine (con o senza <picture>) */
-    .image-box picture, 
-    .image-box img {
+    /* Forza il tag picture a riempire il box */
+    .image-box picture {
         display: block !important;
         width: 100% !important;
         height: 100% !important;
-        margin: 0 !important;
-        padding: 0 !important;
+        position: absolute;
+        top: 0; left: 0;
     }
 
     /* L'immagine vera e propria */
@@ -348,10 +346,11 @@ footer { text-align: center; padding: 30px; color: #333; font-size: 0.8rem; marg
         left: 0 !important;
         width: 100% !important;
         height: 100% !important;
-        object-fit: cover !important; /* Taglia i bordi per riempire */
+        object-fit: cover !important; /* Taglio corretto */
         
-        /* Disabilita parallasse interna su mobile */
+        /* Reset trasformazioni desktop */
         transform: none !important; 
+        opacity: 1 !important;
     }
     
     /* 2. NAVIGAZIONE */
@@ -394,12 +393,11 @@ footer { text-align: center; padding: 30px; color: #333; font-size: 0.8rem; marg
         background: transparent !important;
     }
 
-    /* 3. PROCESS BAR */
+    /* 3. ALTRI ELEMENTI */
     .process-bar {
         padding: 20px 20px 30px !important; 
         text-align: center;
         width: 100%;
-        box-sizing: border-box;
         overflow: visible;
     }
     
@@ -412,7 +410,6 @@ footer { text-align: center; padding: 30px; color: #333; font-size: 0.8rem; marg
         display: block;
     }
     
-    /* 4. LOGO & ALTRI ELEMENTI */
     .logo-wrapper.in-nav,
     .logo-wrapper.static-nav {
         top: 45px !important;       
@@ -421,12 +418,10 @@ footer { text-align: center; padding: 30px; color: #333; font-size: 0.8rem; marg
     }
 
     .connect-title { font-size: 1.5rem; margin-bottom: 30px; }
-    
     .floating-btn { bottom: 20px; width: 50px; height: 50px; }
     .float-left { left: 20px; }
     .float-right { right: 20px; }
     
-    /* Portfolio */
     .portfolio-grid { grid-template-columns: repeat(2, 1fr); gap: 15px; }
     .portfolio-hero { height: 30vh; margin-top: 40px; }
     .cover-overlay { display: none; }
@@ -707,6 +702,7 @@ footer { text-align: center; padding: 30px; color: #333; font-size: 0.8rem; marg
     color: #fff;
     transform: scale(1.1);
 }
+
 
 
 
