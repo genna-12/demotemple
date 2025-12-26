@@ -276,35 +276,73 @@ footer { text-align: center; padding: 30px; color: #333; font-size: 0.8rem; marg
 
 /* --- MOBILE RESPONSIVE --- */
 @media (max-width: 768px) {
-    /* --- GLOBAL & HOME --- */
-    #navbar {
-        padding-top: 30px; padding-bottom: 20px; padding-left: 85px; padding-right: 15px;
-        width: 100%; display: flex; align-items: center; box-sizing: border-box;
-    }
-    .nav-links { display: flex; width: 100%; justify-content: space-between; align-items: center; gap: 5px; }
-    .nav-pill { padding: 10px 10px; font-size: 0.75rem; white-space: nowrap; min-width: auto; }
     
-    .logo-wrapper.in-nav {
-        top: 48px; left: 42.5px;
+    /* --- NAVIGATION GRID SYSTEM (Fix Asimmetria) --- */
+    /* Resetta il padding per usare la logica a percentuali */
+    #navbar {
+        padding: 25px 0 15px 0; 
+        width: 100%; 
+        display: flex; 
+        align-items: center; 
+        box-sizing: border-box;
+    }
+
+    /* Occupa il 75% a destra (lasciando il 25% a sinistra per il logo) */
+    .nav-links { 
+        margin-left: 25%; 
+        width: 75%; 
+        display: grid; 
+        grid-template-columns: 1fr 1fr 1fr; /* 3 colonne uguali */
+        gap: 0; 
+        justify-items: center; 
+        align-items: center; 
+    }
+
+    /* Pulsanti centrati nella loro cella */
+    .nav-pill { 
+        padding: 8px 0; 
+        width: 95%; 
+        font-size: 0.75rem; 
+        white-space: nowrap; 
+        min-width: auto; 
+        text-align: center;
+        display: flex;
+        justify-content: center;
+    }
+    
+    /* Logo posizionato al centro esatto del primo quarto (12.5%) */
+    /* Uniamo le regole per in-nav (Home) e static-nav (Servizi) */
+    .logo-wrapper.in-nav,
+    .logo-wrapper.static-nav {
+        top: 45px; /* Allineamento ottico verticale con i tasti */
+        left: 12.5%; /* Centro della colonna invisibile del logo */
         transform: translate(-50%, -50%) scale(0.6) !important;
         width: 100px; height: 100px;
-        background: transparent; box-shadow: none;
+        background: transparent; 
+        box-shadow: none;
         pointer-events: auto;
+        margin: 0;
     }
+
+    /* Sfondo scuro dietro il logo (solo home o se necessario) */
     .logo-wrapper.in-nav::after {
         content: ''; position: absolute; width: 70px; height: 70px;
         background: rgba(0,0,0,0.6); border-radius: 50%;
         z-index: -1; top: 50%; left: 50%; transform: translate(-50%, -50%);
     }
 
+    /* --- GLOBAL TYPOGRAPHY & LAYOUT --- */
     h1 { font-size: 2rem; padding: 0 10px; line-height: 1.2; }
     
+    /* Stack verticale per le storie */
     .story-block, .text-right { flex-direction: column; gap: 25px; margin-bottom: 80px; width: 100%; }
     .content-box { order: 1; padding: 25px; width: 100%; }
     .image-box { order: 2; width: 100%; height: 280px; margin: 0; transform: none !important; opacity: 1; }
     .detail-img { transform: none !important; position: relative; top: 0; height: 100%; }
 
     .connect-title { font-size: 1.5rem; }
+    
+    /* --- FLOATING UI --- */
     .floating-btn { bottom: 20px; width: 50px; height: 50px; }
     .float-left { left: 20px; }
     .float-right { right: 20px; }
@@ -312,19 +350,18 @@ footer { text-align: center; padding: 30px; color: #333; font-size: 0.8rem; marg
     .social-btn:active { transform: scale(0.95); }
     .floating-btn:active { transform: scale(0.95); }
 
-    /* --- AGGIUNTE PER PAGINA SERVIZI --- */
-    .logo-wrapper.static-nav {
-        top: 48px; 
-        left: 42.5px;
-        transform: translate(-50%, -50%) scale(0.6) !important;
-        background: transparent; 
-        box-shadow: none;
-    }
+    /* --- PAGINA SERVIZI SPECIFIC --- */
     .process-bar {
-        padding: 50px 20px 40px;
+        padding: 50px 10px 40px; /* Padding ridotto ai lati */
+        overflow: hidden; /* Sicurezza per evitare scroll orizzontale */
     }
     .process-bar span {
-        font-size: 1.2rem;
+        display: block;
+        white-space: nowrap; /* Forza su una riga */
+        /* Font fluido: min 0.9rem, preferito 4.5vw, max 1.4rem */
+        font-size: clamp(0.9rem, 4.5vw, 1.4rem);
+        letter-spacing: 1px; 
+        width: 100%;
     }
 }
 
@@ -346,29 +383,27 @@ footer { text-align: center; padding: 30px; color: #333; font-size: 0.8rem; marg
 /* 2. Process Bar (Ascolto -> Costruzione -> Cura) */
 .process-bar {
     text-align: center;
-    /* Spaziatura generosa sopra e sotto per isolare il concetto */
     padding: 80px 20px 60px; 
-    
-    /* Rimosso margin-top negativo. Ora segue il flusso naturale */
-    margin-top: 0; 
-    
+    margin-top: 0;
     position: relative;
     z-index: 5;
-    
-    /* Sfondo trasparente per integrarsi con il background del body */
-    background: transparent; 
+    background: transparent;
+    /* Impedisce overflow orizzontale se lo schermo è minuscolo */
+    overflow: hidden; 
 }
 
 .process-bar span {
     font-family: var(--font-title);
     font-style: italic;
-    font-size: 1.5rem; /* Leggermente più grande per importanza */
+    font-size: 1.5rem;
     color: var(--accent-orange);
     opacity: 0.9;
     letter-spacing: 2px;
-    
-    /* Aggiunta una leggera ombra per staccare dal fondo se necessario */
     text-shadow: 0 4px 10px rgba(0,0,0,0.5);
+    
+    /* FIX: Forza su una riga */
+    display: block;
+    white-space: nowrap;
 }
 
 /* 3. Gestione Logo Statico per sottopagine */
