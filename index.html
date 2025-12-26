@@ -11,7 +11,9 @@
     <link rel="preload" href="assets/nero.png" as="image">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400&family=Playfair+Display:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400&family=Playfair+Display:ital,wght@0,400;0,600;1,400&display=swap"
+        rel="stylesheet">
 
     <link rel="stylesheet" href="style.css">
 </head>
@@ -60,16 +62,24 @@
                     </p>
                 </div>
                 <div class="image-box scroll-reveal parallax-target">
-                    <!-- 2. LAZY LOADING: Questa immagine non bloccherà l'intro. 
-                         Verrà scaricata solo quando serve. decoding="async" evita blocchi della CPU. -->
-                    <img src="assets/home_details/dettaglio1.jpg" alt="Dettaglio studio" class="detail-img" loading="lazy" decoding="async">
+                    <picture>
+                        <!-- Se lo schermo è stretto (Mobile), usa oriz_1.jpg -->
+                        <source media="(max-width: 768px)" srcset="assets/home_details/oriz_1.jpg">
+                        <!-- Altrimenti (Desktop), usa vert_1.jpg -->
+                        <img src="assets/home_details/vert_1.jpg" alt="Dettaglio studio" class="detail-img"
+                            loading="lazy" decoding="async">
+                    </picture>
                 </div>
             </article>
 
             <!-- Blocco 2 -->
             <article class="story-block text-right">
                 <div class="image-box scroll-reveal parallax-target">
-                    <img src="assets/home_details/dettaglio2.jpg" alt="Atmosfera luci" class="detail-img" loading="lazy" decoding="async">
+                    <picture>
+                        <source media="(max-width: 768px)" srcset="assets/home_details/oriz_2.jpg">
+                        <img src="assets/home_details/vert_2.jpg" alt="Atmosfera luci" class="detail-img" loading="lazy"
+                            decoding="async">
+                    </picture>
                 </div>
                 <div class="content-box scroll-reveal">
                     <h2>L'Alchimia</h2>
@@ -92,4 +102,5 @@
     <script src="main.js"></script>
     <script src="home.js"></script>
 </body>
+
 </html>
