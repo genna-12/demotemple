@@ -277,30 +277,30 @@ footer { text-align: center; padding: 30px; color: #333; font-size: 0.8rem; marg
 /* --- MOBILE RESPONSIVE --- */
 @media (max-width: 768px) {
     
-    /* --- NAVIGATION GRID SYSTEM (Fix Asimmetria) --- */
-    /* Resetta il padding per usare la logica a percentuali */
+    /* --- NAVIGATION GRID SYSTEM (Logo + 3 Tasti) --- */
+    /* Resetta il padding per usare la logica a griglia */
     #navbar {
-        padding: 25px 0 15px 0; 
+        padding: 25px 0 15px 0 !important; 
         width: 100%; 
         display: flex; 
         align-items: center; 
         box-sizing: border-box;
     }
 
-    /* Occupa il 75% a destra (lasciando il 25% a sinistra per il logo) */
+    /* 3 Tasti a destra (occupano il 75% dello schermo) */
     .nav-links { 
         margin-left: 25%; 
         width: 75%; 
         display: grid; 
-        grid-template-columns: 1fr 1fr 1fr; /* 3 colonne uguali */
-        gap: 0; 
+        grid-template-columns: 1fr 1fr 1fr; /* 3 colonne identiche */
+        gap: 0 !important; 
         justify-items: center; 
         align-items: center; 
     }
 
-    /* Pulsanti centrati nella loro cella */
+    /* Stile pulsanti mobile */
     .nav-pill { 
-        padding: 8px 0; 
+        padding: 8px 0 !important; 
         width: 95%; 
         font-size: 0.75rem; 
         white-space: nowrap; 
@@ -310,22 +310,26 @@ footer { text-align: center; padding: 30px; color: #333; font-size: 0.8rem; marg
         justify-content: center;
     }
     
-    /* Logo posizionato al centro esatto del primo quarto (12.5%) */
-    /* Uniamo le regole per in-nav (Home) e static-nav (Servizi) */
+    /* --- FIX LOGO (Home & Servizi Identici) --- */
+    /* Posizionamento assoluto basato sulla griglia matematica (12.5% è il centro della prima colonna) */
     .logo-wrapper.in-nav,
     .logo-wrapper.static-nav {
-        top: 45px; /* Allineamento ottico verticale con i tasti */
-        left: 12.5%; /* Centro della colonna invisibile del logo */
+        position: fixed !important;
+        top: 45px !important; /* Allineamento ottico verticale coi tasti */
+        left: 12.5% !important; /* Centro esatto del primo quarto di schermo */
         transform: translate(-50%, -50%) scale(0.6) !important;
-        width: 100px; height: 100px;
+        
+        width: 100px; 
+        height: 100px;
+        margin: 0 !important;
         background: transparent; 
         box-shadow: none;
         pointer-events: auto;
-        margin: 0;
     }
 
-    /* Sfondo scuro dietro il logo (solo home o se necessario) */
-    .logo-wrapper.in-nav::after {
+    /* Sfondo scuro dietro il logo per leggibilità */
+    .logo-wrapper.in-nav::after,
+    .logo-wrapper.static-nav::after {
         content: ''; position: absolute; width: 70px; height: 70px;
         background: rgba(0,0,0,0.6); border-radius: 50%;
         z-index: -1; top: 50%; left: 50%; transform: translate(-50%, -50%);
@@ -351,17 +355,30 @@ footer { text-align: center; padding: 30px; color: #333; font-size: 0.8rem; marg
     .floating-btn:active { transform: scale(0.95); }
 
     /* --- PAGINA SERVIZI SPECIFIC --- */
+    
+    /* FIX ESTETICO: Totem Verticale */
     .process-bar {
-        padding: 50px 10px 40px; /* Padding ridotto ai lati */
-        overflow: hidden; /* Sicurezza per evitare scroll orizzontale */
+        padding: 40px 20px 40px; 
+        display: flex;
+        justify-content: center;
     }
+    
     .process-bar span {
-        display: block;
-        white-space: nowrap; /* Forza su una riga */
-        /* Font fluido: min 0.9rem, preferito 4.5vw, max 1.4rem */
-        font-size: clamp(0.9rem, 4.5vw, 1.4rem);
-        letter-spacing: 1px; 
-        width: 100%;
+        /* Questo trucco forza le parole ad andare a capo creando una colonna */
+        width: 10px; /* Larghezza minima forza il wrap ad ogni spazio */
+        word-wrap: break-word;
+        white-space: normal; /* Permette a capo */
+        display: table-caption; /* Centra il blocco */
+        
+        text-align: center;
+        font-size: 1.3rem; /* Dimensione ben leggibile */
+        line-height: 1.8;  /* Spaziatura verticale elegante */
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        
+        border-top: 1px solid rgba(207, 92, 54, 0.3); /* Linea decorativa sopra */
+        border-bottom: 1px solid rgba(207, 92, 54, 0.3); /* Linea decorativa sotto */
+        padding: 20px 0;
     }
 }
 
@@ -424,3 +441,4 @@ footer { text-align: center; padding: 30px; color: #333; font-size: 0.8rem; marg
 .detail-img {
     transition: transform 0.1s linear; /* Smooth parallax */
 }
+
