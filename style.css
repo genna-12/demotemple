@@ -357,80 +357,124 @@ footer {
 /* --- MOBILE RESPONSIVE FIX --- */
 @media (max-width: 768px) {
     
-    /* 1. NAVBAR FIX: Equidistanti e contenuti */
+    /* 1. NAVBAR GRID SYSTEM (Equidistanza Perfetta) */
     #navbar {
-        padding-left: 65px; /* Spazio sufficiente per il logo (50px + margine) */
-        padding-right: 15px; /* Margine di sicurezza a destra */
-        padding-top: 20px;
-        display: flex;
-        align-items: center;
+        /* Rimuoviamo il padding standard */
+        padding: 0;
+        /* Spostiamo l'inizio dei link al 25% della larghezza (lasciando il primo 25% al logo) */
+        padding-left: 25%; 
+        padding-top: 15px;
+        width: 100%;
+        box-sizing: border-box;
     }
 
     .nav-links {
         display: flex;
         width: 100%;
-        justify-content: space-between; /* Distribuisce lo spazio equamente */
-        gap: 0; /* Rimuoviamo il gap fisso, lasciamo fare a space-between */
+        /* I 3 link si distribuiscono equamente nel restante 75% di spazio */
+        justify-content: space-around; 
+        align-items: center;
     }
 
     .nav-pill {
-        padding: 8px 14px; /* Ridotto padding interno */
-        font-size: 0.75rem; /* Testo leggermente più piccolo */
-        white-space: nowrap; /* Impedisce al testo di andare a capo */
-        /* Riduciamo un po' l'effetto blur per performance */
+        /* Riduciamo drasticamente il padding per farli stare su schermi stretti (es. iPhone SE) */
+        padding: 8px 8px; 
+        font-size: 0.7rem; 
+        white-space: nowrap; 
         backdrop-filter: blur(5px);
+        min-width: 60px; /* Larghezza minima per toccarli agevolmente */
+        text-align: center;
     }
     
-    /* 2. LOGO POSITIONING FIX */
+    /* 2. LOGO POSITIONING FIX (Nel primo 25% dello schermo) */
     .logo-wrapper.in-nav {
-        /* Calibrato al pixel per allinearsi coi tasti */
-        top: -5px; 
-        left: -5px;
-        transform: translate(0, 0) scale(0.5); 
+        /* Si posiziona nell'angolo in alto a sinistra */
+        top: 0;
+        left: 0;
+        /* Occupa esattamente il primo quarto di schermo (25%) */
+        width: 25%; 
+        height: 60px; /* Altezza stimata della navbar */
+        
+        /* Centriamo il cerchio nero dentro questo spazio del 25% */
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        
+        /* Reset trasformazioni desktop */
+        transform: none !important; 
+        
+        /* Stili del cerchio nero */
+        background: transparent; /* Il background nero lo diamo all'immagine o a un figlio se serve */
+        box-shadow: none;
+        pointer-events: auto;
+    }
+    
+    /* Per mantenere il cerchietto nero attorno al logo */
+    .logo-wrapper.in-nav::after {
+        content: '';
+        position: absolute;
+        width: 45px;
+        height: 45px;
+        background: #000;
+        border-radius: 50%;
+        z-index: -1;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+    }
+    
+    /* Aggiustiamo l'immagine dentro il wrapper */
+    .logo-wrapper.in-nav .temple-logo {
+        width: 25px; /* Dimensione logo fisico */
+        height: 25px;
     }
 
-    /* 3. HERO TITLE FIX */
+    /* 3. HERO TITLE & LAYOUT */
     h1 { 
-        font-size: 2.2rem; 
-        padding: 0 15px; /* Margine laterale per non toccare i bordi */
+        font-size: 2rem; 
+        padding: 0 10px;
+        line-height: 1.2;
     }
     
-    /* 4. STORY BLOCKS LAYOUT */
+    /* 4. STORY BLOCKS - ORDINE TESTO/IMMAGINE */
     .story-block, .text-right {
-        flex-direction: column;
-        gap: 20px;
+        flex-direction: column; /* Impila tutto verticalmente */
+        gap: 25px;
         margin-bottom: 80px;
+        width: 100%;
     }
     
-    /* Ordine visivo: Foto sopra, Testo sotto */
-    .story-block .image-box {
-        order: -1; 
-    }
+    /* --- FIX ORDINE: TESTO SEMPRE PRIMA --- */
+    /* Usiamo flex 'order' per forzare la posizione visiva */
     
+    /* Il contenitore del testo va sempre PRIMA (sopra) */
     .content-box {
+        order: 1; 
         padding: 25px;
+        width: 100%;
     }
 
+    /* Il contenitore dell'immagine va sempre DOPO (sotto) */
+    .image-box {
+        order: 2;
+        width: 100%;
+        height: 280px; /* Altezza fissa coerente */
+        margin: 0;
+        transform: none !important; /* No parallax su mobile */
+        opacity: 1;
+    }
+    
     .content-box h2 {
         font-size: 1.8rem;
+        margin-top: 0;
     }
 
-    /* 5. DETAILS IMAGES FIX (Importante!) */
-    .image-box {
-        width: 100%;
-        height: 250px; /* Altezza fissa mobile */
-        /* Rimuoviamo trasformazioni strane su mobile */
-        transform: none !important; 
-        opacity: 1; /* Assicuriamo visibilità */
-    }
-
-    /* Resettiamo il trucco del parallax desktop che nascondeva le immagini su mobile */
+    /* Resettiamo posizioni immagini */
     .detail-img {
-        position: relative; /* Non più absolute */
+        position: relative;
         top: 0;
         left: 0;
         width: 100%;
-        height: 100%; /* Altezza normale */
-        transform: none !important; /* Disabilita parallax JS effects */
+        height: 100%;
+        object-fit: cover;
+        transform: none !important;
     }
 }
