@@ -707,11 +707,6 @@ footer { text-align: center; padding: 30px; color: #333; font-size: 0.8rem; marg
     transform: scale(1.1);
 }
 
-
-
-
-
-
-
-
-
+h1, h2, h3 {
+    font-weight: 300; /* Hiragino è molto leggibile anche sottile */
+}
