@@ -281,35 +281,44 @@ footer { text-align: center; padding: 30px; color: #333; font-size: 0.8rem; marg
     #navbar {
         padding: 25px 0 15px 0 !important; 
         width: 100%; 
-        display: flex; 
-        align-items: center; 
-        box-sizing: border-box;
+        background: transparent !important; /* Rimuove sfondo navbar generale se presente */
+        backdrop-filter: none !important;
     }
 
     .nav-links { 
-        margin-left: 25%; 
-        width: 75%; 
+        margin-left: 20%; 
+        width: 80%; 
         display: grid; 
         grid-template-columns: 1fr 1fr 1fr; 
         gap: 0 !important; 
-        justify-items: center; 
         align-items: center; 
     }
 
     .nav-pill { 
-        padding: 8px 0 !important; 
-        width: 95%; 
-        font-size: 0.75rem; 
+        /* Rimuove tutto il "box" */
+        background: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
+        backdrop-filter: none !important;
+        
+        /* Stile Testo */
+        padding: 10px 0 !important; 
+        width: 100%; 
+        font-size: 0.8rem; 
         white-space: nowrap; 
         text-align: center;
         display: flex; 
         justify-content: center;
-        
-        /* NUOVA RIGA: Rimuove il bordo */
-        border: none !important; 
-        /* Opzionale: se vuoi togliere anche l'ombra per renderli più flat */
-        box-shadow: none !important; 
-        background: rgba(10, 10, 10, 0.6); /* Leggermente più trasparente se preferisci */
+        color: rgba(255, 255, 255, 0.9);
+        transition: transform 0.1s ease, text-shadow 0.2s ease;
+    }
+    
+    /* EFFETTO TAP (SCALE + GLOW) */
+    .nav-pill:active {
+        transform: scale(1.2); /* Ingrandimento al tocco */
+        text-shadow: 0 0 15px rgba(255, 255, 255, 1); /* Glow bianco intenso */
+        color: #fff;
+        background: transparent !important;
     }
     
     /* 2. FIX LOGO (Mantenuto Allineamento Perfetto) */
@@ -654,4 +663,5 @@ footer { text-align: center; padding: 30px; color: #333; font-size: 0.8rem; marg
     transform: scale(1.05);
     box-shadow: 0 0 25px rgba(207, 92, 54, 0.4); /* Glow arancione */
 }
+
 
