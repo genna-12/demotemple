@@ -302,7 +302,14 @@ footer { text-align: center; padding: 30px; color: #333; font-size: 0.8rem; marg
         font-size: 0.75rem; 
         white-space: nowrap; 
         text-align: center;
-        display: flex; justify-content: center;
+        display: flex; 
+        justify-content: center;
+        
+        /* NUOVA RIGA: Rimuove il bordo */
+        border: none !important; 
+        /* Opzionale: se vuoi togliere anche l'ombra per renderli più flat */
+        box-shadow: none !important; 
+        background: rgba(10, 10, 10, 0.6); /* Leggermente più trasparente se preferisci */
     }
     
     /* 2. FIX LOGO (Mantenuto Allineamento Perfetto) */
@@ -331,27 +338,25 @@ footer { text-align: center; padding: 30px; color: #333; font-size: 0.8rem; marg
 
     /* 3. PROCESS BAR (Ritorno alla semplicità - Natural Wrap) */
     .process-bar {
-        padding: 40px 20px 50px; /* Padding standard laterale per non toccare i bordi */
+        padding: 40px 20px 50px;
         text-align: center;
         width: 100%;
-        box-sizing: border-box; /* Assicura che il padding non allarghi la pagina */
+        box-sizing: border-box;
+        overflow: visible; /* Importante: permette al testo di espandersi verticalmente */
     }
     
     .process-bar span {
-        display: inline-block; /* Comportamento testo standard */
-        white-space: normal;   /* Permette di andare a capo se non c'è spazio */
-        
         font-family: var(--font-title);
-        font-size: 1.4rem;     /* Dimensione leggibile */
-        line-height: 1.4;      /* Spaziatura interlinea se va a capo */
+        font-size: 1.3rem; /* Leggermente ridotto per mobile */
+        line-height: 1.5;  /* Aumenta lo spazio tra le righe quando va a capo */
         color: var(--accent-orange);
         
-        width: 100%;           /* Usa tutto lo spazio disponibile */
-        max-width: 100%;       /* Mai oltre lo schermo */
+        display: block;
+        width: 100%;
         
-        /* Nessun bordo, nessuna forzatura */
-        border: none;
-        padding: 0;
+        /* MODIFICA FONDAMENTALE: Permette di andare a capo */
+        white-space: normal !important; 
+        word-wrap: break-word;
     }
 
     /* 4. LAYOUT GENERALE */
@@ -649,3 +654,4 @@ footer { text-align: center; padding: 30px; color: #333; font-size: 0.8rem; marg
     transform: scale(1.05);
     box-shadow: 0 0 25px rgba(207, 92, 54, 0.4); /* Glow arancione */
 }
+
