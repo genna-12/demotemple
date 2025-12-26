@@ -184,24 +184,37 @@ body.no-scroll {
 
 .nav-links { display: flex; gap: 15px; }
 
+/* --- STILE TASTI (VISIBILITÀ MIGLIORATA) --- */
 .nav-pill {
     text-decoration: none;
-    color: var(--text-primary);
-    background: rgba(30, 30, 30, 0.6);
+    color: #ffffff; /* Bianco puro per contrasto */
+    
+    /* Sfondo molto più scuro e meno trasparente */
+    background: rgba(10, 10, 10, 0.9); 
+    
     padding: 10px 24px;
     border-radius: 50px;
     font-size: 0.9rem;
     font-weight: 400;
     letter-spacing: 1px;
     backdrop-filter: blur(8px);
-    border: 1px solid rgba(255,255,255,0.05);
-    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+    
+    /* Bordo leggermente più visibile per staccare dallo sfondo */
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    
+    /* Ombra forte per far "galleggiare" il tasto sopra le foto chiare */
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
+    
+    /* Ombra testo per leggibilità estrema */
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
+    
     transition: transform 0.3s ease, background 0.3s ease;
 }
 
 .nav-pill:hover {
+    background: #000; /* Nero assoluto all'hover */
+    border-color: rgba(255, 255, 255, 0.5);
     transform: scale(1.05);
-    background: rgba(50, 50, 50, 0.8);
 }
 
 /* --- HERO SECTION --- */
@@ -478,3 +491,4 @@ footer {
         transform: none !important;
     }
 }
+
