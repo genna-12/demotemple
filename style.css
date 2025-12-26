@@ -99,6 +99,10 @@ body.no-scroll {
     justify-content: center;
     align-items: center;
     z-index: 10000;
+
+    /* PRESTAZIONI SAFARI/MOBILE: */
+    /* Avvisa il browser che queste proprietà cambieranno, prevenendo glitch grafici */
+    will-change: top, left, transform;
     
     /* Gestione unificata di tutte le proprietà che cambiano */
     transition: 
@@ -367,22 +371,17 @@ footer {
     font-size: 0.8rem;
 }
 
-/* --- MOBILE RESPONSIVE FIX --- */
+/* --- MOBILE RESPONSIVE FIX (FLUIDITÀ TOTALE) --- */
 @media (max-width: 768px) {
     
-    /* 1. NAVBAR GRID SYSTEM (Equidistanza Perfetta) */
-    /* 1. NAVBAR GRID SYSTEM */
+    /* 1. NAVBAR GRID */
     #navbar {
         padding: 0;
-        /* Aumentiamo lo spazio in alto (era 15px o 20px) per dare respiro */
-        padding-top: 35px; 
-        padding-bottom: 15px; /* Spazio extra sotto per non tagliare ombre */
-        
-        padding-left: 25%; /* Manteniamo la griglia del logo */
+        padding-top: 35px; /* Spazio per non toccare la notch/bordo alto */
+        padding-bottom: 15px;
+        padding-left: 25%; /* Lasciamo il primo 25% libero per il logo */
         width: 100%;
         box-sizing: border-box;
-        
-        /* Assicuriamo che gli elementi siano allineati verticalmente al centro */
         display: flex;
         align-items: center; 
     }
@@ -394,103 +393,83 @@ footer {
         align-items: center;
     }
 
-    /* 2. LOGO POSITIONING FIX (Adattato alla nuova altezza) */
+    /* 2. LOGO POSITIONING FIX (SOLO GPU) */
     .logo-wrapper.in-nav {
-        /* Lo spostiamo giù per allinearlo visivamente ai tasti che ora sono più in basso */
-        top: 20px; /* Prima era 0 o -5px. Ora scende per seguire il padding-top */
-        left: 0;
+        /* POSIZIONE VERTICALE:
+           Allineato al centro della navbar (che inizia a 35px).
+           Circa 40-45px dall'alto è il punto dolce visivo. */
+        top: 42px; 
         
-        width: 25%; 
-        height: 60px;
+        /* POSIZIONE ORIZZONTALE:
+           Invece di width: 25%, posizioniamo il centro del logo
+           esattamente al centro della prima colonna immaginaria (12.5%). */
+        left: 12.5%; 
         
-        display: flex;
-        justify-content: center;
-        align-items: center;
+        /* DIMENSIONE E FLUIDITÀ:
+           1. translate(-50%, -50%): Centra il logo sul punto left:12.5% / top:42px
+           2. scale(0.6): Rimpicciolisce il logo (da 100px a 60px visivi)
+           
+           Poiché stiamo usando scale() invece di width, il browser interpola
+           fluidamente da scale(1) a scale(0.6) senza scatti. */
+        transform: translate(-50%, -50%) scale(0.6) !important;
         
-        transform: none !important;
+        /* Manteniamo le dimensioni originali del box per non rompere il calcolo del centro */
+        width: 100px; 
+        height: 100px;
+        
         background: transparent;
         box-shadow: none;
         pointer-events: auto;
     }
-
-    .nav-pill {
-        /* Riduciamo drasticamente il padding per farli stare su schermi stretti (es. iPhone SE) */
-        padding: 8px 8px; 
-        font-size: 0.7rem; 
-        white-space: nowrap; 
-        backdrop-filter: blur(5px);
-        min-width: 60px; /* Larghezza minima per toccarli agevolmente */
-        text-align: center;
-    }
     
-    /* Per mantenere il cerchietto nero attorno al logo */
+    /* Cerchietto nero di sfondo (opzionale, per contrasto) */
     .logo-wrapper.in-nav::after {
         content: '';
         position: absolute;
-        width: 45px;
-        height: 45px;
-        background: #000;
+        width: 60px; /* Adattato alla scala */
+        height: 60px;
+        background: rgba(0,0,0,0.4); /* Leggero sfondo per contrasto */
         border-radius: 50%;
         z-index: -1;
-        box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-    }
-    
-    /* Aggiustiamo l'immagine dentro il wrapper */
-    .logo-wrapper.in-nav .temple-logo {
-        width: 25px; /* Dimensione logo fisico */
-        height: 25px;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
     }
 
-    /* 3. HERO TITLE & LAYOUT */
+    /* 3. HERO TITLE */
     h1 { 
         font-size: 2rem; 
         padding: 0 10px;
         line-height: 1.2;
     }
     
-    /* 4. STORY BLOCKS - ORDINE TESTO/IMMAGINE */
+    /* 4. STORY BLOCKS (Order Fix) */
     .story-block, .text-right {
-        flex-direction: column; /* Impila tutto verticalmente */
+        flex-direction: column;
         gap: 25px;
         margin-bottom: 80px;
         width: 100%;
     }
     
-    /* --- FIX ORDINE: TESTO SEMPRE PRIMA --- */
-    /* Usiamo flex 'order' per forzare la posizione visiva */
-    
-    /* Il contenitore del testo va sempre PRIMA (sopra) */
     .content-box {
-        order: 1; 
+        order: 1; /* Testo sempre sopra */
         padding: 25px;
         width: 100%;
     }
 
-    /* Il contenitore dell'immagine va sempre DOPO (sotto) */
     .image-box {
-        order: 2;
+        order: 2; /* Immagine sempre sotto */
         width: 100%;
-        height: 280px; /* Altezza fissa coerente */
+        height: 280px;
         margin: 0;
-        transform: none !important; /* No parallax su mobile */
+        transform: none !important;
         opacity: 1;
     }
     
-    .content-box h2 {
-        font-size: 1.8rem;
-        margin-top: 0;
-    }
-
-    /* Resettiamo posizioni immagini */
     .detail-img {
-        position: relative;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
         transform: none !important;
+        position: relative;
+        top: 0; 
+        height: 100%;
     }
 }
-
-
