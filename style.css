@@ -274,10 +274,11 @@ footer { text-align: center; padding: 30px; color: #333; font-size: 0.8rem; marg
     transform: translateY(0) !important;
 }
 
-/* --- MOBILE RESPONSIVE (Versione Definitiva v2) --- */
+/* --- MOBILE RESPONSIVE (Versione Definitiva Scaletta + Fix Logo) --- */
 @media (max-width: 768px) {
     
-    /* 1. GRIGLIA NAVIGAZIONE (Logo + 3 Tasti) */
+    /* 1. GRIGLIA NAVIGAZIONE (Simmetria Matematica) */
+    /* Divide lo schermo in 4 quarti invisibili */
     #navbar {
         padding: 25px 0 15px 0 !important; 
         width: 100%; 
@@ -286,12 +287,12 @@ footer { text-align: center; padding: 30px; color: #333; font-size: 0.8rem; marg
         box-sizing: border-box;
     }
 
-    /* I link occupano il 75% a destra */
+    /* I link occupano esattamente gli ultimi 3 quarti (75%) */
     .nav-links { 
         margin-left: 25%; 
         width: 75%; 
         display: grid; 
-        grid-template-columns: 1fr 1fr 1fr; 
+        grid-template-columns: 1fr 1fr 1fr; /* 3 celle identiche */
         gap: 0 !important; 
         justify-items: center; 
         align-items: center; 
@@ -299,23 +300,23 @@ footer { text-align: center; padding: 30px; color: #333; font-size: 0.8rem; marg
 
     .nav-pill { 
         padding: 8px 0 !important; 
-        width: 95%; 
+        width: 90%; /* Larghezza bottone */
         font-size: 0.75rem; 
         white-space: nowrap; 
         text-align: center;
         display: flex; justify-content: center;
     }
     
-    /* 2. FIX LOGO (Identico per Home e Servizi) */
+    /* 2. FIX LOGO (Coordinate Assolute per Home e Servizi) */
+    /* Il logo si piazza esattamente al centro del primo quarto (12.5%) */
     .logo-wrapper.in-nav,
     .logo-wrapper.static-nav {
         position: fixed !important; 
-        top: 45px !important;       
-        left: 12.5% !important;     
+        top: 45px !important;       /* Allineamento ottico verticale ai tasti */
+        left: 12.5% !important;     /* Centro matematico della prima colonna */
         transform: translate(-50%, -50%) scale(0.6) !important;
         
-        width: 100px; 
-        height: 100px;
+        width: 100px; height: 100px;
         margin: 0 !important;
         background: transparent; 
         box-shadow: none;
@@ -330,38 +331,34 @@ footer { text-align: center; padding: 30px; color: #333; font-size: 0.8rem; marg
         z-index: -1; top: 50%; left: 50%; transform: translate(-50%, -50%);
     }
 
-    /* 3. TOTEM VERTICALE PERMANENTE (Ascolto -> Costruzione -> Cura) */
+    /* 3. SCALETTA DIAGONALE ("Ascolto -> Costruzione -> Cura") */
     .process-bar {
-        padding: 40px 0 50px 0; 
+        padding: 50px 0 60px 0; 
         display: flex;
-        justify-content: center;
+        justify-content: center; /* Centra il blocco nello schermo */
         width: 100%;
-        overflow: hidden; /* Fondamentale per evitare overflow orizzontale */
+        overflow: hidden;
     }
     
     .process-bar span {
-        display: inline-flex; /* Usa flexbox per il nesting */
-        flex-direction: column; /* Impila gli elementi verticalmente */
-        align-items: center; /* Centra orizzontalmente ogni parola */
-        
-        text-align: center;
-        
+        display: block;
         font-family: var(--font-title);
-        font-size: 1.3rem; 
+        font-size: 1.3rem;
         line-height: 1.6;  
         color: var(--accent-orange);
         
-        /* Gestione del contenuto spezzato */
-        width: auto; /* Lascia che la larghezza si adatti al contenuto */
-        max-width: calc(100% - 40px); /* Limita la larghezza massima per evitare bordi */
-        white-space: normal; /* Permette il ritorno a capo */
-
-        border-top: 1px solid rgba(207, 92, 54, 0.4);
-        border-bottom: 1px solid rgba(207, 92, 54, 0.4);
-        padding: 20px 0;
+        /* IL SEGRETO: Rispetta gli spazi e gli 'a capo' che metteremo nel JS */
+        white-space: pre; 
+        text-align: left;
+        
+        /* Assicuriamo che non esca dallo schermo se troppo indentato */
+        max-width: 100%;
+        overflow-x: auto; /* Scroll orizzontale solo se strettamente necessario */
     }
+    /* Nasconde la scrollbar della scritta se dovesse comparire */
+    .process-bar span::-webkit-scrollbar { display: none; }
 
-    /* 4. GLOBAL TYPOGRAPHY & LAYOUT */
+    /* 4. LAYOUT GENERALE */
     h1 { font-size: 2rem; padding: 0 10px; line-height: 1.2; }
     
     .story-block, .text-right { flex-direction: column; gap: 25px; margin-bottom: 80px; width: 100%; }
@@ -370,13 +367,10 @@ footer { text-align: center; padding: 30px; color: #333; font-size: 0.8rem; marg
     .detail-img { transform: none !important; position: relative; top: 0; height: 100%; }
 
     .connect-title { font-size: 1.5rem; }
-    
     .floating-btn { bottom: 20px; width: 50px; height: 50px; }
     .float-left { left: 20px; }
     .float-right { right: 20px; }
-
-    .social-btn:active { transform: scale(0.95); }
-    .floating-btn:active { transform: scale(0.95); }
+    .social-btn:active, .floating-btn:active { transform: scale(0.95); }
 }
 
 /* --- AGGIUNTE PER PAGINA SERVIZI --- */
@@ -437,6 +431,7 @@ footer { text-align: center; padding: 30px; color: #333; font-size: 0.8rem; marg
 .detail-img {
     transition: transform 0.1s linear; /* Smooth parallax */
 }
+
 
 
 
