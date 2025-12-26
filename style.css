@@ -371,22 +371,46 @@ footer {
 @media (max-width: 768px) {
     
     /* 1. NAVBAR GRID SYSTEM (Equidistanza Perfetta) */
+    /* 1. NAVBAR GRID SYSTEM */
     #navbar {
-        /* Rimuoviamo il padding standard */
         padding: 0;
-        /* Spostiamo l'inizio dei link al 25% della larghezza (lasciando il primo 25% al logo) */
-        padding-left: 25%; 
-        padding-top: 15px;
+        /* Aumentiamo lo spazio in alto (era 15px o 20px) per dare respiro */
+        padding-top: 35px; 
+        padding-bottom: 15px; /* Spazio extra sotto per non tagliare ombre */
+        
+        padding-left: 25%; /* Manteniamo la griglia del logo */
         width: 100%;
         box-sizing: border-box;
+        
+        /* Assicuriamo che gli elementi siano allineati verticalmente al centro */
+        display: flex;
+        align-items: center; 
     }
 
     .nav-links {
         display: flex;
         width: 100%;
-        /* I 3 link si distribuiscono equamente nel restante 75% di spazio */
-        justify-content: space-around; 
+        justify-content: space-around;
         align-items: center;
+    }
+
+    /* 2. LOGO POSITIONING FIX (Adattato alla nuova altezza) */
+    .logo-wrapper.in-nav {
+        /* Lo spostiamo giù per allinearlo visivamente ai tasti che ora sono più in basso */
+        top: 20px; /* Prima era 0 o -5px. Ora scende per seguire il padding-top */
+        left: 0;
+        
+        width: 25%; 
+        height: 60px;
+        
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        
+        transform: none !important;
+        background: transparent;
+        box-shadow: none;
+        pointer-events: auto;
     }
 
     .nav-pill {
@@ -397,29 +421,6 @@ footer {
         backdrop-filter: blur(5px);
         min-width: 60px; /* Larghezza minima per toccarli agevolmente */
         text-align: center;
-    }
-    
-    /* 2. LOGO POSITIONING FIX (Nel primo 25% dello schermo) */
-    .logo-wrapper.in-nav {
-        /* Si posiziona nell'angolo in alto a sinistra */
-        top: 0;
-        left: 0;
-        /* Occupa esattamente il primo quarto di schermo (25%) */
-        width: 25%; 
-        height: 60px; /* Altezza stimata della navbar */
-        
-        /* Centriamo il cerchio nero dentro questo spazio del 25% */
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        
-        /* Reset trasformazioni desktop */
-        transform: none !important; 
-        
-        /* Stili del cerchio nero */
-        background: transparent; /* Il background nero lo diamo all'immagine o a un figlio se serve */
-        box-shadow: none;
-        pointer-events: auto;
     }
     
     /* Per mantenere il cerchietto nero attorno al logo */
@@ -491,4 +492,5 @@ footer {
         transform: none !important;
     }
 }
+
 
