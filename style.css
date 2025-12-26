@@ -7,8 +7,16 @@
     --accent-orange: #cf5c36;
     --nav-glass: rgba(15, 15, 15, 0.85);
     
-    --font-title: 'Playfair Display', serif;
-    --font-text: 'Lato', sans-serif;
+    /* --- NUOVI FONT (Hiragino Sans) --- */
+    /* 
+       Ordine di preferenza: 
+       1. Hiragino Sans (Mac moderni)
+       2. Hiragino Kaku Gothic ProN (Mac vecchi)
+       3. Meiryo (Windows - il più simile)
+       4. sans-serif (Generico)
+    */
+    --font-title: "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Meiryo", sans-serif;
+    --font-text: "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Meiryo", sans-serif;
     
     --ease-cinematic: cubic-bezier(0.65, 0, 0.35, 1);
 }
@@ -698,6 +706,7 @@ footer { text-align: center; padding: 30px; color: #333; font-size: 0.8rem; marg
     color: #fff;
     transform: scale(1.1);
 }
+
 
 
 
