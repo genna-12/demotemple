@@ -276,6 +276,7 @@ footer { text-align: center; padding: 30px; color: #333; font-size: 0.8rem; marg
 
 /* --- MOBILE RESPONSIVE --- */
 @media (max-width: 768px) {
+    /* --- GLOBAL & HOME --- */
     #navbar {
         padding-top: 30px; padding-bottom: 20px; padding-left: 85px; padding-right: 15px;
         width: 100%; display: flex; align-items: center; box-sizing: border-box;
@@ -310,5 +311,81 @@ footer { text-align: center; padding: 30px; color: #333; font-size: 0.8rem; marg
 
     .social-btn:active { transform: scale(0.95); }
     .floating-btn:active { transform: scale(0.95); }
+
+    /* --- AGGIUNTE PER PAGINA SERVIZI --- */
+    .logo-wrapper.static-nav {
+        top: 48px; 
+        left: 42.5px;
+        transform: translate(-50%, -50%) scale(0.6) !important;
+        background: transparent; 
+        box-shadow: none;
+    }
+    .process-bar {
+        padding: 50px 20px 40px;
+    }
+    .process-bar span {
+        font-size: 1.2rem;
+    }
 }
 
+/* --- AGGIUNTE PER PAGINA SERVIZI --- */
+
+/* 1. Sottotitolo Hero */
+.hero-subtitle {
+    font-family: var(--font-text);
+    font-size: 1.2rem;
+    color: var(--text-muted);
+    margin-top: 20px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    font-weight: 300;
+    opacity: 0;
+    transition: opacity 1s ease, transform 1s ease;
+}
+
+/* 2. Process Bar (Ascolto -> Costruzione -> Cura) */
+.process-bar {
+    text-align: center;
+    /* Spaziatura generosa sopra e sotto per isolare il concetto */
+    padding: 80px 20px 60px; 
+    
+    /* Rimosso margin-top negativo. Ora segue il flusso naturale */
+    margin-top: 0; 
+    
+    position: relative;
+    z-index: 5;
+    
+    /* Sfondo trasparente per integrarsi con il background del body */
+    background: transparent; 
+}
+
+.process-bar span {
+    font-family: var(--font-title);
+    font-style: italic;
+    font-size: 1.5rem; /* Leggermente più grande per importanza */
+    color: var(--accent-orange);
+    opacity: 0.9;
+    letter-spacing: 2px;
+    
+    /* Aggiunta una leggera ombra per staccare dal fondo se necessario */
+    text-shadow: 0 4px 10px rgba(0,0,0,0.5);
+}
+
+/* 3. Gestione Logo Statico per sottopagine */
+/* Forza il logo nella posizione finale senza animazione */
+.logo-wrapper.static-nav {
+    top: 58px; 
+    left: 50px;
+    transform: translate(-50%, -50%) scale(0.5);
+    background: #000; 
+    border-radius: 50%;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+    cursor: pointer; 
+    pointer-events: auto;
+    transition: transform 0.3s cubic-bezier(0.65, 0, 0.35, 1); /* Solo hover */
+}
+
+/* 4. Fix specifico per le immagini servizi se necessario */
+.detail-img {
+    transition: transform 0.1s linear; /* Smooth parallax */
+}
