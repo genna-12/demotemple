@@ -61,7 +61,7 @@ body.no-scroll { overflow: hidden; }
 .logo-wrapper.in-nav {
     top: 58px; left: 50px;
     transform: translate(-50%, -50%) scale(0.5);
-    background: #00000000; border-radius: 50%;
+    background: #00000000 !important; border-radius: 50%;
     box-shadow: 0 4px 20px rgba(0,0,0,0.5);
     cursor: pointer; pointer-events: auto;
     transition: 
@@ -698,6 +698,7 @@ footer { text-align: center; padding: 30px; color: #333; font-size: 0.8rem; marg
     color: #fff;
     transform: scale(1.1);
 }
+
 
 
 
