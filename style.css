@@ -301,34 +301,44 @@ footer { text-align: center; padding: 30px; color: #333; font-size: 0.8rem; marg
 
     .content-box { order: 1; padding: 20px; width: 100%; }
 
-    /* --- FIX IMMAGINI (SOLUZIONE RADICALE) --- */
+    /* --- FIX IMMAGINI + ANIMAZIONE ELEGANTE --- */
     
     .image-box { 
         order: 2; 
         width: 100%; 
-        height: 250px; /* Altezza fissa */
+        height: 250px; /* Altezza fissa per mobile */
         margin: 0; 
         
-        /* 1. Reset Posizionamento */
+        /* Layout stabile */
         position: relative !important; 
         display: block !important;
-        
-        /* 2. Disabilita effetti grafici complessi che rompono il render mobile */
-        transform: none !important; 
-        opacity: 1 !important; 
-        mask-image: none !important;         /* FONDAMENTALE */
-        -webkit-mask-image: none !important; /* FONDAMENTALE */
-        
-        /* 3. Colore di sfondo di debug (se l'immagine non carica, vedi almeno il box nero) */
-        background: #111; 
         overflow: hidden;
+        background: #111; /* Sfondo scuro mentre carica */
+        
+        /* Rimuovi la maschera che causava il bug invisibile */
+        mask-image: none !important;
+        -webkit-mask-image: none !important;
+
+        /* RIPRISTINO ANIMAZIONE (State Iniziale) */
+        opacity: 0; /* Parte invisibile */
+        transform: translateY(30px); /* Parte leggermente spostata in basso */
+        transition: opacity 1.2s ease-out, transform 1.2s ease-out !important;
     }
 
-    /* Gestione del tag <picture> se presente */
-    .image-box picture {
+    /* STATO FINALE ANIMAZIONE (Gestito dal JS) */
+    .image-box.is-visible {
+        opacity: 1 !important;
+        transform: translateY(0) !important;
+    }
+
+    /* Gestione universale immagine (con o senza <picture>) */
+    .image-box picture, 
+    .image-box img {
         display: block !important;
         width: 100% !important;
         height: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
     }
 
     /* L'immagine vera e propria */
@@ -338,11 +348,10 @@ footer { text-align: center; padding: 30px; color: #333; font-size: 0.8rem; marg
         left: 0 !important;
         width: 100% !important;
         height: 100% !important;
-        object-fit: cover !important; /* Taglia l'immagine per riempire */
+        object-fit: cover !important; /* Taglia i bordi per riempire */
         
-        /* Reset trasformazioni ereditate */
-        transform: none !important;
-        opacity: 1 !important;
+        /* Disabilita parallasse interna su mobile */
+        transform: none !important; 
     }
     
     /* 2. NAVIGAZIONE */
@@ -698,6 +707,7 @@ footer { text-align: center; padding: 30px; color: #333; font-size: 0.8rem; marg
     color: #fff;
     transform: scale(1.1);
 }
+
 
 
 
