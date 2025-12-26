@@ -280,7 +280,6 @@ footer { text-align: center; padding: 30px; color: #333; font-size: 0.8rem; marg
     /* 1. LAYOUT GENERALE & RIDUZIONE SPAZI */
     h1 { font-size: 2rem; padding: 0 10px; line-height: 1.2; }
     
-    /* RIDUZIONE SPAZI 1: Tra Hero e Testi (Home/Servizi) */
     .narrative-section {
         padding-top: 40px !important;
         padding-bottom: 40px !important;
@@ -288,7 +287,6 @@ footer { text-align: center; padding: 30px; color: #333; font-size: 0.8rem; marg
         padding-right: 20px;
     }
 
-    /* RIDUZIONE SPAZI 2: Tra i vari blocchi di storia */
     .story-block, .text-right { 
         flex-direction: column; 
         gap: 20px; 
@@ -296,7 +294,6 @@ footer { text-align: center; padding: 30px; color: #333; font-size: 0.8rem; marg
         width: 100%; 
     }
     
-    /* RIDUZIONE SPAZI 3: Prima della Connect Section */
     .connect-section {
         padding-top: 50px !important;
         padding-bottom: 120px !important;
@@ -304,46 +301,51 @@ footer { text-align: center; padding: 30px; color: #333; font-size: 0.8rem; marg
 
     .content-box { order: 1; padding: 20px; width: 100%; }
 
-    /* --- FIX IMMAGINI (NUCLEAR OPTION) --- */
+    /* --- FIX IMMAGINI (SOLUZIONE RADICALE) --- */
     
-    /* 1. Il Contenitore (Box Grigio) */
     .image-box { 
         order: 2; 
         width: 100%; 
-        height: 250px; /* Tua altezza ridotta */
+        height: 250px; /* Altezza fissa */
         margin: 0; 
-        position: relative !important; /* Essenziale per ancorare l'immagine */
-        opacity: 1 !important; /* Sovrascrive animazioni JS */
-        transform: none !important;
-        overflow: hidden;
+        
+        /* 1. Reset Posizionamento */
+        position: relative !important; 
         display: block !important;
-        background: #000; /* Fallback se immagine non carica */
+        
+        /* 2. Disabilita effetti grafici complessi che rompono il render mobile */
+        transform: none !important; 
+        opacity: 1 !important; 
+        mask-image: none !important;         /* FONDAMENTALE */
+        -webkit-mask-image: none !important; /* FONDAMENTALE */
+        
+        /* 3. Colore di sfondo di debug (se l'immagine non carica, vedi almeno il box nero) */
+        background: #111; 
+        overflow: hidden;
     }
 
-    /* 2. Il Tag Picture (SPESSO È LUI IL PROBLEMA) */
+    /* Gestione del tag <picture> se presente */
     .image-box picture {
         display: block !important;
         width: 100% !important;
         height: 100% !important;
-        position: absolute;
-        top: 0;
-        left: 0;
     }
 
-    /* 3. L'Immagine Reale */
+    /* L'immagine vera e propria */
     .detail-img {
         position: absolute !important;
         top: 0 !important;
         left: 0 !important;
         width: 100% !important;
         height: 100% !important;
-        object-fit: cover !important; /* Riempie il box tagliando i bordi */
-        transform: none !important;   /* No Parallasse */
-        opacity: 1 !important;        /* Visibilità forzata */
-        z-index: 1;
+        object-fit: cover !important; /* Taglia l'immagine per riempire */
+        
+        /* Reset trasformazioni ereditate */
+        transform: none !important;
+        opacity: 1 !important;
     }
     
-    /* 2. NAVIGAZIONE (SOLO TESTO) */
+    /* 2. NAVIGAZIONE */
     #navbar {
         padding: 25px 0 10px 0 !important; 
         width: 100%; 
@@ -383,7 +385,7 @@ footer { text-align: center; padding: 30px; color: #333; font-size: 0.8rem; marg
         background: transparent !important;
     }
 
-    /* 3. PROCESS BAR (SERVIZI) */
+    /* 3. PROCESS BAR */
     .process-bar {
         padding: 20px 20px 30px !important; 
         text-align: center;
@@ -415,7 +417,7 @@ footer { text-align: center; padding: 30px; color: #333; font-size: 0.8rem; marg
     .float-left { left: 20px; }
     .float-right { right: 20px; }
     
-    /* Portfolio Mobile Fixes */
+    /* Portfolio */
     .portfolio-grid { grid-template-columns: repeat(2, 1fr); gap: 15px; }
     .portfolio-hero { height: 30vh; margin-top: 40px; }
     .cover-overlay { display: none; }
@@ -696,6 +698,7 @@ footer { text-align: center; padding: 30px; color: #333; font-size: 0.8rem; marg
     color: #fff;
     transform: scale(1.1);
 }
+
 
 
 
