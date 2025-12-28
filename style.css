@@ -16,6 +16,7 @@
 html, body { scrollbar-width: none; -ms-overflow-style: none; }
 html { scroll-behavior: smooth; }
 html::-webkit-scrollbar, body::-webkit-scrollbar, *::-webkit-scrollbar { display: none; width: 0; height: 0; }
+
 /* --- BASE STYLES --- */
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body {
@@ -44,7 +45,9 @@ body.menu-open { overflow: hidden; } /* Blocca scroll quando menu aperto */
     position: fixed; top: 50%; left: 50%;
     transform: translate(-50%, -50%) scale(1);
     width: 100px; height: 100px;
-    display: flex; justify-content: center; align-items: center; z-index: 10000;
+    display: flex; justify-content: center; align-items: center; 
+    /* Z-INDEX MASSIMO: Sopra alla navbar per evitare sfocature */
+    z-index: 10020; 
     will-change: top, left, transform;
     transition: all 1.2s var(--ease-cinematic);
 }
@@ -53,11 +56,13 @@ body.menu-open { overflow: hidden; } /* Blocca scroll quando menu aperto */
     top: 58px; left: 50px;
     transform: translate(-50%, -50%) scale(0.5);
     background: transparent !important; border-radius: 50%;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+    /* Rimosso shadow per pulizia */
+    box-shadow: none; 
     cursor: pointer; pointer-events: auto;
     transition: all 1.2s var(--ease-cinematic);
 }
-/* Nascondi il logo principale quando il menu è aperto per evitare doppioni col logo del menu */
+
+/* Quando il menu è aperto, il logo principale sparisce per lasciare spazio a quello del menu */
 body.menu-open .logo-wrapper {
     opacity: 0;
     pointer-events: none;
@@ -76,12 +81,13 @@ body.menu-open .logo-wrapper {
 #navbar {
     position: fixed; top: 0; left: 0; width: 100%;
     padding: 35px 40px; 
-    z-index: 10005; /* Superiore a tutto */
+    /* Z-INDEX SOTTO AL LOGO MA SOPRA AL RESTO */
+    z-index: 10010; 
     box-sizing: border-box; 
     display: flex;
     justify-content: flex-end; 
     pointer-events: none; 
-    mix-blend-mode: exclusion; /* Cool effect sul testo sotto */
+    mix-blend-mode: exclusion;
 }
 
 /* Quando il menu è aperto, rimuoviamo il mix-blend-mode per vedere bene la X arancione */
@@ -127,9 +133,7 @@ body.menu-open .menu-trigger .line:last-child {
 }
 
 .nav-visible { opacity: 1; transform: translateY(0); }
-.nav-hidden-scroll { transform: translateY(-100%); }
-/* Se il menu è aperto, la navbar DEVE restare visibile per mostrare la X */
-body.menu-open .nav-hidden-scroll { transform: translateY(0) !important; }
+/* Nota: nav-hidden-scroll ora si applica SOLO ai bottoni fluttuanti via JS */
 
 
 /* --- FULLSCREEN MENU OVERLAY --- */
@@ -137,14 +141,14 @@ body.menu-open .nav-hidden-scroll { transform: translateY(0) !important; }
     position: fixed;
     top: 0; left: 0;
     width: 100vw; height: 100vh;
-    z-index: 10002; /* Sotto alla navbar (10005) ma sopra al resto */
+    z-index: 10005; /* Sotto alla navbar e logo ma sopra al resto */
     transform: translateY(100%);
     transition: transform 0.8s var(--ease-cinematic);
     overflow: hidden;
     display: flex;
     justify-content: center;
     align-items: center;
-    background: #080808; /* Fallback color */
+    background: #080808; 
 }
 
 body.menu-open #fullscreen-menu {
@@ -155,14 +159,11 @@ body.menu-open #fullscreen-menu {
     position: absolute; 
     top: 0; left: 0; 
     width: 100%; height: 100%;
-    
-    /* Assicurati che il percorso sia corretto rispetto a dove si trova il file CSS */
     background-image: url('assets/sfondo_menu_desktop.jpg');
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
-    
-    filter: brightness(0.3); /* Scurisce lo sfondo per far risaltare il testo */
+    filter: brightness(0.3);
     z-index: 1;
 }
 
@@ -206,7 +207,7 @@ body.menu-open .menu-logo {
 .menu-link {
     display: block;
     font-family: var(--font-title);
-    font-size: 3rem; /* Molto grande */
+    font-size: 3rem; 
     color: #e6e6e6;
     text-decoration: none;
     font-weight: 300;
@@ -300,7 +301,7 @@ h1.is-visible { opacity: 1; transform: translateY(0); }
     position: fixed; 
     bottom: 30px; 
     width: 55px; height: 55px; 
-    z-index: 10003; /* Sopra al menu (10002) */
+    z-index: 10015; /* Molto alto */
     
     border-radius: 50%; background: #000;
     padding: 0; overflow: hidden;
@@ -314,8 +315,11 @@ h1.is-visible { opacity: 1; transform: translateY(0); }
 }
 
 .floating-btn.nav-visible { opacity: 1; pointer-events: auto; transform: translateY(0); }
+/* Classe per nascondere i pulsanti quando scorri giù */
+.floating-btn.nav-hidden-scroll { transform: translateY(150%) !important; opacity: 0; pointer-events: none; }
+
 /* Se il menu è aperto, i bottoni fluttuanti non scappano anche se scorri */
-body.menu-open .floating-btn { opacity: 1 !important; transform: translateY(0) !important; }
+body.menu-open .floating-btn { opacity: 1 !important; transform: translateY(0) !important; pointer-events: auto; }
 
 .float-left { left: 30px; }
 .float-right { right: 30px; }
@@ -348,6 +352,11 @@ footer { text-align: center; padding: 30px; color: #333; font-size: 0.8rem; marg
     /* Regolazioni Menu Mobile */
     .menu-link { font-size: 2.5rem; }
     .menu-logo { width: 60px; }
+    /* ALZA IL CONTENUTO DEL MENU SU MOBILE */
+    .menu-content {
+        transform: translateY(-50px);
+        gap: 20px; /* Ridotto gap per stare meglio */
+    }
 
     .logo-wrapper.in-nav, .logo-wrapper.static-nav { top: 45px !important; left: 40px !important; transform: translate(-50%, -50%) scale(0.6) !important; }
     
@@ -396,4 +405,3 @@ footer { text-align: center; padding: 30px; color: #333; font-size: 0.8rem; marg
 .social-btn.mini-btn { width: 40px; height: 40px; background: rgba(255, 255, 255, 0.05); border: none; }
 .social-btn.mini-btn:hover { background: var(--accent-orange); color: #fff; transform: scale(1.1); }
 h1, h2, h3 { font-weight: 300; }
-
