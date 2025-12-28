@@ -5,16 +5,7 @@
     --text-muted: #a09085;
     --accent-brown: #4a3b32;
     --accent-orange: #cf5c36;
-    --nav-glass: rgba(15, 15, 15, 0.85);
     
-    /* --- NUOVI FONT (Hiragino Sans) --- */
-    /* 
-       Ordine di preferenza: 
-       1. Hiragino Sans (Mac moderni)
-       2. Hiragino Kaku Gothic ProN (Mac vecchi)
-       3. Meiryo (Windows - il più simile)
-       4. sans-serif (Generico)
-    */
     --font-title: "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Meiryo", sans-serif;
     --font-text: "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Meiryo", sans-serif;
     
@@ -24,9 +15,7 @@
 /* --- SCROLLBAR HIDDEN --- */
 html, body { scrollbar-width: none; -ms-overflow-style: none; }
 html { scroll-behavior: smooth; }
-html::-webkit-scrollbar, body::-webkit-scrollbar, *::-webkit-scrollbar {
-    display: none; width: 0; height: 0;
-}
+html::-webkit-scrollbar, body::-webkit-scrollbar, *::-webkit-scrollbar { display: none; width: 0; height: 0; }
 
 /* --- BASE STYLES --- */
 * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -41,7 +30,7 @@ body {
         radial-gradient(circle at 80% 80%, rgba(207, 92, 54, 0.08) 0%, transparent 60%);
     background-attachment: fixed;
 }
-body.no-scroll { overflow: hidden; }
+body.menu-open { overflow: hidden; } /* Blocca scroll quando menu aperto */
 
 /* --- INTRO & LOGO --- */
 #intro-layer {
@@ -58,32 +47,24 @@ body.no-scroll { overflow: hidden; }
     width: 100px; height: 100px;
     display: flex; justify-content: center; align-items: center; z-index: 10000;
     will-change: top, left, transform;
-    transition: 
-        top 1.2s var(--ease-cinematic),
-        left 1.2s var(--ease-cinematic),
-        transform 1.2s var(--ease-cinematic),
-        background-color 0.5s ease,
-        box-shadow 0.5s ease;
+    transition: all 1.2s var(--ease-cinematic);
 }
 
 .logo-wrapper.in-nav {
     top: 58px; left: 50px;
     transform: translate(-50%, -50%) scale(0.5);
-    background: #00000000 !important; border-radius: 50%;
+    background: transparent !important; border-radius: 50%;
     box-shadow: 0 4px 20px rgba(0,0,0,0.5);
     cursor: pointer; pointer-events: auto;
-    transition: 
-        top 1.2s var(--ease-cinematic),
-        left 1.2s var(--ease-cinematic),
-        transform 0.3s var(--ease-cinematic),
-        background-color 0.3s ease,
-        box-shadow 0.3s ease;
+    transition: all 1.2s var(--ease-cinematic);
 }
-.logo-wrapper.in-nav:hover {
-    transform: translate(-50%, -50%) scale(0.55);
-    box-shadow: 0 8px 30px rgba(0,0,0,0.7);
-    border: 1px solid rgba(255, 255, 255, 0.2);
+/* Nascondi il logo principale quando il menu è aperto per evitare doppioni col logo del menu */
+body.menu-open .logo-wrapper {
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
 }
+
 .temple-logo { width: 100%; height: 100%; transition: fill 0.5s ease; }
 @keyframes heartbeat {
     0% { transform: translate(-50%, -50%) scale(1); }
@@ -92,34 +73,170 @@ body.no-scroll { overflow: hidden; }
 }
 .pulse-anim { animation: heartbeat 0.8s ease-in-out forwards; }
 
-/* --- NAVIGATION --- */
+/* --- MENU TRIGGER & NAVBAR --- */
 #navbar {
     position: fixed; top: 0; left: 0; width: 100%;
-    padding: 35px 40px 20px 120px;
-    z-index: 9000;
-    transition: transform 0.4s ease, opacity 0.8s ease;
-    mix-blend-mode: exclusion;
+    padding: 35px 40px; 
+    z-index: 10005; /* Superiore a tutto */
     box-sizing: border-box; 
+    display: flex;
+    justify-content: flex-end; 
+    pointer-events: none; 
+    mix-blend-mode: exclusion; /* Cool effect sul testo sotto */
 }
-.hidden-nav { opacity: 0; pointer-events: none; transform: translateY(-10px); }
-.nav-visible { opacity: 1; pointer-events: auto; transform: translateY(0); }
-.nav-hidden-scroll { transform: translateY(-100%); }
-.nav-links { display: flex; gap: 20px; }
-.nav-pill {
-    text-decoration: none; color: #ffffff;
-    background: rgba(10, 10, 10, 0.9);
-    padding: 12px 28px;
-    border-radius: 50px;
-    font-size: 0.95rem; font-weight: 400; letter-spacing: 1px;
-    backdrop-filter: blur(8px);
-    border: 1px solid rgba(255, 255, 255, 0.25);
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
-    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
-    transition: transform 0.3s ease, background 0.3s ease;
-}
-.nav-pill:hover { background: #000; border-color: rgba(255, 255, 255, 0.5); transform: scale(1.05); }
 
-/* --- HERO --- */
+/* Quando il menu è aperto, rimuoviamo il mix-blend-mode per vedere bene la X arancione */
+body.menu-open #navbar {
+    mix-blend-mode: normal;
+}
+
+.menu-trigger {
+    pointer-events: auto;
+    cursor: pointer;
+    width: 50px;
+    height: 40px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: flex-end;
+    gap: 8px;
+    transition: transform 0.3s ease;
+}
+
+.menu-trigger .line {
+    width: 40px;
+    height: 2px;
+    background-color: #fff;
+    transition: all 0.4s var(--ease-cinematic);
+    transform-origin: center;
+}
+
+/* Hover Effect */
+.menu-trigger:hover .line:first-child { transform: translateY(-2px); }
+.menu-trigger:hover .line:last-child { transform: translateY(2px); }
+
+/* STATO ATTIVO (X per uscire) */
+body.menu-open .menu-trigger .line:first-child {
+    transform: translateY(5px) rotate(45deg);
+    background-color: var(--accent-orange);
+    width: 35px;
+}
+body.menu-open .menu-trigger .line:last-child {
+    transform: translateY(-5px) rotate(-45deg);
+    background-color: var(--accent-orange);
+    width: 35px;
+}
+
+.nav-visible { opacity: 1; transform: translateY(0); }
+.nav-hidden-scroll { transform: translateY(-100%); }
+/* Se il menu è aperto, la navbar DEVE restare visibile per mostrare la X */
+body.menu-open .nav-hidden-scroll { transform: translateY(0) !important; }
+
+
+/* --- FULLSCREEN MENU OVERLAY --- */
+#fullscreen-menu {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100vw; height: 100vh;
+    z-index: 10002; /* Sotto alla navbar (10005) ma sopra al resto */
+    transform: translateY(100%);
+    transition: transform 0.8s var(--ease-cinematic);
+    overflow: hidden;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: #080808; /* Fallback color */
+}
+
+body.menu-open #fullscreen-menu {
+    transform: translateY(0%);
+}
+
+.menu-bg {
+    position: absolute; 
+    top: 0; left: 0; 
+    width: 100%; height: 100%;
+    
+    /* Assicurati che il percorso sia corretto rispetto a dove si trova il file CSS */
+    background-image: url('assets/sfondo_menu_desktop.jpg');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    
+    filter: brightness(0.3); /* Scurisce lo sfondo per far risaltare il testo */
+    z-index: 1;
+}
+
+@media (max-width: 768px) {
+    .menu-bg {
+        background-image: url('assets/sfondo_menu_mobile.jpg');
+    }
+}
+
+.menu-content {
+    position: relative;
+    z-index: 2;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 30px;
+}
+
+.menu-logo {
+    width: 80px;
+    height: auto;
+    margin-bottom: 20px;
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.5s ease 0.2s, transform 0.5s ease 0.2s;
+}
+
+body.menu-open .menu-logo {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.menu-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.menu-link {
+    display: block;
+    font-family: var(--font-title);
+    font-size: 3rem; /* Molto grande */
+    color: #e6e6e6;
+    text-decoration: none;
+    font-weight: 300;
+    letter-spacing: 2px;
+    opacity: 0;
+    transform: translateY(40px);
+    transition: color 0.3s ease, transform 0.3s ease, opacity 0.5s ease;
+}
+
+/* Ritardo animazione per effetto a cascata */
+body.menu-open .menu-link:nth-child(1) { transition-delay: 0.3s; }
+body.menu-open .menu-link:nth-child(2) { transition-delay: 0.4s; }
+body.menu-open .menu-link:nth-child(3) { transition-delay: 0.5s; }
+body.menu-open .menu-link:nth-child(4) { transition-delay: 0.6s; }
+
+body.menu-open .menu-link {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* Effetti Hover Eleganti */
+.menu-link:hover {
+    color: var(--accent-orange);
+    transform: scale(1.05);
+    text-shadow: 0 0 20px rgba(207, 92, 54, 0.4);
+}
+
+
+/* --- SEZIONI STANDARD (Invariate) --- */
 .hero-section { height: 100vh; width: 100%; position: relative; display: flex; justify-content: center; align-items: center; overflow: hidden; }
 #hero-image-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-size: cover; background-position: center; opacity: 0; transition: opacity 2s ease-in-out; z-index: 0; }
 .hero-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(to bottom, rgba(8,8,8,0.3) 0%, rgba(8,8,8,1) 95%); z-index: 1; }
@@ -132,7 +249,6 @@ h1 {
 }
 h1.is-visible { opacity: 1; transform: translateY(0); }
 
-/* --- NARRATIVE --- */
 .narrative-section { position: relative; padding: 100px 5%; max-width: 1200px; margin: 0 auto; z-index: 10; }
 .story-block { display: flex; align-items: center; gap: 60px; margin-bottom: 150px; }
 .text-right { flex-direction: row-reverse; }
@@ -152,18 +268,12 @@ h1.is-visible { opacity: 1; transform: translateY(0); }
 }
 .detail-img { position: absolute; top: -10%; left: 0; width: 100%; height: 120%; object-fit: cover; will-change: transform; }
 
-/* --- CONNECT SECTION --- */
 .connect-section {
-    position: relative; padding: 100px 5% 150px 5%; /* Padding bottom extra per i pulsanti fluttuanti */
+    position: relative; padding: 100px 5% 150px 5%;
     text-align: center; z-index: 10;
-    
-    /* SFONDO SCURO */
     background-color: #945d38; 
     border-top: 1px solid rgba(255,255,255,0.05);
-
-    /* Animazione Scroll Reveal */
-    opacity: 0; 
-    transform: translateY(30px);
+    opacity: 0; transform: translateY(30px);
     transition: opacity 1s ease-out, transform 1s ease-out;
 }
 .connect-title {
@@ -186,241 +296,62 @@ h1.is-visible { opacity: 1; transform: translateY(0); }
     color: var(--accent-orange);
 }
 
-/* --- FLOATING BUTTONS (FIX DIMENSIONE) --- */
+/* --- FLOATING BUTTONS (Sopra il menu) --- */
 .floating-btn {
     position: fixed; 
     bottom: 30px; 
-    width: 55px; 
-    height: 55px; 
-    z-index: 9500;
+    width: 55px; height: 55px; 
+    z-index: 10003; /* Sopra al menu (10002) */
     
-    border-radius: 50%; 
-    background: #000;
-    
-    /* FIX 1: Rimuovi qualsiasi padding che restringa l'immagine */
-    padding: 0;
-    
-    /* FIX 2: Nascondi ciò che esce dal cerchio (permette di zoomare l'immagine) */
-    overflow: hidden;
-    
-    display: flex; 
-    justify-content: center; 
-    align-items: center;
+    border-radius: 50%; background: #000;
+    padding: 0; overflow: hidden;
+    display: flex; justify-content: center; align-items: center;
     
     border: 1px solid rgba(255,255,255,0.15);
     box-shadow: 0 5px 20px rgba(0,0,0,0.5);
     transition: transform 0.4s ease, opacity 0.4s ease, box-shadow 0.3s ease;
     
-    opacity: 0; 
-    pointer-events: none; 
-    transform: translateY(20px);
+    opacity: 0; pointer-events: none; transform: translateY(20px);
 }
 
 .floating-btn.nav-visible { opacity: 1; pointer-events: auto; transform: translateY(0); }
-.floating-btn.nav-hidden-scroll { transform: translateY(150%) !important; }
+/* Se il menu è aperto, i bottoni fluttuanti non scappano anche se scorri */
+body.menu-open .floating-btn { opacity: 1 !important; transform: translateY(0) !important; }
 
 .float-left { left: 30px; }
 .float-right { right: 30px; }
+.floating-btn:hover { transform: scale(1.05); }
 
-/* Effetto Hover del bottone */
-.floating-btn:hover { 
-    transform: scale(1.05); 
-}
+.lang-icon { width: 100%; height: 100%; object-fit: cover; opacity: 0.95; transition: transform 0.5s ease; transform: scale(1.3); }
+.rotate-anim { transform: scale(1.3) rotate(360deg) !important; }
 
-/* --- FIX ICONA LINGUA (ZOOM FORZATO) --- */
-.lang-icon { 
-    /* Occupa tutto lo spazio disponibile nel bottone */
-    width: 100%; 
-    height: 100%; 
-    
-    /* Mantiene le proporzioni senza deformare */
-    object-fit: cover; 
-    
-    opacity: 0.95; 
-    transition: transform 0.5s ease;
-    
-    /* 
-       FIX 3: ZOOM DIGITALE
-       Se l'icona è piccola, aumenta questo numero (es. 1.2, 1.4, 1.6).
-       Questo ingrandisce l'immagine OLTRE i bordi del contenitore.
-       Poiché il bottone ha 'overflow: hidden', l'eccesso viene tagliato
-       e l'icona sembrerà molto più grande.
-    */
-    transform: scale(1.3); 
-}
-
-/* Animazione rotazione (sovrascrive lo scale momentaneamente) */
-.rotate-anim {
-    /* Manteniamo lo scale anche durante la rotazione */
-    transform: scale(1.3) rotate(360deg) !important;
-}
-
-/* Specifico WhatsApp */
-#wa-btn:hover {
-    box-shadow: 0 0 20px rgba(37, 211, 102, 0.4);
-    border-color: rgba(37, 211, 102, 0.4);
-}
-#lang-btn:hover {
-    box-shadow: 0 0 20px rgba(255, 255, 255, 0.2);
-}
+#wa-btn:hover { box-shadow: 0 0 20px rgba(37, 211, 102, 0.4); border-color: rgba(37, 211, 102, 0.4); }
+#lang-btn:hover { box-shadow: 0 0 20px rgba(255, 255, 255, 0.2); }
 
 footer { text-align: center; padding: 30px; color: #333; font-size: 0.8rem; margin-bottom: 60px; }
+.footer-address { color: var(--text-muted); font-family: var(--font-title); font-style: italic; font-size: 1rem; margin-bottom: 10px; letter-spacing: 0.5px; }
+.is-visible { opacity: 1 !important; transform: translateY(0) !important; }
 
-.footer-address {
-    color: var(--text-muted);
-    font-family: var(--font-title);
-    font-style: italic;
-    font-size: 1rem;
-    margin-bottom: 10px;
-    letter-spacing: 0.5px;
-}
-
-/* --- IMPORTANT: REVEAL CLASS DEFINITIVE --- */
-/* Messa alla fine per sovrascrivere l'opacity:0 delle sezioni */
-.is-visible {
-    opacity: 1 !important;
-    transform: translateY(0) !important;
-}
-
-/* --- MOBILE RESPONSIVE (FIX DEFINITIVO) --- */
+/* --- MOBILE RESPONSIVE --- */
 @media (max-width: 768px) {
-    
-    /* 1. LAYOUT GENERALE */
     h1 { font-size: 2rem; padding: 0 10px; line-height: 1.2; }
-    
-    .narrative-section {
-        padding-top: 40px !important;
-        padding-bottom: 40px !important;
-        padding-left: 20px;
-        padding-right: 20px;
-    }
-
-    .story-block, .text-right { 
-        flex-direction: column; 
-        gap: 20px; 
-        margin-bottom: 50px !important;
-        width: 100%; 
-    }
-    
-    .connect-section {
-        padding-top: 50px !important;
-        padding-bottom: 120px !important;
-    }
-
+    .narrative-section { padding-top: 40px !important; padding-bottom: 40px !important; padding-left: 20px; padding-right: 20px; }
+    .story-block, .text-right { flex-direction: column; gap: 20px; margin-bottom: 50px !important; width: 100%; }
+    .connect-section { padding-top: 50px !important; padding-bottom: 120px !important; }
     .content-box { order: 1; padding: 20px; width: 100%; }
-
-    /* --- GESTIONE IMMAGINI DETAILS (Layout + Eleganza) --- */
     
-    /* Il contenitore: Definisce SOLO lo spazio e rimuove la maschera buggata */
-    .image-box { 
-        order: 2; 
-        width: 100%; 
-        height: 250px; /* Altezza fissa mobile */
-        margin: 0; 
-        
-        display: block !important;
-        position: relative !important;
-        overflow: hidden;
-        background: #111; /* Sfondo nero di sicurezza */
-        
-        /* FONDAMENTALE: Rimuove la maschera che rende tutto invisibile su mobile */
-        mask-image: none !important;
-        -webkit-mask-image: none !important;
-
-        /* NOTA: Ho rimosso opacity e transform da qui. 
-           Lasciamo che sia la classe .scroll-reveal globale a gestire l'entrata elegante. */
-    }
-
-    /* Gestisce sia il tag <picture> che <img> diretto (per compatibilità Contatti) */
-    .image-box picture,
-    .image-box img {
-        display: block !important;
-        width: 100% !important;
-        height: 100% !important;
-        margin: 0 !important;
-        padding: 0 !important;
-        border: none !important;
-    }
-
-    /* L'immagine vera e propria: Si adatta al contenitore */
-    .detail-img {
-        position: absolute !important;
-        top: 0 !important;
-        left: 0 !important;
-        width: 100% !important;
-        height: 100% !important;
-        object-fit: cover !important; /* Taglia l'immagine per riempire il box */
-        
-        /* Blocca SOLO l'effetto parallasse interno (che su mobile scatta), 
-           ma NON tocca l'animazione di entrata del box genitore */
-        transform: none !important; 
-        opacity: 1 !important;
-    }
+    .image-box { order: 2; width: 100%; height: 250px; margin: 0; display: block !important; position: relative !important; overflow: hidden; background: #111; mask-image: none !important; -webkit-mask-image: none !important; }
+    .image-box picture, .image-box img { display: block !important; width: 100% !important; height: 100% !important; margin: 0 !important; padding: 0 !important; border: none !important; }
+    .detail-img { position: absolute !important; top: 0 !important; left: 0 !important; width: 100% !important; height: 100% !important; object-fit: cover !important; transform: none !important; opacity: 1 !important; }
     
-    /* 2. NAVIGAZIONE */
-    #navbar {
-        padding: 25px 0 10px 0 !important; 
-        width: 100%; 
-        background: transparent !important; 
-        backdrop-filter: none !important;
-    }
-
-    .nav-links { 
-        margin-left: 20%; 
-        width: 80%; 
-        display: grid; 
-        grid-template-columns: 1fr 1fr 1fr; 
-        gap: 0 !important; 
-        align-items: center; 
-    }
-
-    .nav-pill { 
-        background: transparent !important;
-        border: none !important;
-        box-shadow: none !important;
-        backdrop-filter: none !important;
-        padding: 10px 0 !important; 
-        width: 100%; 
-        font-size: 0.8rem; 
-        white-space: nowrap; 
-        text-align: center;
-        display: flex; 
-        justify-content: center;
-        color: rgba(255, 255, 255, 0.9);
-        transition: transform 0.1s ease, text-shadow 0.2s ease;
-    }
+    #navbar { padding: 25px 30px !important; background: transparent !important; backdrop-filter: none !important; }
     
-    .nav-pill:active {
-        transform: scale(1.2); 
-        text-shadow: 0 0 15px rgba(255, 255, 255, 1); 
-        color: #fff;
-        background: transparent !important;
-    }
+    /* Regolazioni Menu Mobile */
+    .menu-link { font-size: 2.5rem; }
+    .menu-logo { width: 60px; }
 
-    /* 3. ALTRI ELEMENTI */
-    .process-bar {
-        padding: 20px 20px 30px !important; 
-        text-align: center;
-        width: 100%;
-        overflow: visible;
-    }
+    .logo-wrapper.in-nav, .logo-wrapper.static-nav { top: 45px !important; left: 40px !important; transform: translate(-50%, -50%) scale(0.6) !important; }
     
-    .process-bar span {
-        font-family: var(--font-title);
-        font-size: 1.3rem; 
-        color: var(--accent-orange);
-        white-space: normal !important;
-        line-height: 1.4; 
-        display: block;
-    }
-    
-    .logo-wrapper.in-nav,
-    .logo-wrapper.static-nav {
-        top: 45px !important;       
-        left: 10% !important;     
-        transform: translate(-50%, -50%) scale(0.6) !important;
-    }
-
     .connect-title { font-size: 1.5rem; margin-bottom: 30px; }
     .floating-btn { bottom: 20px; width: 50px; height: 50px; }
     .float-left { left: 20px; }
@@ -432,281 +363,37 @@ footer { text-align: center; padding: 30px; color: #333; font-size: 0.8rem; marg
     .playlist-cover-img { width: 200px; height: 200px; }
 }
 
-/* --- AGGIUNTE PER PAGINA SERVIZI --- */
-/* 1. Sottotitolo Hero */
-.hero-subtitle {
-    font-family: var(--font-text);
-    font-size: 1.2rem;
-    color: var(--text-muted);
-    margin-top: 20px;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    font-weight: 300;
-    opacity: 0;
-    transition: opacity 1s ease, transform 1s ease;
-}
+/* Altre classi specifiche (Servizi, Portfolio...) */
+.hero-subtitle { font-family: var(--font-text); font-size: 1.2rem; color: var(--text-muted); margin-top: 20px; letter-spacing: 2px; text-transform: uppercase; font-weight: 300; opacity: 0; transition: opacity 1s ease, transform 1s ease; }
+.process-bar { text-align: center; padding: 80px 20px 60px; margin-top: 0; position: relative; z-index: 5; background: transparent; overflow: hidden; }
+.process-bar span { font-family: var(--font-title); font-style: italic; font-size: 1.5rem; color: var(--accent-orange); opacity: 0.9; letter-spacing: 2px; text-shadow: 0 4px 10px rgba(0,0,0,0.5); display: block; white-space: nowrap; }
+.logo-wrapper.static-nav { top: 58px; left: 50px; transform: translate(-50%, -50%) scale(0.5); background: #000; border-radius: 50%; box-shadow: 0 4px 20px rgba(0,0,0,0.5); cursor: pointer; pointer-events: auto; transition: transform 0.3s cubic-bezier(0.65, 0, 0.35, 1); }
+.detail-img { transition: transform 0.1s linear; }
 
-/* 2. Process Bar (Ascolto -> Costruzione -> Cura) */
-.process-bar {
-    text-align: center;
-    padding: 80px 20px 60px; 
-    margin-top: 0;
-    position: relative;
-    z-index: 5;
-    background: transparent;
-    /* Impedisce overflow orizzontale se lo schermo è minuscolo */
-    overflow: hidden; 
-}
-
-.process-bar span {
-    font-family: var(--font-title);
-    font-style: italic;
-    font-size: 1.5rem;
-    color: var(--accent-orange);
-    opacity: 0.9;
-    letter-spacing: 2px;
-    text-shadow: 0 4px 10px rgba(0,0,0,0.5);
-    
-    /* FIX: Forza su una riga */
-    display: block;
-    white-space: nowrap;
-}
-
-/* 3. Gestione Logo Statico per sottopagine */
-/* Forza il logo nella posizione finale senza animazione */
-.logo-wrapper.static-nav {
-    top: 58px; 
-    left: 50px;
-    transform: translate(-50%, -50%) scale(0.5);
-    background: #000; 
-    border-radius: 50%;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.5);
-    cursor: pointer; 
-    pointer-events: auto;
-    transition: transform 0.3s cubic-bezier(0.65, 0, 0.35, 1); /* Solo hover */
-}
-
-/* 4. Fix specifico per le immagini servizi se necessario */
-.detail-img {
-    transition: transform 0.1s linear; /* Smooth parallax */
-}
-
-/* --- AGGIUNTE PORTFOLIO PAGE --- */
-
-/* Hero Portfolio */
-.portfolio-hero {
-    height: 40vh; /* Non full screen, più discreto */
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    text-align: center;
-    padding: 0 20px;
-    margin-top: 80px; /* Spazio per la nav fissa */
-}
-
-.portfolio-hero h1 {
-    font-size: 2.2rem;
-    font-weight: 300;
-    color: var(--text-muted);
-    font-family: var(--font-text); /* Meno pomposo del titolo home */
-    letter-spacing: 1px;
-    opacity: 0; /* Gestito da JS */
-    transform: translateY(20px);
-    transition: opacity 1.2s ease, transform 1.2s ease;
-}
+.portfolio-hero { height: 40vh; display: flex; justify-content: center; align-items: center; text-align: center; padding: 0 20px; margin-top: 80px; }
+.portfolio-hero h1 { font-size: 2.2rem; font-weight: 300; color: var(--text-muted); font-family: var(--font-text); letter-spacing: 1px; opacity: 0; transform: translateY(20px); transition: opacity 1.2s ease, transform 1.2s ease; }
 .portfolio-hero h1.is-visible { opacity: 1; transform: translateY(0); }
-
-/* Griglia Portfolio */
-.portfolio-grid-section {
-    padding: 0 5% 100px 5%;
-    max-width: 1400px;
-    margin: 0 auto;
-}
-
-.portfolio-grid {
-    display: grid;
-    /* Desktop: 3 colonne fluide */
-    grid-template-columns: repeat(3, 1fr);
-    gap: 40px;
-}
-
-/* Card Copertina */
-.cover-card {
-    position: relative;
-    display: block;
-    width: 100%;
-    aspect-ratio: 1 / 1; /* Forza il quadrato perfetto */
-    overflow: hidden;
-    border-radius: 12px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-    transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94), box-shadow 0.4s ease;
-    cursor: pointer;
-    background: #111; /* Fallback mentre carica */
-    
-    /* Reveal animation setup */
-    opacity: 0;
-    transform: translateY(30px);
-}
-
-.cover-card.is-visible {
-    opacity: 1;
-    transform: translateY(0);
-}
-
-.cover-card:hover {
-    transform: scale(1.03) translateY(-5px); /* Leggero lift */
-    box-shadow: 0 20px 40px rgba(0,0,0,0.7);
-    z-index: 2;
-}
-
-.cover-card img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    transition: filter 0.4s ease;
-}
-
-/* Overlay Titolo (Visibile solo hover desktop) */
-.cover-overlay {
-    position: absolute;
-    top: 0; left: 0; width: 100%; height: 100%;
-    background: rgba(0, 0, 0, 0.6);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    opacity: 0;
-    transition: opacity 0.3s ease;
-    padding: 20px;
-    text-align: center;
-}
-
-.cover-card:hover .cover-overlay {
-    opacity: 1;
-}
-
-.project-title {
-    color: #fff;
-    font-family: var(--font-title);
-    font-size: 1.2rem;
-    font-style: italic;
-    transform: translateY(10px);
-    transition: transform 0.3s ease;
-}
-
-.cover-card:hover .project-title {
-    transform: translateY(0);
-}
-
-/* Visual Break (Testo Centrale) */
-.visual-break {
-    padding: 100px 20px;
-    text-align: center;
-}
-
-.visual-break p {
-    font-family: var(--font-title);
-    font-size: 1.8rem;
-    color: var(--text-primary);
-    opacity: 0.8;
-}
-
-/* Sezione Playlist */
-.playlist-section {
-    background: radial-gradient(circle at center, rgba(74, 59, 50, 0.2) 0%, rgba(5, 5, 5, 1) 70%);
-    padding: 120px 20px;
-    text-align: center;
-    border-top: 1px solid rgba(255,255,255,0.05);
-    border-bottom: 1px solid rgba(255,255,255,0.05);
-}
-
-.playlist-content h2 {
-    font-family: var(--font-title);
-    font-size: 2.5rem;
-    margin-bottom: 40px;
-    color: var(--text-primary);
-}
-
-/* --- STILE PLAYLIST & BOTTONE --- */
-
-.playlist-content {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 30px; /* Spazio verticale tra gli elementi */
-}
-
-/* Immagine Playlist */
-.playlist-cover-img {
-    width: 280px;
-    height: 280px;
-    object-fit: cover;
-    box-shadow: 0 15px 40px rgba(0,0,0,0.6);
-    transition: transform 0.4s ease;
-    border-radius: 4px; 
-}
-
-.playlist-cover-img:hover {
-    transform: scale(1.03); /* Leggero zoom quando passi sull'immagine */
-}
-
-/* Bottone Spotify Arancione */
-.spotify-btn {
-    display: inline-block;
-    text-decoration: none;
-    color: #fff;
-    background: transparent;
-    border: 1px solid rgba(255, 255, 255, 0.3);
-    padding: 15px 45px;
-    border-radius: 50px;
-    font-family: var(--font-text);
-    font-weight: 300;
-    letter-spacing: 1px;
-    transition: all 0.3s ease;
-}
-
-.spotify-btn:hover {
-    background: var(--accent-orange); /* Arancione Tiny Temple */
-    border-color: var(--accent-orange);
-    color: #fff;
-    transform: scale(1.05);
-    box-shadow: 0 0 25px rgba(207, 92, 54, 0.4); /* Glow arancione */
-}
-
-/* --- AGGIUNTE PER PAGINA CONTATTI --- */
-
-/* Ruolo Team (es. Produttore) */
-.role-text {
-    color: var(--accent-orange);
-    font-family: var(--font-title);
-    font-style: italic;
-    font-size: 1.1rem;
-    margin-bottom: 20px;
-    letter-spacing: 0.5px;
-}
-
-/* Griglia social mini dentro la bio */
-.bio-socials {
-    display: flex;
-    gap: 15px;
-    margin-top: 25px;
-    border-top: 1px solid rgba(255, 255, 255, 0.05);
-    padding-top: 20px;
-}
-
-/* Variante pulsante social più piccolo e discreto */
-.social-btn.mini-btn {
-    width: 40px;
-    height: 40px;
-    background: rgba(255, 255, 255, 0.05);
-    border: none;
-}
-
-.social-btn.mini-btn:hover {
-    background: var(--accent-orange);
-    color: #fff;
-    transform: scale(1.1);
-}
-
-h1, h2, h3 {
-    font-weight: 300; /* Hiragino è molto leggibile anche sottile */
-}
+.portfolio-grid-section { padding: 0 5% 100px 5%; max-width: 1400px; margin: 0 auto; }
+.portfolio-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 40px; }
+.cover-card { position: relative; display: block; width: 100%; aspect-ratio: 1 / 1; overflow: hidden; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94), box-shadow 0.4s ease; cursor: pointer; background: #111; opacity: 0; transform: translateY(30px); }
+.cover-card.is-visible { opacity: 1; transform: translateY(0); }
+.cover-card:hover { transform: scale(1.03) translateY(-5px); box-shadow: 0 20px 40px rgba(0,0,0,0.7); z-index: 2; }
+.cover-card img { width: 100%; height: 100%; object-fit: cover; transition: filter 0.4s ease; }
+.cover-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.6); display: flex; justify-content: center; align-items: center; opacity: 0; transition: opacity 0.3s ease; padding: 20px; text-align: center; }
+.cover-card:hover .cover-overlay { opacity: 1; }
+.project-title { color: #fff; font-family: var(--font-title); font-size: 1.2rem; font-style: italic; transform: translateY(10px); transition: transform 0.3s ease; }
+.cover-card:hover .project-title { transform: translateY(0); }
+.visual-break { padding: 100px 20px; text-align: center; }
+.visual-break p { font-family: var(--font-title); font-size: 1.8rem; color: var(--text-primary); opacity: 0.8; }
+.playlist-section { background: radial-gradient(circle at center, rgba(74, 59, 50, 0.2) 0%, rgba(5, 5, 5, 1) 70%); padding: 120px 20px; text-align: center; border-top: 1px solid rgba(255,255,255,0.05); border-bottom: 1px solid rgba(255,255,255,0.05); }
+.playlist-content h2 { font-family: var(--font-title); font-size: 2.5rem; margin-bottom: 40px; color: var(--text-primary); }
+.playlist-content { display: flex; flex-direction: column; align-items: center; gap: 30px; }
+.playlist-cover-img { width: 280px; height: 280px; object-fit: cover; box-shadow: 0 15px 40px rgba(0,0,0,0.6); transition: transform 0.4s ease; border-radius: 4px; }
+.playlist-cover-img:hover { transform: scale(1.03); }
+.spotify-btn { display: inline-block; text-decoration: none; color: #fff; background: transparent; border: 1px solid rgba(255, 255, 255, 0.3); padding: 15px 45px; border-radius: 50px; font-family: var(--font-text); font-weight: 300; letter-spacing: 1px; transition: all 0.3s ease; }
+.spotify-btn:hover { background: var(--accent-orange); border-color: var(--accent-orange); color: #fff; transform: scale(1.05); box-shadow: 0 0 25px rgba(207, 92, 54, 0.4); }
+.role-text { color: var(--accent-orange); font-family: var(--font-title); font-style: italic; font-size: 1.1rem; margin-bottom: 20px; letter-spacing: 0.5px; }
+.bio-socials { display: flex; gap: 15px; margin-top: 25px; border-top: 1px solid rgba(255, 255, 255, 0.05); padding-top: 20px; }
+.social-btn.mini-btn { width: 40px; height: 40px; background: rgba(255, 255, 255, 0.05); border: none; }
+.social-btn.mini-btn:hover { background: var(--accent-orange); color: #fff; transform: scale(1.1); }
+h1, h2, h3 { font-weight: 300; }
