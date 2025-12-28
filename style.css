@@ -16,7 +16,6 @@
 html, body { scrollbar-width: none; -ms-overflow-style: none; }
 html { scroll-behavior: smooth; }
 html::-webkit-scrollbar, body::-webkit-scrollbar, *::-webkit-scrollbar { display: none; width: 0; height: 0; }
-
 /* --- BASE STYLES --- */
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body {
@@ -397,3 +396,4 @@ footer { text-align: center; padding: 30px; color: #333; font-size: 0.8rem; marg
 .social-btn.mini-btn { width: 40px; height: 40px; background: rgba(255, 255, 255, 0.05); border: none; }
 .social-btn.mini-btn:hover { background: var(--accent-orange); color: #fff; transform: scale(1.1); }
 h1, h2, h3 { font-weight: 300; }
+
