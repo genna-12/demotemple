@@ -2,7 +2,6 @@
  * Tiny Temple - Main JavaScript
  * Gestione globale: Navigazione, Menu Overlay, Scroll UI
  */
-
 document.addEventListener('DOMContentLoaded', () => {
     initNavigation();
     initFullscreenMenu();
