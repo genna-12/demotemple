@@ -2,6 +2,7 @@
  * Tiny Temple - Main JavaScript
  * Gestione globale: Navigazione, Menu Overlay, Scroll UI
  */
+
 document.addEventListener('DOMContentLoaded', () => {
     initNavigation();
     initFullscreenMenu();
@@ -25,10 +26,14 @@ function initNavigation() {
 
                 // Gestione visibilità UI
                 if (currentScrollY > lastScrollY && currentScrollY > 50) {
-                    navbar.classList.add('nav-hidden-scroll');
+                    // SCORRI GIÙ:
+                    // Navbar resta visibile (RIMOSSO nav-hidden-scroll)
+                    // I bottoni fluttuanti spariscono
                     floatBtns.forEach(btn => btn.classList.add('nav-hidden-scroll'));
                 } else {
-                    navbar.classList.remove('nav-hidden-scroll');
+                    // SCORRI SU:
+                    // Tutto visibile
+                    navbar.classList.remove('nav-hidden-scroll'); // Safety check
                     floatBtns.forEach(btn => btn.classList.remove('nav-hidden-scroll'));
                 }
 
@@ -70,7 +75,6 @@ function initFullscreenMenu() {
     if(menuLogo) {
         menuLogo.addEventListener('click', () => {
              document.body.classList.remove('menu-open');
-             // Se sei già in home, fa scroll top, altrimenti va alla home (handled by <a> tag usually)
              window.location.href = 'index.html';
         });
     }
