@@ -105,8 +105,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 'nav-portfolio': 'Portfolio',
                 'nav-contatti': 'Contact',
                 'hero-title': 'We build sounds together.',
-                'hero-subtitle': 'Where idea becomes frequency.',
-                'process-text': 'Listen &rarr; Build &rarr; Care',
+                'hero-subtitle': 'Listen &rarr; Build &rarr; Care',
+                //'process-text': 'Listen &rarr; Build &rarr; Care',
                 
                 'serv1-title': 'Music Production',
                 'serv1-text': 'We don\'t impose a sound, we find it inside you. From pre-production to arrangement, we give body to your vision.',
@@ -169,3 +169,4 @@ document.addEventListener('DOMContentLoaded', () => {
 
     initTranslation();
 });
+
