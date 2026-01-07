@@ -11,8 +11,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // 1. INIZIALIZZAZIONE LIGHT (Nessuna intro lunga)
     setTimeout(() => {
         document.body.classList.remove('loading-state');
-        if(heroTitle) heroTitle.classList.add('is-visible');
-        if(heroSubtitle) {
+        if (heroTitle) heroTitle.classList.add('is-visible');
+        if (heroSubtitle) {
             heroSubtitle.style.opacity = '0';
             heroSubtitle.style.transform = 'translateY(20px)';
             setTimeout(() => heroSubtitle.classList.add('is-visible'), 300);
@@ -27,17 +27,17 @@ document.addEventListener('DOMContentLoaded', () => {
     // 2. HERO IMAGE - SMART LOAD (Cartella services_main)
     const loadServicesHero = () => {
         const heroContainer = document.getElementById('hero-image-container');
-        
+
         // --- CONFIGURAZIONE ---
         // Sostituisci 3 con il numero reale di immagini che hai in services_main
-        const totalImages = 3; 
+        const totalImages = 3;
         // ----------------------
 
         const isMobile = window.innerWidth <= 768;
         const prefix = isMobile ? 'mobile_' : 'desktop_';
-        
+
         // Generiamo un numero nuovo a ogni refresh per varietà
-        const randomNum = Math.floor(Math.random() * totalImages) + 1; 
+        const randomNum = Math.floor(Math.random() * totalImages) + 1;
 
         // Percorso specifico per pagina Servizi
         const imageUrl = `assets/services_main/${prefix}${randomNum}.jpg`;
@@ -78,8 +78,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const scrolled = window.scrollY;
             document.querySelectorAll('.detail-img').forEach((img) => {
                 const parentBox = img.parentElement.parentElement; // picture -> div
-                if(!parentBox) return;
-                
+                if (!parentBox) return;
+
                 const parentTop = parentBox.offsetTop;
                 const parentHeight = parentBox.offsetHeight;
                 const windowHeight = window.innerHeight;
@@ -93,58 +93,87 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // 5. TRADUZIONI SERVIZI
+    // 5. TRADUZIONI SERVIZI CON PERSISTENZA
     const initTranslation = () => {
         const langBtn = document.getElementById('lang-btn');
         const langIcon = langBtn.querySelector('.lang-icon');
-        let currentLang = 'it'; 
+
+        // Recupera lingua salvata
+        let currentLang = localStorage.getItem('tinyTempleLang') || 'it';
 
         const translations = {
             'en': {
                 'nav-home': 'Home',
                 'nav-portfolio': 'Portfolio',
+                'nav-servizi': 'Services',
                 'nav-contatti': 'Contact',
+
                 'hero-title': 'We build sounds together.',
                 'hero-subtitle': 'Listen &rarr; Build &rarr; Care',
                 //'process-text': 'Listen &rarr; Build &rarr; Care',
-                
+
                 'serv1-title': 'Music Production',
                 'serv1-text': 'We don\'t impose a sound, we find it inside you. From pre-production to arrangement, we give body to your vision.',
-                
+
                 'serv2-title': 'Recording',
                 'serv2-text': 'We capture the moment. Carefully chosen microphones, warm preamps, and a room treated to enhance every nuance of the performance.',
-                
+
                 'serv3-title': 'Mixing & Mastering',
                 'serv3-text': 'Balance and depth. We sculpt the sound to make it three-dimensional and ready for the world, respecting the original dynamics.',
-                
+
                 'serv4-title': 'Art Direction',
                 'serv4-text': 'Beyond sound, there is identity. We guide you in stylistic choices to create a consistent, authentic, and recognizable project.',
-                
+
                 'cta-text': 'If you feel this is the right place, write to us.'
             },
             'it': {
                 'nav-home': 'Home',
                 'nav-portfolio': 'Portfolio',
+                'nav-servizi': 'Servizi',
                 'nav-contatti': 'Contatti',
+
                 'hero-title': 'Costruiamo suoni insieme.',
                 'hero-subtitle': 'Dove l\'idea diventa frequenza.',
                 'process-text': 'Ascolto &rarr; Costruzione &rarr; Cura',
-                
+
                 'serv1-title': 'Produzione Musicale',
                 'serv1-text': 'Non imponiamo un sound, lo cerchiamo dentro di te. Dalla pre-produzione all\'arrangiamento, diamo corpo alla tua visione.',
-                
+
                 'serv2-title': 'Recording',
                 'serv2-text': 'Catturiamo l\'istante. Microfoni scelti con cura, preamplificatori caldi e un ambiente trattato per esaltare ogni sfumatura della performance.',
-                
+
                 'serv3-title': 'Mixing & Mastering',
                 'serv3-text': 'Equilibrio e profondità. Scolpiamo il suono per renderlo tridimensionale e pronto per il mondo, rispettando la dinamica originale.',
-                
+
                 'serv4-title': 'Direzione Artistica',
                 'serv4-text': 'Oltre il suono, c\'è l\'identità. Ti guidiamo nelle scelte stilistiche per creare un progetto coerente, autentico e riconoscibile.',
-                
+
                 'cta-text': 'Se senti che è il posto giusto, scrivici.'
             }
         };
+
+        const applyLanguage = (lang, withAnimation = false) => {
+            const elements = document.querySelectorAll('[data-translate]');
+            elements.forEach(el => {
+                const key = el.getAttribute('data-translate');
+                if (translations[lang] && translations[lang][key]) {
+                    if (withAnimation) {
+                        el.style.opacity = '0';
+                        setTimeout(() => {
+                            el.innerHTML = translations[lang][key];
+                            el.style.opacity = '1';
+                        }, 300);
+                    } else {
+                        el.innerHTML = translations[lang][key];
+                    }
+                }
+            });
+        };
+
+        // Applica subito se necessario
+        if (currentLang !== 'it') {
+            applyLanguage(currentLang, false);
+        }
 
         langBtn.addEventListener('click', (e) => {
             e.preventDefault();
@@ -152,21 +181,11 @@ document.addEventListener('DOMContentLoaded', () => {
             setTimeout(() => langIcon.classList.remove('rotate-anim'), 500);
 
             currentLang = currentLang === 'it' ? 'en' : 'it';
-            const elements = document.querySelectorAll('[data-translate]');
-            
-            elements.forEach(el => {
-                const key = el.getAttribute('data-translate');
-                if (translations[currentLang][key]) {
-                    el.style.opacity = '0';
-                    setTimeout(() => {
-                        el.innerHTML = translations[currentLang][key];
-                        el.style.opacity = '1';
-                    }, 300);
-                }
-            });
+            localStorage.setItem('tinyTempleLang', currentLang);
+
+            applyLanguage(currentLang, true);
         });
     };
 
     initTranslation();
 });
-
