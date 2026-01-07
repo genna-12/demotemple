@@ -1,8 +1,8 @@
-/**
- * Tiny Temple - Home Page JavaScript
- * Ottimizzato per performance e caricamento asincrono
- */
 
+/**
+Tiny Temple - Home Page JavaScript
+Ottimizzato per performance e caricamento asincrono
+*/
 document.addEventListener('DOMContentLoaded', () => {
     const logoWrapper = document.getElementById('main-logo');
     const introLayer = document.getElementById('intro-layer');
@@ -27,28 +27,28 @@ document.addEventListener('DOMContentLoaded', () => {
             void logoWrapper.offsetWidth; // Force Reflow
             logoWrapper.classList.add('in-nav');
             introLayer.classList.add('intro-complete');
-            
+
             // SVELAMENTO UI
             navbar.classList.remove('hidden-nav');
             navbar.classList.add('nav-visible');
-            
+
             // Svela pulsanti fluttuanti
             document.querySelectorAll('.floating-btn').forEach(btn => {
                 btn.classList.remove('hidden-nav');
                 btn.classList.add('nav-visible');
             });
 
-            if(heroTitle) {
+            if (heroTitle) {
                 heroTitle.classList.add('is-visible');
             }
 
             logoWrapper.addEventListener('click', () => {
                 window.scrollTo({ top: 0, behavior: 'smooth' });
             });
-            
+
             document.body.classList.remove('loading-state');
 
-        }, 900); 
+        }, 900);
     };
 
     // Avvia intro immediatamente
@@ -58,21 +58,21 @@ document.addEventListener('DOMContentLoaded', () => {
     // 2. HERO IMAGE - SMART LOAD (Mobile/Desktop + Random N)
     const loadHeroImageAsync = () => {
         const heroContainer = document.getElementById('hero-image-container');
-        
+
         // --- CONFIGURAZIONE ---
-        const totalImages = 3; 
+        const totalImages = 3;
         // ----------------------
 
         // 1. Rileva dispositivo
         const isMobile = window.innerWidth <= 768;
-        
+
         // 2. Scegli prefisso file
         const prefix = isMobile ? 'mobile_' : 'desktop_';
 
         // 3. Genera numero casuale
         let randomNum = sessionStorage.getItem('heroImgNum');
         if (!randomNum) {
-            randomNum = Math.floor(Math.random() * totalImages) + 1; 
+            randomNum = Math.floor(Math.random() * totalImages) + 1;
             sessionStorage.setItem('heroImgNum', randomNum);
         }
 
@@ -81,18 +81,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // 4. Preload e Visualizzazione
         const imgPreloader = new Image();
-        
+
         imgPreloader.onload = () => {
             requestAnimationFrame(() => {
                 heroContainer.style.backgroundImage = `url('${imageUrl}')`;
-                heroContainer.style.opacity = '0.6'; 
+                heroContainer.style.opacity = '0.6';
             });
         };
 
         imgPreloader.onerror = () => {
             console.error(`Impossibile caricare: ${imageUrl}. Verifica che il file esista.`);
             heroContainer.style.backgroundImage = `url('assets/home_main/desktop_1.jpg')`;
-             heroContainer.style.opacity = '0.6';
+            heroContainer.style.opacity = '0.6';
         };
 
         imgPreloader.src = imageUrl;
@@ -139,14 +139,17 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // 5. GESTIONE TRADUZIONE (IT <-> EN)
+    // 5. GESTIONE TRADUZIONE (IT <-> EN) CON PERSISTENZA
     const initTranslation = () => {
         const langBtn = document.getElementById('lang-btn');
         const langIcon = langBtn.querySelector('.lang-icon');
-        let currentLang = 'it'; 
+
+        // Recupera la lingua salvata o usa 'it' come default
+        let currentLang = localStorage.getItem('tinyTempleLang') || 'it';
 
         const translations = {
             'en': {
+                'nav-home': 'Home',
                 'nav-portfolio': 'Portfolio',
                 'nav-servizi': 'Services',
                 'nav-contatti': 'Contact',
@@ -158,6 +161,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 'connect-title': 'Every track is born from collaboration.'
             },
             'it': {
+                'nav-home': 'Home',
                 'nav-portfolio': 'Portfolio',
                 'nav-servizi': 'Servizi',
                 'nav-contatti': 'Contatti',
@@ -170,25 +174,44 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         };
 
+        // Funzione helper per applicare il testo
+        const applyLanguage = (lang, withAnimation = false) => {
+            const elements = document.querySelectorAll('[data-translate]');
+            elements.forEach(el => {
+                const key = el.getAttribute('data-translate');
+                if (translations[lang] && translations[lang][key]) {
+                    if (withAnimation) {
+                        el.style.opacity = '0';
+                        el.style.transition = 'opacity 0.3s ease';
+                        setTimeout(() => {
+                            el.innerHTML = translations[lang][key];
+                            el.style.opacity = '1';
+                        }, 300);
+                    } else {
+                        // Applicazione immediata al caricamento pagina
+                        el.innerHTML = translations[lang][key];
+                    }
+                }
+            });
+        };
+
+        // Applicazione iniziale (se diversa da IT)
+        if (currentLang !== 'it') {
+            applyLanguage(currentLang, false);
+        }
+
         langBtn.addEventListener('click', (e) => {
             e.preventDefault();
             langIcon.classList.add('rotate-anim');
             setTimeout(() => langIcon.classList.remove('rotate-anim'), 500);
 
+            // Toggle lingua
             currentLang = currentLang === 'it' ? 'en' : 'it';
-            const elements = document.querySelectorAll('[data-translate]');
-            
-            elements.forEach(el => {
-                const key = el.getAttribute('data-translate');
-                if (translations[currentLang][key]) {
-                    el.style.opacity = '0';
-                    el.style.transition = 'opacity 0.3s ease';
-                    setTimeout(() => {
-                        el.innerHTML = translations[currentLang][key];
-                        el.style.opacity = '1';
-                    }, 300);
-                }
-            });
+
+            // Salva preferenza
+            localStorage.setItem('tinyTempleLang', currentLang);
+
+            applyLanguage(currentLang, true);
         });
     };
 
