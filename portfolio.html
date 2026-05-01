@@ -5,6 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tiny Temple | Portfolio</title>
+    <link rel="icon" type="image/png" href="assets/trasparente.ico">
 
     <script src="preload.js"></script>
     <link rel="preload" href="assets/trasparente.png" as="image">
@@ -46,157 +47,105 @@
     </div>
 
     <main>
-        <!-- Hero Minimale -->
-        <section class="portfolio-hero">
-            <h1 class="fade-in-up" data-translate="port-hero">Alcuni dei mondi che abbiamo attraversato.</h1>
-        </section>
+<!-- Testo Gigante Scorrevole (Sfondo Dinamico Multi-Livello) -->
+        <div class="marquee-section">
+            <div class="marquee-track">
+                <div class="marquee-text">ANALOG HEART &nbsp;•&nbsp; DIGITAL MIND &nbsp;•&nbsp; SOUND IS A RITUAL
+                    &nbsp;•&nbsp; ANALOG HEART &nbsp;•&nbsp; DIGITAL MIND &nbsp;•&nbsp; SOUND IS A RITUAL &nbsp;•&nbsp;
+                </div>
+            </div>
+            <div class="marquee-track">
+                <div class="marquee-text reverse outline">CREATIVE VISION &nbsp;•&nbsp; NO FILTERS &nbsp;•&nbsp; PURE
+                    FREQUENCIES &nbsp;•&nbsp; CREATIVE VISION &nbsp;•&nbsp; NO FILTERS &nbsp;•&nbsp; PURE FREQUENCIES
+                    &nbsp;•&nbsp;</div>
+            </div>
+            <div class="marquee-track">
+                <div class="marquee-text">ORGANIC SOUND &nbsp;•&nbsp; WOOD AND TUBES &nbsp;•&nbsp; SONIC ALCHEMY
+                    &nbsp;•&nbsp; ORGANIC SOUND &nbsp;•&nbsp; WOOD AND TUBES &nbsp;•&nbsp; SONIC ALCHEMY &nbsp;•&nbsp;
+                </div>
+            </div>
+            <div class="marquee-track">
+                <div class="marquee-text reverse outline">VOLTAGE CONTROL &nbsp;•&nbsp; SONIC TEXTURES &nbsp;•&nbsp;
+                    OBSESSION FOR DETAIL &nbsp;•&nbsp; VOLTAGE CONTROL &nbsp;•&nbsp; SONIC TEXTURES &nbsp;•&nbsp;
+                    OBSESSION FOR DETAIL &nbsp;•&nbsp;</div>
+            </div>
+            <div class="marquee-track">
+                <div class="marquee-text">RAW SIGNALS &nbsp;•&nbsp; HARMONIC DISTORTION &nbsp;•&nbsp; TRANSIENT DESIGN
+                    &nbsp;•&nbsp; RAW SIGNALS &nbsp;•&nbsp; HARMONIC DISTORTION &nbsp;•&nbsp; TRANSIENT DESIGN
+                    &nbsp;•&nbsp;</div>
+            </div>
+        </div>
 
-        <!-- Griglia Portfolio -->
-        <section class="portfolio-grid-section">
-            <div class="portfolio-grid">
+        <!-- COVERFLOW PLAYER SECTION -->
+        <section class="coverflow-section">
+            
+            <!-- Info Dinamiche Top (Super minimali) -->
+            <div class="mp-text-info-dynamic">
+                <h2 id="mp-dynamic-title" class="mp-dynamic-title">Titolo</h2>
+                <p id="mp-dynamic-artist" class="mp-dynamic-artist">Artista</p>
+                <p id="mp-dynamic-song" class="mp-song-detail" style="display:none;">Brano: <span id="mp-song-name">...</span></p>
+            </div>
 
-                <!-- Item 1 -->
-                <a href="https://open.spotify.com/intl-it/album/1Ki813sOi4DpRX9gCc1XTb?si=kL_MFdL4SoO5C7avGwQKqg" target="_blank" class="cover-card scroll-reveal">
-                    <img src="assets/portfolio_covers/cover_1.webp" alt="EDODACAPO - tutto bene" fetchpriority="high">
-                    <div class="cover-overlay">
-                        <span class="project-title">EDODACAPO - tutto bene</span>
+            <!-- Carousel 3D -->
+            <div id="mp-carousel" class="mp-carousel">
+                <!-- Immagini generate dal JS -->
+            </div>
+            
+            <!-- Player UI Inferiore (Stile iOS Lockscreen) -->
+            <div class="player-bottom-ui">
+                
+                <!-- Progress Bar SOPRA i bottoni -->
+                <div class="mp-progress-wrapper">
+                    <span id="mp-time-current">0:00</span>
+                    <div class="mp-progress-bar" id="mp-progress-container">
+                        <div class="mp-progress-fill" id="mp-progress-fill"></div>
                     </div>
-                </a>
+                    <span id="mp-time-total">0:00</span>
+                </div>
 
-                <!-- Item 2 -->
-                <a href="https://open.spotify.com/intl-it/album/5RNBlmDZEGIrGZWnBMahBx?si=kYoPnNQPRHu9tFlFdoQ3NA" target="_blank" class="cover-card scroll-reveal">
-                    <img src="assets/portfolio_covers/cover_2.webp" alt="España Circo Este - Canzoni per la decrescita felice" fetchpriority="high">
-                    <div class="cover-overlay">
-                        <span class="project-title">España Circo Este - Canzoni per la decrescita felice</span>
+                <!-- Controlli Playback con Griglia (Centratura Assoluta) -->
+                <div class="mp-buttons-grid">
+                    
+                    <!-- LATO SINISTRO (Badge Album + Prev) -->
+                    <div class="mp-ctrl-side left">
+                        <span id="mp-dynamic-type" class="mp-badge-inline">Album</span>
+                        <button id="mp-prev" class="mp-btn"><svg viewBox="0 0 24 24" fill="currentColor" width="22" height="22"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg></button>
                     </div>
-                </a>
-
-                <!-- Item 3 -->
-                <a href="https://open.spotify.com/intl-it/album/2lndT5UBQ4MsmB9mfZ60cd?si=PR29RfpESsmN5Y3zy9CbGw" target="_blank" class="cover-card scroll-reveal">
-                    <img src="assets/portfolio_covers/cover_3.webp" alt="Corner in Bloom - " fetchpriority="high">
-                    <div class="cover-overlay">
-                        <span class="project-title">Corner in Bloom - Breakfast</span>
+                    
+                    <!-- CENTRO (Play/Pause) -->
+                    <div class="mp-ctrl-center">
+                        <button id="mp-play" class="mp-btn mp-play-btn">
+                            <svg id="mp-icon-play" viewBox="0 0 24 24" fill="currentColor" width="28" height="28"><path d="M8 5v14l11-7z"/></svg>
+                            <svg id="mp-icon-pause" viewBox="0 0 24 24" fill="currentColor" width="28" height="28" style="display:none;"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+                        </button>
                     </div>
-                </a>
-
-                <!-- Item 4 -->
-                <a href="https://open.spotify.com/intl-it/album/0chcpZo5oBoXe7AaV9QBrz?si=k1tmEDIxQPG4-6yHlvNG4A" target="_blank" class="cover-card scroll-reveal">
-                    <img src="assets/portfolio_covers/cover_4.webp" alt="Maura - storie di arcieri e altri animali" loading="lazy">
-                    <div class="cover-overlay">
-                        <span class="project-title">Maura - storie di arcieri e altri animali</span>
+                    
+                    <!-- LATO DESTRO (Next + Spotify) -->
+                    <div class="mp-ctrl-side right">
+                        <button id="mp-next" class="mp-btn"><svg viewBox="0 0 24 24" fill="currentColor" width="22" height="22"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg></button>
+                        <a id="mp-spotify-btn" href="#" target="_blank" class="mp-btn spotify-player-btn" title="Ascolta su Spotify">
+                            <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.24 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.84.24 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.6.18-1.2.72-1.38 4.2-1.26 11.28-1.02 15.72 1.621.539.3.719 1.02.419 1.56-.239.54-.959.72-1.559.3z"/></svg>
+                        </a>
                     </div>
-                </a>
-
-                <!-- Item 5 -->
-                <a href="https://open.spotify.com/intl-it/album/7lcFADq6EULl5O42v3SsfM?si=fuZl6FRQRdml8zaYxwvTTw" target="_blank" class="cover-card scroll-reveal">
-                    <img src="assets/portfolio_covers/cover_5.webp" alt="Santi - Non so più correre" loading="lazy">
-                    <div class="cover-overlay">
-                        <span class="project-title">Santi - Non so più correre</span>
-                    </div>
-                </a>
-
-                <!-- Item 6 -->
-                <a href="https://open.spotify.com/intl-it/album/0qy84P5cRjPa0BAWabTp00?si=VyeisAXBTnG3NyW1_OuK3Q" target="_blank" class="cover-card scroll-reveal">
-                    <img src="assets/portfolio_covers/cover_6.webp" alt="Clemente Guidi - Straordinarie Primavere" loading="lazy">
-                    <div class="cover-overlay">
-                        <span class="project-title">Clemente Guidi - Straordinarie Primavere</span>
-                    </div>
-                </a>
-
-                <!-- Item 7 -->
-                <a href="https://open.spotify.com/intl-it/album/3IBhGA2HsfvPPMpRqleJes?si=eO0Kc4BtTXCSBqk2mrMn-A" target="_blank" class="cover-card scroll-reveal">
-                    <img src="assets/portfolio_covers/cover_7.webp" alt="STRE - Carpe die" loading="lazy">
-                    <div class="cover-overlay">
-                        <span class="project-title">STRE - Carpe die</span>
-                    </div>
-                </a>
-
-                <!-- Item 8 -->
-                <a href="https://open.spotify.com/intl-it/album/0uzeXYj3sAYOF1CgoGN6rE?si=hNqI6g5IQH-qCH9uSHiI8A" target="_blank" class="cover-card scroll-reveal">
-                    <img src="assets/portfolio_covers/cover_8.webp" alt="TiBi - Tu Da Me" loading="lazy">
-                    <div class="cover-overlay">
-                        <span class="project-title">TiBi - Tu Da Me</span>
-                    </div>
-                </a>
-
-                <!-- Item 9 -->
-                <a href="https://open.spotify.com/intl-it/album/3JJTfTdtAbPEhH8SIJrn1h?si=ctYfXDRaTjuSB7TXqcFltg" target="_blank" class="cover-card scroll-reveal">
-                    <img src="assets/portfolio_covers/cover_9.webp" alt="Visioni di Cody & Max Penombra - Restate Come Siete" loading="lazy">
-                    <div class="cover-overlay">
-                        <span class="project-title">Visioni di Cody & Max Penombra - Restate Come Siete</span>
-                    </div>
-                </a>
-
-                <!-- Item 10 -->
-                <a href="https://open.spotify.com/intl-it/album/4JxqttXHh2g7MyWjFANmT0?si=lZD8YNwwQ22NbFJznlmHYg" target="_blank" class="cover-card scroll-reveal">
-                    <img src="assets/portfolio_covers/cover_10.webp" alt="MANGO DREAM - Maldive" loading="lazy">
-                    <div class="cover-overlay">
-                        <span class="project-title">MANGO DREAM - Maldive</span>
-                    </div>
-                </a>
-
-                <!-- Item 11 -->
-                <a href="https://open.spotify.com/intl-it/album/6OZa0WGIyhE18hWoAhiLOo?si=Ew7MjQF7Q8OlxEOrRtw6Zg" target="_blank" class="cover-card scroll-reveal">
-                    <img src="assets/portfolio_covers/cover_11.webp" alt="My Girl Is Retro - Radici" loading="lazy">
-                    <div class="cover-overlay">
-                        <span class="project-title">My Girl Is Retro - Radici</span>
-                    </div>
-                </a>
-
-                <!-- Item 12 -->
-                <a href="https://open.spotify.com/intl-it/album/4TTGgb7iBJ7WJGJLdY3Xbm?si=E1TlO20WRLWYjdvI3OmxqA" target="_blank" class="cover-card scroll-reveal">
-                    <img src="assets/portfolio_covers/cover_12.webp" alt="Maura - Lacci" loading="lazy">
-                    <div class="cover-overlay">
-                        <span class="project-title">Maura - Lacci</span>
-                    </div>
-                </a>
-
-                <!-- Item 13 -->
-                <a href="https://open.spotify.com/intl-it/album/03CUTGzybeijvohpiyXMN0?si=WsIhfJhmSzq3rj4k-E74KQ" target="_blank" class="cover-card scroll-reveal">
-                    <img src="assets/portfolio_covers/cover_13.webp" alt="Corner in Bloom - Lemon" loading="lazy">
-                    <div class="cover-overlay">
-                        <span class="project-title">Corner in Bloom - Lemon</span>
-                    </div>
-                </a>
-
-                <!-- Item 14 -->
-                <a href="https://open.spotify.com/intl-it/album/5qiw4a5WupiR0KeqJpTL0Z?si=6-l8Xy97R0-se6faIsEK6Q" target="_blank" class="cover-card scroll-reveal">
-                    <img src="assets/portfolio_covers/cover_14.webp" alt="Santi - ciaociaoamore" loading="lazy">
-                    <div class="cover-overlay">
-                        <span class="project-title">Santi - ciaociaoamore</span>
-                    </div>
-                </a>
-
-                <!-- Item 15 -->
-                <a href="https://open.spotify.com/intl-it/album/48MlZ37NjHyumT3gMlep0c?si=Alr8Hv1kQBqou_nf1ItcCA" target="_blank" class="cover-card scroll-reveal">
-                    <img src="assets/portfolio_covers/cover_15.webp" alt="TiBi - Fuori Stagione" loading="lazy">
-                    <div class="cover-overlay">
-                        <span class="project-title">TiBi - Fuori Stagione</span>
-                    </div>
-                </a>
+                    
+                </div>
             </div>
         </section>
 
-        <!-- Visual Break -->
-        <section class="visual-break scroll-reveal">
-            <p data-translate="visual-break">Ogni progetto è importante.</p>
-        </section>
-
-        <!-- Sezione Playlist -->
-        <section class="playlist-section scroll-reveal">
-            <div class="playlist-content">
-                <h2 data-translate="playlist-title">La nostra playlist. Senza filtri.</h2>
-
-                <a href="https://open.spotify.com/playlist/5lHxaIeBISgtfHPiueRs2a?si=YirNwScRSoaF6_5M43S7gw&pi=fM1RykRTQa-BP" target="_blank">
-                    <img src="assets/playlist_cover.jpg" alt="Tiny Temple Playlist" class="playlist-cover-img"
-                        loading="lazy">
-                </a>
-
-                <a href="https://open.spotify.com/playlist/5lHxaIeBISgtfHPiueRs2a?si=YirNwScRSoaF6_5M43S7gw&pi=fM1RykRTQa-BP" target="_blank" class="spotify-btn"
-                    data-translate="playlist-btn">
-                    Ascolta su Spotify
-                </a>
+        <!-- TRACKLIST / TABELLA -->
+        <section class="tracklist-container scroll-reveal">
+            <!-- Intestazione -->
+            <div class="tracklist-header">
+                <div class="col-play"></div>
+                <div class="col-cover"></div>
+                <div class="col-title">Brano</div>
+                <div class="col-artist">Artista</div>
+                <div class="col-genre">Genere</div>
+                <div class="col-roles">Lavoro</div>
+                <div class="col-time">Time</div>
             </div>
+            <!-- Corpo Tabella -->
+            <div id="tracklist-body"></div>
         </section>
 
         <!-- NUOVA SEZIONE: Connect / Collaborazione -->
