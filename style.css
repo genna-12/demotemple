@@ -614,9 +614,36 @@ h1, h2, h3 { font-weight: 300; }
     overflow: hidden; position: relative; z-index: 5;
 }
 
-/* Info Dinamiche Top (Minimali) */
-.mp-text-info-dynamic { text-align: center; margin-bottom: 5px; display: flex; flex-direction: column; align-items: center; z-index: 10; }
-.mp-dynamic-title { font-family: var(--font-title); font-size: 1.8rem; font-style: italic; color: var(--text-primary); margin-bottom: 2px; line-height: 1.1; }
+/* Info Dinamiche Top (Con altezze fisse anti-salto) */
+.mp-text-info-dynamic { 
+    text-align: center; 
+    margin-bottom: 5px; 
+    display: flex; 
+    flex-direction: column; 
+    align-items: center; 
+    z-index: 10;
+    /* Diamo un'altezza fissa al blocco intero */
+    height: 110px; 
+    justify-content: flex-end;
+}
+
+.mp-dynamic-title { 
+    font-family: var(--font-title); 
+    font-size: 1.8rem; 
+    font-style: italic; 
+    color: var(--text-primary); 
+    line-height: 1.1;
+    margin-bottom: 2px;
+    /* Fissiamo l'altezza del titolo per 2 righe esatte */
+    height: 4rem; 
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    /* Se il testo è troppo lungo, andrà a capo ma non allargherà il div */
+    overflow: hidden; 
+}
+
 .mp-dynamic-artist { font-size: 1rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 2px; }
 .mp-song-detail { font-size: 0.8rem; color: #fff; margin-top: 5px; opacity: 0.7; font-style: italic; }
 .mp-song-detail span { color: var(--accent-orange); font-weight: bold; }
