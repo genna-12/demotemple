@@ -171,18 +171,11 @@ body.menu-open #fullscreen-menu {
     position: absolute; 
     top: 0; left: 0; 
     width: 100%; height: 100%;
-    background-image: url('assets/sfondo_menu_desktop.jpg');
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
     filter: brightness(0.3);
     z-index: 1;
-}
-
-@media (max-width: 768px) {
-    .menu-bg {
-        background-image: url('assets/sfondo_menu_mobile.jpg');
-    }
 }
 
 .menu-content {
