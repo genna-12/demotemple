@@ -54,9 +54,10 @@ document.addEventListener('DOMContentLoaded', () => {
         img.className = 'carousel-item';
         
         img.addEventListener('click', () => {
+            if (dragSuppressClick) return; // Ignora il click se arriva subito dopo un drag
             if (currentIndex !== i) {
                 loadTrack(i);
-                if(isPlaying) playAudio();
+                playAudio(); // Click diretto su una cover = parte subito, come su Spotify
             } else {
                 togglePlay();
             }
@@ -153,36 +154,80 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById(`track-${currentIndex}`).classList.add('playing');
     }
 
-    // === SCROLL FLUIDO (Accumulatore Wheel) ===
+    // === SCROLL FLUIDO UNIFICATO (Rotellina + Drag Mouse + Swipe Touch) ===
+    const SCROLL_THRESHOLD = 60;
     let wheelDelta = 0;
+    let dragSuppressClick = false; // Evita che un drag venga interpretato come click sulla cover
+
+    function stepCarousel(delta) {
+        wheelDelta += delta;
+        if (wheelDelta > SCROLL_THRESHOLD) {
+            loadTrack((currentIndex + 1) % portfolioData.length);
+            if (isPlaying) playAudio();
+            wheelDelta = 0;
+        } else if (wheelDelta < -SCROLL_THRESHOLD) {
+            loadTrack((currentIndex - 1 + portfolioData.length) % portfolioData.length);
+            if (isPlaying) playAudio();
+            wheelDelta = 0;
+        }
+    }
+
+    // --- Rotellina (Desktop) ---
     mpCarousel.addEventListener('wheel', (e) => {
         e.preventDefault();
-        // Accumula il movimento
-        wheelDelta += (Math.abs(e.deltaX) > Math.abs(e.deltaY)) ? e.deltaX : e.deltaY;
-        
-        // Se superi la soglia scatta il cambio traccia! (Rende tutto velocissimo ma morbido)
-        if (wheelDelta > 60) {
-            loadTrack((currentIndex + 1) % portfolioData.length);
-            if(isPlaying) playAudio();
-            wheelDelta = 0;
-        } else if (wheelDelta < -60) {
-            loadTrack((currentIndex - 1 + portfolioData.length) % portfolioData.length);
-            if(isPlaying) playAudio();
-            wheelDelta = 0;
-        }
-    }, {passive: false});
+        stepCarousel((Math.abs(e.deltaX) > Math.abs(e.deltaY)) ? e.deltaX : e.deltaY);
+    }, { passive: false });
 
-    // Swipe Mobile
-    let touchStartX = 0;
-    mpCarousel.addEventListener('touchstart', e => { touchStartX = e.changedTouches[0].screenX; }, {passive: true});
-    mpCarousel.addEventListener('touchend', e => {
-        let touchEndX = e.changedTouches[0].screenX;
-        if(touchStartX - touchEndX > 40) { 
-            loadTrack((currentIndex + 1) % portfolioData.length); if(isPlaying) playAudio();
-        } else if (touchEndX - touchStartX > 40) {
-            loadTrack((currentIndex - 1 + portfolioData.length) % portfolioData.length); if(isPlaying) playAudio();
-        }
-    }, {passive: true});
+    // --- Drag con Mouse (Click + Trascina, Desktop) ---
+    let isDragging = false;
+    let lastPointerX = 0;
+    let dragDistance = 0;
+
+    mpCarousel.addEventListener('mousedown', (e) => {
+        isDragging = true;
+        dragSuppressClick = false;
+        dragDistance = 0;
+        wheelDelta = 0;
+        lastPointerX = e.clientX;
+        mpCarousel.classList.add('is-dragging');
+    });
+
+    window.addEventListener('mousemove', (e) => {
+        if (!isDragging) return;
+        const delta = lastPointerX - e.clientX;
+        dragDistance += Math.abs(delta);
+        if (dragDistance > 5) dragSuppressClick = true; // oltre 5px è un drag, non un click
+        stepCarousel(delta);
+        lastPointerX = e.clientX;
+    });
+
+    window.addEventListener('mouseup', () => {
+        if (!isDragging) return;
+        isDragging = false;
+        wheelDelta = 0;
+        mpCarousel.classList.remove('is-dragging');
+        // Piccolo ritardo per far ignorare al click che segue il mouseup dopo un drag
+        if (dragSuppressClick) setTimeout(() => { dragSuppressClick = false; }, 50);
+    });
+
+    // --- Swipe Touch (Mobile) — progressivo, non solo a fine gesto ---
+    let lastTouchX = 0;
+
+    mpCarousel.addEventListener('touchstart', (e) => {
+        lastTouchX = e.changedTouches[0].screenX;
+        wheelDelta = 0;
+    }, { passive: true });
+
+    mpCarousel.addEventListener('touchmove', (e) => {
+        const currentX = e.changedTouches[0].screenX;
+        const delta = lastTouchX - currentX;
+        stepCarousel(delta);
+        lastTouchX = currentX;
+    }, { passive: true });
+
+    mpCarousel.addEventListener('touchend', () => {
+        wheelDelta = 0;
+    }, { passive: true });
 
     // === CONTROLLI PLAYBACK ===
     function playAudio() { currentAudio.play().catch(e => console.log("Attesa audio fisici")); isPlaying = true; updatePlayIcons(true); }

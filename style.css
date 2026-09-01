@@ -646,9 +646,10 @@ h1, h2, h3 { font-weight: 300; }
     position: relative; width: 100vw; height: 360px;
     perspective: 1000px; transform-style: preserve-3d;
     display: flex; justify-content: center; align-items: center;
-    margin-bottom: 15px; cursor: grab;
+    margin-bottom: 15px; cursor: grab; touch-action: pan-y;
 }
 .mp-carousel:active { cursor: grabbing; }
+.mp-carousel.is-dragging { cursor: grabbing; user-select: none; -webkit-user-select: none; touch-action: pan-y; }
 
 .carousel-item {
     position: absolute; left: 50%; top: 50%;
