@@ -804,7 +804,8 @@ h1.is-visible {
 }
 
 .floating-btn:active {
-    transform: translateY(-2px) scale(0.96) !important;
+    transform: translateY(-2px) scale(0.95) !important;
+    transition: transform 0.1s ease !important;
 }
 
 /* EFFETTI HOVER / TOUCH ACTIVE (Spatial Experience) */
@@ -1994,5 +1995,47 @@ h1, h2, h3 { font-weight: 300; }
     .form-grid {
         grid-template-columns: 1fr;
         gap: 16px;
+    }
+
+    .floating-btn:hover {
+        transform: translateY(-6px) scale(1.08) !important;
+        border-color: rgba(255, 255, 255, 0.5);
+        box-shadow: 
+            0 20px 35px rgba(0, 0, 0, 0.8),
+            inset 0 1px 3px rgba(255, 255, 255, 0.6);
+    }
+
+    #wa-btn:hover {
+        background: linear-gradient(135deg, rgba(255, 255, 255, 0.22) 0%, rgba(37, 211, 102, 0.2) 100%);
+        box-shadow: 
+            0 15px 30px rgba(37, 211, 102, 0.25),
+            0 10px 20px rgba(0, 0, 0, 0.8),
+            inset 0 1px 3px rgba(255, 255, 255, 0.6);
+    }
+
+    #lang-btn:hover {
+        background: linear-gradient(135deg, rgba(255, 255, 255, 0.22) 0%, rgba(207, 92, 54, 0.18) 100%);
+        box-shadow: 
+            0 15px 30px rgba(207, 92, 54, 0.2),
+            0 10px 20px rgba(0, 0, 0, 0.8),
+            inset 0 1px 3px rgba(255, 255, 255, 0.6);
+    }
+
+    .floating-btn:hover::before {
+        opacity: 1;
+        transform: scale(1.1);
+    }
+
+    #wa-btn:hover svg {
+        fill: #ffffff !important;
+        transform: scale(1.1);
+        filter: drop-shadow(0 0 8px rgba(37, 211, 102, 0.6));
+    }
+
+    #lang-btn:hover .lang-icon {
+        stroke: #ffffff !important;
+        fill: none !important;
+        transform: scale(1.1);
+        filter: drop-shadow(0 0 8px rgba(207, 92, 54, 0.6));
     }
 }
