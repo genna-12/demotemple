@@ -184,6 +184,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let dragStartX = 0;
     let liveDragOffset = 0; // in "frazioni di carosello": 0 = fermo, 1 = una cover di distanza
     let dragTravelPx = 0;   // distanza assoluta percorsa, per distinguere un click da un drag
+    let dragSamples = [];   // {x, t} recenti, per calcolare la velocità del flick al rilascio
 
     function startLiveDrag(clientX) {
         isLiveDragging = true;
@@ -191,16 +192,22 @@ document.addEventListener('DOMContentLoaded', () => {
         dragTravelPx = 0;
         dragStartX = clientX;
         liveDragOffset = 0;
+        dragSamples = [{ x: clientX, t: performance.now() }];
         mpCarousel.classList.add('is-dragging'); // disattiva la transition CSS per seguire il dito 1:1
     }
 
     function moveLiveDrag(clientX) {
         if (!isLiveDragging) return;
+        const now = performance.now();
         const deltaPx = dragStartX - clientX;
         dragTravelPx = Math.max(dragTravelPx, Math.abs(deltaPx));
         if (dragTravelPx > 5) dragSuppressClick = true; // oltre 5px è un drag, non più un click
         liveDragOffset = deltaPx / CARD_STEP_PX;
         updateCarousel(liveDragOffset); // aggiorna la posizione visiva ad ogni pixel, niente scatti
+
+        dragSamples.push({ x: clientX, t: now });
+        const cutoff = now - 100; // tieni solo ~100ms di storico: è la velocità ISTANTANEA al rilascio che conta
+        while (dragSamples.length > 2 && dragSamples[0].t < cutoff) dragSamples.shift();
     }
 
     function endLiveDrag() {
@@ -208,15 +215,41 @@ document.addEventListener('DOMContentLoaded', () => {
         isLiveDragging = false;
         mpCarousel.classList.remove('is-dragging'); // riattiva la transition per l'assestamento finale
 
-        const steps = Math.round(liveDragOffset);
+        // Velocità del flick negli ultimi ~100ms (px/ms): è questa che manca per l'inerzia "alla Apple"
+        let velocityPxMs = 0;
+        if (dragSamples.length >= 2) {
+            const first = dragSamples[0];
+            const last = dragSamples[dragSamples.length - 1];
+            const dt = last.t - first.t;
+            if (dt > 0) velocityPxMs = (first.x - last.x) / dt; // positivo = flick verso sinistra (avanti)
+        }
+
+        // Proietta quanta strada farebbe ancora il carosello per inerzia, come uno scroll nativo,
+        // così anche un flick breve ma veloce può "portare" oltre la cover successiva.
+        const MOMENTUM_FACTOR = 110; // ms equivalenti di scorrimento aggiuntivo dopo il rilascio del dito
+        const projectedOffset = liveDragOffset + (velocityPxMs * MOMENTUM_FACTOR) / CARD_STEP_PX;
+
+        let steps = Math.round(projectedOffset);
+        steps = Math.max(-4, Math.min(4, steps)); // limite di sicurezza per flick fortissimi
+
         if (steps !== 0) {
             const newIndex = (currentIndex + steps + portfolioData.length * 10) % portfolioData.length;
-            loadTrack(newIndex); // loadTrack chiama updateCarousel(0): anima dolcemente fino alla posizione esatta
+            // Più il carosello deve "correre" per raggiungere il target, più la transizione dura:
+            // è questo che dà la sensazione di decelerazione graduale invece di uno stop secco.
+            const travel = Math.abs(steps - liveDragOffset);
+            const duration = Math.min(0.9, 0.35 + travel * 0.12);
+            coverElements.forEach(img => { img.style.transitionDuration = `${duration}s`; });
+            loadTrack(newIndex); // loadTrack chiama updateCarousel(0): anima fino alla posizione esatta
             if (isPlaying) playAudio();
+            setTimeout(() => {
+                coverElements.forEach(img => { img.style.transitionDuration = ''; }); // torna al default 0.4s
+            }, duration * 1000 + 50);
         } else {
             updateCarousel(0); // sotto la soglia di uno scatto: torna elasticamente al punto di partenza
         }
+
         liveDragOffset = 0;
+        dragSamples = [];
         if (dragSuppressClick) setTimeout(() => { dragSuppressClick = false; }, 50);
     }
 
