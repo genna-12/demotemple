@@ -186,7 +186,57 @@ document.addEventListener('DOMContentLoaded', () => {
     let dragTravelPx = 0;   // distanza assoluta percorsa, per distinguere un click da un drag
     let dragSamples = [];   // {x, t} recenti, per calcolare la velocità del flick al rilascio
 
+    // --- Motore di inerzia (requestAnimationFrame): la VERA fluidità nativa sta qui.
+    // Non si salta subito alla card di destinazione: si continua a muovere la posizione
+    // frame per frame secondo la velocità del flick, che decade per attrito ad ogni frame,
+    // finché non è abbastanza lenta da agganciarsi (snap) alla card più vicina.
+    const FRICTION = 0.94;              // quanta velocità resta ad ogni frame (a 60fps): più alto = scorre più a lungo
+    const VELOCITY_STOP = 0.0006;       // sotto questa velocità (card/ms) consideriamo il movimento esaurito
+    const MIN_FLING_VELOCITY = 0.05;    // sopra questa velocità (card/ms) al rilascio, si attiva l'inerzia
+    let momentumVelocity = 0;           // card/ms
+    let momentumRAF = null;
+
+    function cancelMomentum() {
+        if (momentumRAF) { cancelAnimationFrame(momentumRAF); momentumRAF = null; }
+    }
+
+    function runMomentum() {
+        let lastT = performance.now();
+        const frame = (now) => {
+            const dt = Math.min(now - lastT, 48); // clamp per evitare salti se il tab perde il focus
+            lastT = now;
+
+            liveDragOffset += momentumVelocity * dt;
+            updateCarousel(liveDragOffset);
+
+            const decay = Math.pow(FRICTION, dt / 16.6667); // decadimento indipendente dal framerate
+            momentumVelocity *= decay;
+
+            if (Math.abs(momentumVelocity) < VELOCITY_STOP) {
+                settleToNearestCard();
+                return;
+            }
+            momentumRAF = requestAnimationFrame(frame);
+        };
+        momentumRAF = requestAnimationFrame(frame);
+    }
+
+    function settleToNearestCard() {
+        cancelMomentum();
+        mpCarousel.classList.remove('is-dragging'); // riattiva la transition CSS solo per l'ultimo, breve aggancio
+        const steps = Math.round(liveDragOffset);
+        liveDragOffset = 0;
+        if (steps !== 0) {
+            const newIndex = (currentIndex + steps + portfolioData.length * 10) % portfolioData.length;
+            loadTrack(newIndex); // loadTrack chiama updateCarousel(0): anima dolcemente fino alla posizione esatta
+            if (isPlaying) playAudio();
+        } else {
+            updateCarousel(0); // sotto la soglia di uno scatto: torna elasticamente al punto di partenza
+        }
+    }
+
     function startLiveDrag(clientX) {
+        cancelMomentum(); // se stava ancora "scorrendo" da un flick precedente, il nuovo tocco lo interrompe subito
         isLiveDragging = true;
         dragSuppressClick = false;
         dragTravelPx = 0;
@@ -213,9 +263,8 @@ document.addEventListener('DOMContentLoaded', () => {
     function endLiveDrag() {
         if (!isLiveDragging) return;
         isLiveDragging = false;
-        mpCarousel.classList.remove('is-dragging'); // riattiva la transition per l'assestamento finale
 
-        // Velocità del flick negli ultimi ~100ms (px/ms): è questa che manca per l'inerzia "alla Apple"
+        // Velocità del flick negli ultimi ~100ms (card/ms)
         let velocityPxMs = 0;
         if (dragSamples.length >= 2) {
             const first = dragSamples[0];
@@ -223,32 +272,15 @@ document.addEventListener('DOMContentLoaded', () => {
             const dt = last.t - first.t;
             if (dt > 0) velocityPxMs = (first.x - last.x) / dt; // positivo = flick verso sinistra (avanti)
         }
+        const velocityCardsMs = velocityPxMs / CARD_STEP_PX;
 
-        // Proietta quanta strada farebbe ancora il carosello per inerzia, come uno scroll nativo,
-        // così anche un flick breve ma veloce può "portare" oltre la cover successiva.
-        const MOMENTUM_FACTOR = 850; // ms equivalenti di scorrimento aggiuntivo dopo il rilascio del dito
-        const projectedOffset = liveDragOffset + (velocityPxMs * MOMENTUM_FACTOR) / CARD_STEP_PX;
-
-        let steps = Math.round(projectedOffset);
-        steps = Math.max(-4, Math.min(4, steps)); // limite di sicurezza per flick fortissimi
-
-        if (steps !== 0) {
-            const newIndex = (currentIndex + steps + portfolioData.length * 10) % portfolioData.length;
-            // Più il carosello deve "correre" per raggiungere il target, più la transizione dura:
-            // è questo che dà la sensazione di decelerazione graduale invece di uno stop secco.
-            const travel = Math.abs(steps - liveDragOffset);
-            const duration = Math.min(0.9, 0.35 + travel * 0.12);
-            coverElements.forEach(img => { img.style.transitionDuration = `${duration}s`; });
-            loadTrack(newIndex); // loadTrack chiama updateCarousel(0): anima fino alla posizione esatta
-            if (isPlaying) playAudio();
-            setTimeout(() => {
-                coverElements.forEach(img => { img.style.transitionDuration = ''; }); // torna al default 0.4s
-            }, duration * 1000 + 50);
+        if (Math.abs(velocityCardsMs) > MIN_FLING_VELOCITY) {
+            momentumVelocity = velocityCardsMs;
+            runMomentum(); // continua a muoversi da solo, rallentando, poi si aggancia alla card più vicina
         } else {
-            updateCarousel(0); // sotto la soglia di uno scatto: torna elasticamente al punto di partenza
+            settleToNearestCard(); // drag lento/breve: nessuna inerzia, aggancio diretto
         }
 
-        liveDragOffset = 0;
         dragSamples = [];
         if (dragSuppressClick) setTimeout(() => { dragSuppressClick = false; }, 50);
     }
