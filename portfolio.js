@@ -1,5 +1,5 @@
 /**
- * Tiny Temple - Master Player (Ultra-Fluid Ice Glide & Kinetic Inertia Engine)
+ * Tiny Temple - Master Player (Hardware-Accelerated Pointer Engine with Inertia)
  */
 document.addEventListener('DOMContentLoaded', () => {
     // === 1. DATABASE ===
@@ -22,7 +22,6 @@ document.addEventListener('DOMContentLoaded', () => {
     ];
 
     let currentIndex = Math.floor(Math.random() * portfolioData.length);
-    let virtualIndex = currentIndex;
     let currentAudio = new Audio();
     let isPlaying = false;
     let coverElements = [];
@@ -48,9 +47,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const mpTimeTotal = document.getElementById('mp-time-total');
     const tracklistBody = document.getElementById('tracklist-body');
 
-    // Sensibilità: passo più corto = carosello più leggero e scattante
-    const getStepPx = () => (window.innerWidth <= 768 ? 75 : 115);
-
     // === 2. INIZIALIZZAZIONE COVERFLOW ===
     portfolioData.forEach((track, i) => {
         const img = document.createElement('img');
@@ -58,10 +54,14 @@ document.addEventListener('DOMContentLoaded', () => {
         img.className = 'carousel-item';
         img.alt = `${track.title} - ${track.artist}`;
 
-        img.addEventListener('click', () => {
-            if (dragSuppressClick) return;
+        img.addEventListener('click', (e) => {
+            if (dragSuppressClick) {
+                e.preventDefault();
+                return;
+            }
             if (currentIndex !== i) {
-                goToTrack(i, true);
+                loadTrack(i);
+                playAudio();
             } else {
                 togglePlay();
             }
@@ -71,7 +71,8 @@ document.addEventListener('DOMContentLoaded', () => {
         coverElements.push(img);
     });
 
-    function renderCoverflow(vIndex) {
+    // Rendering posizioni 3D
+    function updateCarousel(liveOffset = 0) {
         const total = portfolioData.length;
         const isMobile = window.innerWidth <= 768;
         const offset = isMobile ? 95 : 140;
@@ -79,9 +80,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const rotation = isMobile ? 38 : 45;
 
         coverElements.forEach((img, i) => {
-            let diff = (i - vIndex) % total;
-            if (diff > total / 2) diff -= total;
-            if (diff < -total / 2) diff += total;
+            let diff = (i - currentIndex) % total;
+            if (diff > Math.floor(total / 2)) diff -= total;
+            if (diff < -Math.floor(total / 2)) diff += total;
+
+            diff -= liveOffset;
 
             const absDiff = Math.abs(diff);
             const clampedDiff = Math.max(-1, Math.min(1, diff));
@@ -124,20 +127,21 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (currentAudio.duration) currentAudio.currentTime = percent * currentAudio.duration;
                 }
             } else {
-                goToTrack(index, true);
+                loadTrack(index);
+                playAudio();
             }
         });
         tracklistBody.appendChild(row);
     });
 
-    // === 4. SYNC UI & AUDIO ===
-    function syncTrackUI(index) {
+    // === 4. LOGICA CARICAMENTO TRACCIA (GPU NATIVE) ===
+    function loadTrack(index) {
         document.querySelectorAll('.track-row').forEach(el => el.classList.remove('playing'));
         document.querySelectorAll('.icon-play').forEach(el => el.style.display = 'block');
         document.querySelectorAll('.icon-pause').forEach(el => el.style.display = 'none');
         document.querySelectorAll('.track-progress').forEach(el => el.style.width = '0%');
 
-        currentIndex = index;
+        currentIndex = ((index % portfolioData.length) + portfolioData.length) % portfolioData.length;
         const track = portfolioData[currentIndex];
 
         dynType.textContent = track.type || "Singolo";
@@ -153,6 +157,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         mpSpotifyBtn.href = track.url || "#";
+        updateCarousel(0);
         currentAudio.src = track.audio;
 
         const activeRow = document.getElementById(`track-${currentIndex}`);
@@ -160,207 +165,172 @@ document.addEventListener('DOMContentLoaded', () => {
         updatePlayIcons(isPlaying);
     }
 
-    // === 5. FISICA "GHIACCIO" (HIGH VELOCITY & FRICTIONLESS GLIDE) ===
+    // === 5. SCROLL ROTELLINA DESKTOP ===
+    const SCROLL_THRESHOLD = 45;
+    let wheelDelta = 0;
+    let wheelResetTimeout = null;
+
+    mpCarousel.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        const delta = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
+        wheelDelta += delta;
+
+        if (wheelDelta > SCROLL_THRESHOLD) {
+            loadTrack(currentIndex + 1);
+            if (isPlaying) playAudio();
+            wheelDelta = 0;
+        } else if (wheelDelta < -SCROLL_THRESHOLD) {
+            loadTrack(currentIndex - 1);
+            if (isPlaying) playAudio();
+            wheelDelta = 0;
+        }
+
+        clearTimeout(wheelResetTimeout);
+        wheelResetTimeout = setTimeout(() => { wheelDelta = 0; }, 180);
+    }, { passive: false });
+
+    // === 6. GESTIONE GESTI UNIVERSALE (INERTIAL / MOMENTUM FLICK ENGINE) ===
+    const getStepPx = () => (window.innerWidth <= 768 ? 85 : 135);
     let isDragging = false;
     let dragSuppressClick = false;
-    let touchStartX = 0;
-    let touchStartY = 0;
+    let startX = 0;
+    let startY = 0;
+    let currentDragOffset = 0;
     let isHorizontalGesture = null;
-    let dragStartVirtualIndex = 0;
-    let samples = [];
-    let animationRAF = null;
+    let dragSamples = [];
+    let inertiaRafId = null;
 
-    // PARAMETRI FISICI REGOLABILI:
-    const ICE_FRICTION = 0.972;       // Più vicino a 1.0 = più scivola su ghiaccio (default precedente: 0.925)
-    const FLING_MULTIPLIER = 1.65;    // Moltiplicatore spinta cinetica
-    const STOP_VELOCITY = 0.00035;    // Soglia minima prima del magnetismo
-    const MAX_VELOCITY = 0.038;       // Velocità massima consentita
-
-    function cancelActivePhysics() {
-        if (animationRAF) {
-            cancelAnimationFrame(animationRAF);
-            animationRAF = null;
+    mpCarousel.addEventListener('pointerdown', (e) => {
+        if (e.button !== 0) return;
+        
+        if (inertiaRafId) {
+            cancelAnimationFrame(inertiaRafId);
+            inertiaRafId = null;
         }
-    }
 
-    // Snap magnetico rapido
-    function animateToIndex(targetIdx, startAudioIfPlaying = false) {
-        cancelActivePhysics();
-        const total = portfolioData.length;
-
-        let diff = (targetIdx - virtualIndex) % total;
-        if (diff > total / 2) diff -= total;
-        if (diff < -total / 2) diff += total;
-
-        const startV = virtualIndex;
-        const targetV = startV + diff;
-        let startTime = performance.now();
-        const duration = 280; // Transizione più scattante (era 380ms)
-
-        // Ease-out rapido e scattante
-        const easeOutQuad = (t) => t * (2 - t);
-
-        function step(now) {
-            const elapsed = now - startTime;
-            const progress = Math.min(1, elapsed / duration);
-
-            virtualIndex = startV + (targetV - startV) * easeOutQuad(progress);
-            renderCoverflow(virtualIndex);
-
-            if (progress < 1) {
-                animationRAF = requestAnimationFrame(step);
-            } else {
-                const finalNormalized = ((Math.round(targetV) % total) + total) % total;
-                virtualIndex = finalNormalized;
-                renderCoverflow(virtualIndex);
-
-                if (currentIndex !== finalNormalized) {
-                    syncTrackUI(finalNormalized);
-                    if (startAudioIfPlaying && isPlaying) playAudio();
-                }
-            }
-        }
-        animationRAF = requestAnimationFrame(step);
-    }
-
-    function goToTrack(index, autoPlay = false) {
-        animateToIndex(index, autoPlay);
-        if (autoPlay) playAudio();
-    }
-
-    // Scivolamento inerziale su ghiaccio
-    function runMomentum(initialVelocity) {
-        let currentVel = initialVelocity;
-        let lastT = performance.now();
-
-        function momentumFrame(now) {
-            const dt = Math.min(now - lastT, 32);
-            lastT = now;
-
-            virtualIndex += currentVel * dt;
-            renderCoverflow(virtualIndex);
-
-            // Decadimento a frizione minima
-            currentVel *= Math.pow(ICE_FRICTION, dt / 16.67);
-
-            if (Math.abs(currentVel) < STOP_VELOCITY) {
-                const nearest = Math.round(virtualIndex);
-                animateToIndex(nearest, isPlaying);
-                return;
-            }
-            animationRAF = requestAnimationFrame(momentumFrame);
-        }
-        animationRAF = requestAnimationFrame(momentumFrame);
-    }
-
-    // --- GESTIONE TOUCH & MOUSE ---
-    function onPointerStart(clientX, clientY) {
-        cancelActivePhysics();
         isDragging = true;
         dragSuppressClick = false;
-        touchStartX = clientX;
-        touchStartY = clientY;
+        startX = e.clientX;
+        startY = e.clientY;
+        currentDragOffset = 0;
         isHorizontalGesture = null;
-        dragStartVirtualIndex = virtualIndex;
-        samples = [{ x: clientX, t: performance.now() }];
+        dragSamples = [{ x: e.clientX, t: performance.now() }];
+        
         mpCarousel.classList.add('is-dragging');
-    }
+        mpCarousel.setPointerCapture(e.pointerId);
+    });
 
-    function onPointerMove(clientX, clientY, e) {
+    mpCarousel.addEventListener('pointermove', (e) => {
         if (!isDragging) return;
         const now = performance.now();
-        const deltaX = touchStartX - clientX;
-        const deltaY = touchStartY - clientY;
+        const deltaX = startX - e.clientX;
+        const deltaY = startY - e.clientY;
 
-        if (isHorizontalGesture === null && (Math.abs(deltaX) > 5 || Math.abs(deltaY) > 5)) {
+        if (isHorizontalGesture === null && (Math.abs(deltaX) > 4 || Math.abs(deltaY) > 4)) {
             isHorizontalGesture = Math.abs(deltaX) >= Math.abs(deltaY);
         }
 
         if (isHorizontalGesture === false) return;
 
-        if (isHorizontalGesture === true && e && e.cancelable) {
-            e.preventDefault();
+        if (Math.abs(deltaX) > 6) {
+            dragSuppressClick = true;
         }
 
-        if (Math.abs(deltaX) > 5) dragSuppressClick = true;
+        currentDragOffset = deltaX;
+        const liveOffset = currentDragOffset / getStepPx();
+        updateCarousel(liveOffset);
 
-        virtualIndex = dragStartVirtualIndex + (deltaX / getStepPx());
-        renderCoverflow(virtualIndex);
-
-        samples.push({ x: clientX, t: now });
-        while (samples.length > 2 && samples[0].t < now - 70) {
-            samples.shift();
+        dragSamples.push({ x: e.clientX, t: now });
+        while (dragSamples.length > 2 && dragSamples[0].t < now - 90) {
+            dragSamples.shift();
         }
-    }
+    });
 
-    function onPointerEnd() {
+    function finishDrag(e) {
         if (!isDragging) return;
         isDragging = false;
-        mpCarousel.classList.remove('is-dragging');
+
+        try {
+            if (mpCarousel.hasPointerCapture(e.pointerId)) {
+                mpCarousel.releasePointerCapture(e.pointerId);
+            }
+        } catch (err) {}
 
         if (isHorizontalGesture === false) {
-            animateToIndex(Math.round(virtualIndex), isPlaying);
+            mpCarousel.classList.remove('is-dragging');
+            updateCarousel(0);
             return;
         }
 
-        let flingVelocityCardsMs = 0;
-        if (samples.length >= 2) {
-            const first = samples[0];
-            const last = samples[samples.length - 1];
+        let velocityPxMs = 0;
+        if (dragSamples.length >= 2) {
+            const first = dragSamples[0];
+            const last = dragSamples[dragSamples.length - 1];
             const dt = last.t - first.t;
             if (dt > 8) {
-                const deltaPx = first.x - last.x;
-                flingVelocityCardsMs = ((deltaPx / getStepPx()) / dt) * FLING_MULTIPLIER;
+                velocityPxMs = (first.x - last.x) / dt;
             }
         }
 
-        flingVelocityCardsMs = Math.max(-MAX_VELOCITY, Math.min(MAX_VELOCITY, flingVelocityCardsMs));
+        const friction = 0.92;
+        let velocity = velocityPxMs * 16;
+        const stepPx = getStepPx();
 
-        if (Math.abs(flingVelocityCardsMs) > 0.001) {
-            runMomentum(flingVelocityCardsMs);
-        } else {
-            animateToIndex(Math.round(virtualIndex), isPlaying);
+        function runInertia() {
+            velocity *= friction;
+            currentDragOffset += velocity;
+
+            // Se lo spostamento supera una copertina, aggiorna l'indice
+            if (Math.abs(currentDragOffset) >= stepPx) {
+                const shift = Math.trunc(currentDragOffset / stepPx);
+                currentIndex = ((currentIndex + shift) % portfolioData.length + portfolioData.length) % portfolioData.length;
+                currentDragOffset -= shift * stepPx;
+            }
+
+            const liveOffset = currentDragOffset / stepPx;
+            // Mantieni attiva la classe .is-dragging per MANTENERE disattivate le transizioni CSS mentre si muove
+            updateCarousel(liveOffset);
+
+            if (Math.abs(velocity) > 0.5) {
+                inertiaRafId = requestAnimationFrame(runInertia);
+            } else {
+                // INERZIA FINITA: Rimuovi la classe per riattivare le transizioni fluide CSS prima dello SNAP
+                mpCarousel.classList.remove('is-dragging');
+                
+                const finalShift = Math.round(currentDragOffset / stepPx);
+                loadTrack(currentIndex + finalShift);
+                if (isPlaying) playAudio();
+                inertiaRafId = null;
+            }
         }
 
-        samples = [];
+        if (Math.abs(velocity) > 1.2) {
+            // Mantiene .is-dragging attivo durante l'inerzia per evitare glitch visivi
+            mpCarousel.classList.add('is-dragging');
+            inertiaRafId = requestAnimationFrame(runInertia);
+        } else {
+            mpCarousel.classList.remove('is-dragging');
+            const steps = Math.round(currentDragOffset / stepPx);
+            if (steps !== 0) {
+                loadTrack(currentIndex + steps);
+                if (isPlaying) playAudio();
+            } else {
+                updateCarousel(0);
+            }
+        }
+
+        dragSamples = [];
         if (dragSuppressClick) {
-            setTimeout(() => { dragSuppressClick = false; }, 80);
+            setTimeout(() => { dragSuppressClick = false; }, 60);
         }
     }
 
-    // Mouse
-    mpCarousel.addEventListener('mousedown', (e) => onPointerStart(e.clientX, e.clientY));
-    window.addEventListener('mousemove', (e) => onPointerMove(e.clientX, e.clientY, e));
-    window.addEventListener('mouseup', onPointerEnd);
+    mpCarousel.addEventListener('pointerup', finishDrag);
+    mpCarousel.addEventListener('pointercancel', finishDrag);
 
-    // Touch
-    mpCarousel.addEventListener('touchstart', (e) => {
-        if (e.touches.length === 1) onPointerStart(e.touches[0].clientX, e.touches[0].clientY);
-    }, { passive: true });
-
-    mpCarousel.addEventListener('touchmove', (e) => {
-        if (e.touches.length === 1) onPointerMove(e.touches[0].clientX, e.touches[0].clientY, e);
-    }, { passive: false });
-
-    mpCarousel.addEventListener('touchend', onPointerEnd, { passive: true });
-
-    // Wheel
-    let wheelAccumulator = 0;
-    mpCarousel.addEventListener('wheel', (e) => {
-        e.preventDefault();
-        const delta = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
-        wheelAccumulator += delta;
-
-        if (Math.abs(wheelAccumulator) > 30) {
-            const direction = wheelAccumulator > 0 ? 1 : -1;
-            goToTrack((currentIndex + direction + portfolioData.length) % portfolioData.length, isPlaying);
-            wheelAccumulator = 0;
-        }
-    }, { passive: false });
-
-    // === 6. CONTROLLI AUDIO ===
+    // === 7. CONTROLLI AUDIO PLAYBACK ===
     function playAudio() {
-        currentAudio.play().catch(() => console.log("Audio in attesa di interazione"));
+        currentAudio.play().catch(() => console.log("Audio pronto"));
         isPlaying = true;
         updatePlayIcons(true);
     }
@@ -386,8 +356,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     mpPlayBtn.addEventListener('click', togglePlay);
-    mpNextBtn.addEventListener('click', () => goToTrack((currentIndex + 1) % portfolioData.length, isPlaying));
-    mpPrevBtn.addEventListener('click', () => goToTrack((currentIndex - 1 + portfolioData.length) % portfolioData.length, isPlaying));
+    mpNextBtn.addEventListener('click', () => { loadTrack(currentIndex + 1); if (isPlaying) playAudio(); });
+    mpPrevBtn.addEventListener('click', () => { loadTrack(currentIndex - 1); if (isPlaying) playAudio(); });
 
     currentAudio.addEventListener('loadedmetadata', () => {
         const totalMins = Math.floor(currentAudio.duration / 60);
@@ -417,12 +387,12 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     currentAudio.addEventListener('ended', () => {
-        goToTrack((currentIndex + 1) % portfolioData.length, true);
+        loadTrack(currentIndex + 1);
+        playAudio();
     });
 
     setTimeout(() => {
         document.body.classList.remove('loading-state');
-        syncTrackUI(currentIndex);
-        renderCoverflow(virtualIndex);
+        loadTrack(currentIndex);
     }, 150);
 });

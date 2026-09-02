@@ -128,6 +128,19 @@ function initTranslationSystem() {
             'hero-title-serv': 'We build sounds together.', 'hero-subtitle-serv': 'Listen &rarr; Build &rarr; Care', 'serv1-title': 'Music Production', 'serv1-text': 'We don\'t impose a sound, we find it inside you. From pre-production to arrangement, we give body to your vision.', 'serv2-title': 'Recording', 'serv2-text': 'We capture the moment. Carefully chosen microphones, warm preamps, and a room treated to enhance every nuance of the performance.', 'serv3-title': 'Mixing & Mastering', 'serv3-text': 'Balance and depth. We sculpt the sound to make it three-dimensional and ready for the world, respecting the original dynamics.', 'serv4-title': 'Art Direction', 'serv4-text': 'Beyond sound, there is identity. We guide you in stylistic choices to create a consistent, authentic, and recognizable project.', 'connect-title-services': 'If you feel this is the right place, write to us.',
             // CONTACT
             'hero-title-cont': 'Let\'s talk.', 'hero-subtitle-cont': 'Tell us your idea.', 'ponz-role': 'Producer', 'ponz-bio': 'The ear that sees beyond. Specialized in finding the sonic soul of a project before the first note is recorded. He guides the overall vision with an approach that blends technique and instinct.', 'andrea-role': 'Multi-instrumentalist / Arranger', 'andrea-bio': 'Hands that translate ideas into harmony. From piano to synths, strings to electronics. He builds the musical foundations upon which the song can rise and breathe.', 'connect-title-contacts': 'Let\'s team up.',
+            'form-badge': 'Direct Communication',
+            'form-title': 'Write to the Temple.',
+            'form-subtitle': 'Tell us about your project. We usually reply within 24 hours.',
+            'form-name-label': 'Name / Artist Name *',
+            'form-email-label': 'Contact Email *',
+            'form-service-label': 'What are you planning?',
+            'opt-prod': 'Full Music Production',
+            'opt-rec': 'Recording Studio',
+            'opt-mix': 'Mixing & Mastering',
+            'opt-dir': 'Artistic Direction / Consulting',
+            'opt-other': 'Other / General Inquiry',
+            'form-msg-label': 'Share your vision *',
+            'form-btn-send': 'Send Message',
             // PORTFOLIO
             'port-hero': 'Some of the worlds we have traversed.', 'visual-break': 'Every project is a collaboration.', 'playlist-title': 'Our playlist. No filters.', 'playlist-btn': 'Listen on Spotify', 'connect-title-portfolio': 'The next project could be yours.'
         },
@@ -138,7 +151,19 @@ function initTranslationSystem() {
             // SERVICES
             'hero-title-serv': 'Costruiamo suoni insieme.', 'hero-subtitle-serv': 'Ascolto &rarr; Costruzione &rarr; Cura', 'serv1-title': 'Produzione Musicale', 'serv1-text': 'Non imponiamo un sound, lo cerchiamo dentro di te. Dalla pre-produzione all\'arrangiamento, diamo corpo alla tua visione.', 'serv2-title': 'Recording', 'serv2-text': 'Catturiamo l\'istante. Microfoni scelti con cura, preamplificatori caldi e un ambiente trattato per esaltare ogni sfumatura della performance.', 'serv3-title': 'Mixing & Mastering', 'serv3-text': 'Equilibrio e profondità. Scolpiamo il suono per renderlo tridimensionale e pronto per il mondo, rispettando la dinamica originale.', 'serv4-title': 'Direzione Artistica', 'serv4-text': 'Oltre il suono, c\'è l\'identità. Ti guidiamo nelle scelte stilistiche per creare un progetto coerente, autentico e riconoscibile.', 'connect-title-services': 'Se senti che è il posto giusto scrivici.',
             // CONTACT
-            'hero-title-cont': 'Parliamo.', 'hero-subtitle-cont': 'Raccontaci la tua idea.', 'ponz-role': 'Produttore', 'ponz-bio': 'L\'orecchio che vede oltre. Specializzato nel trovare l\'anima sonora di un progetto prima ancora che venga registrata la prima nota. Guida la visione d\'insieme con un approccio che fonde tecnica e istinto.', 'andrea-role': 'Polistrumentista / Arrangiatore', 'andrea-bio': 'Le mani che traducono l\'idea in armonia. Dal pianoforte ai synth, dagli archi all\'elettronica. Costruisce le fondamenta musicali su cui il brano può elevarsi e respirare.', 'connect-title-contacts': 'Facciamo squadra.',
+            'hero-title-cont': 'Parliamo.', 'hero-subtitle-cont': 'Raccontaci la tua idea.', 'ponz-role': 'Produttore', 'ponz-bio': 'L\'orecchio che vede oltre. Specializzato nel trovare l\'anima sonora di un progetto prima ancora che venga registrata la prima nota. Guida la visione d\'insieme con un approccio che fonde tecnica e istinto.', 'andrea-role': 'Polistrumentista / Arrangiatore', 'andrea-bio': 'Le mani che traducono l\'idea in armonia. Dal pianoforte ai synth, dagli archi all\'elettronica. Costruisce le fondamenta musicali su cui il brano può elevarsi e respirare.', 'connect-title-contacts': 'Facciamo squadra.', 'form-badge': 'Comunicazione Diretta',
+            'form-title': 'Scrivi al Tempio.',
+            'form-subtitle': 'Parlaci del tuo progetto. Rispondiamo solitamente entro 24 ore.',
+            'form-name-label': 'Nome / Nome d\'Arte *',
+            'form-email-label': 'Email di Contatto *',
+            'form-service-label': 'Cosa hai in mente?',
+            'opt-prod': 'Produzione Musicale Completa',
+            'opt-rec': 'Recording & Registrazione',
+            'opt-mix': 'Mixing & Mastering',
+            'opt-dir': 'Direzione Artistica / Consulenza',
+            'opt-other': 'Altro / Info Generali',
+            'form-msg-label': 'Raccontaci la tua visione *',
+            'form-btn-send': 'Invia Messaggio',
             // PORTFOLIO
             'port-hero': 'Alcuni dei mondi che abbiamo attraversato.', 'visual-break': 'Ogni progetto è una collaborazione.', 'playlist-title': 'La nostra playlist. Senza filtri.', 'playlist-btn': 'Ascolta su Spotify', 'connect-title-portfolio': 'Il prossimo progetto potrebbe essere il tuo.'
         }

@@ -159,6 +159,83 @@
 
         </section>
 
+        <!-- SEZIONE CONTACT FORM (Spatial Liquid Glass) -->
+        <section id="contact-form-section" class="contact-form-section scroll-reveal">
+            <div class="spatial-glow"></div>
+
+            <div class="form-glass-card">
+                <div class="form-header">
+                    <span class="connect-tag" data-translate="form-badge">Direct Communication</span>
+                    <h2 class="form-title" data-translate="form-title">Scrivi al Tempio.</h2>
+                    <p class="form-subtitle" data-translate="form-subtitle">Parlaci del tuo progetto. Rispondiamo
+                        solitamente entro 24 ore.</p>
+                </div>
+
+                <form id="tiny-contact-form" class="spatial-form" novalidate>
+                    <!-- 1. HONEYPOT ANTI-BOT (Invisibile per umani) -->
+                    <div class="trap-field" aria-hidden="true" style="display:none !important;">
+                        <input type="text" name="studio_verification_code" tabindex="-1" autocomplete="off">
+                    </div>
+
+                    <!-- Griglia Campi -->
+                    <div class="form-grid">
+                        <!-- Nome / Artista -->
+                        <div class="input-group">
+                            <label for="user_name" data-translate="form-name-label">Nome / Nome d'Arte *</label>
+                            <input type="text" id="user_name" name="user_name" required placeholder="Es. Marco Rossi"
+                                autocomplete="name">
+                        </div>
+
+                        <!-- Email -->
+                        <div class="input-group">
+                            <label for="user_email" data-translate="form-email-label">Email di Contatto *</label>
+                            <input type="email" id="user_email" name="user_email" required
+                                placeholder="nome@dominio.com" autocomplete="email">
+                        </div>
+                    </div>
+
+                    <!-- Tipo di Lavoro / Servizio -->
+                    <div class="input-group">
+                        <label for="service_type" data-translate="form-service-label">Cosa hai in mente?</label>
+                        <div class="select-wrapper">
+                            <select id="service_type" name="service_type">
+                                <option value="Produzione Musicale" data-translate="opt-prod">Produzione Musicale
+                                    Completa</option>
+                                <option value="Recording Studio" data-translate="opt-rec">Recording & Registrazione
+                                </option>
+                                <option value="Mix e Master" data-translate="opt-mix">Mixing & Mastering</option>
+                                <option value="Direzione Artistica" data-translate="opt-dir">Direzione Artistica /
+                                    Consulenza</option>
+                                <option value="Altro Progetto" data-translate="opt-other">Altro / Info Generali</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Messaggio -->
+                    <div class="input-group">
+                        <label for="message" data-translate="form-msg-label">Raccontaci la tua visione *</label>
+                        <textarea id="message" name="message" rows="5" required
+                            placeholder="Genere, riferimenti sonori, scadenze o dettagli sul brano..."></textarea>
+                    </div>
+
+                    <!-- Stato / Notifiche Form -->
+                    <div id="form-status" class="form-status"></div>
+
+                    <!-- Tasto Invio Spaziale -->
+                    <button type="submit" id="submit-btn" class="spatial-submit-btn">
+                        <span class="btn-lens"></span>
+                        <span class="btn-content">
+                            <span class="btn-text" data-translate="form-btn-send">Invia Messaggio</span>
+                            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <path d="M7 17L17 7M17 7H7M17 7V17" />
+                            </svg>
+                        </span>
+                    </button>
+                </form>
+            </div>
+        </section>
+
         <!-- SEZIONE CONNECT (Spatial UI & Liquid Glass) -->
         <section id="connect" class="connect-section scroll-reveal">
             <div class="spatial-glow"></div>
