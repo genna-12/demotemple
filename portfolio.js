@@ -226,7 +226,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Proietta quanta strada farebbe ancora il carosello per inerzia, come uno scroll nativo,
         // così anche un flick breve ma veloce può "portare" oltre la cover successiva.
-        const MOMENTUM_FACTOR = 110; // ms equivalenti di scorrimento aggiuntivo dopo il rilascio del dito
+        const MOMENTUM_FACTOR = 280; // ms equivalenti di scorrimento aggiuntivo dopo il rilascio del dito
         const projectedOffset = liveDragOffset + (velocityPxMs * MOMENTUM_FACTOR) / CARD_STEP_PX;
 
         let steps = Math.round(projectedOffset);
