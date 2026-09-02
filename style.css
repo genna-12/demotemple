@@ -650,6 +650,7 @@ h1, h2, h3 { font-weight: 300; }
 }
 .mp-carousel:active { cursor: grabbing; }
 .mp-carousel.is-dragging { cursor: grabbing; user-select: none; -webkit-user-select: none; touch-action: pan-y; }
+.mp-carousel.is-dragging .carousel-item { transition: none; }
 
 .carousel-item {
     position: absolute; left: 50%; top: 50%;
@@ -745,6 +746,8 @@ h1, h2, h3 { font-weight: 300; }
     .mp-ctrl-side.right { gap: 15px; padding-left: 20px; }
     .mp-text-info-dynamic { height: 120px; margin-bottom: 10px; }
     .mp-dynamic-title { font-size: 1.6rem; }
+    /* Spazio extra sotto il player: evita che i tasti WhatsApp/lingua (fixed, bottom 20px) coprano Album/Spotify */
+    .coverflow-section { padding-bottom: 110px; }
     .tracklist-header { display: none; }
     .track-row { grid-template-columns: 40px 50px 1fr 50px; padding: 15px 10px; gap: 10px; }
     .col-genre, .col-roles { display: none; }

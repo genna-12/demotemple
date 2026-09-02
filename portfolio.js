@@ -67,29 +67,29 @@ document.addEventListener('DOMContentLoaded', () => {
         coverElements.push(img);
     });
 
-    function updateCarousel() {
+    function updateCarousel(liveOffset = 0) {
         const total = portfolioData.length;
+        const offset = 140;
+        const zOffset = 100;
+        const rotation = 45;
+
         coverElements.forEach((img, i) => {
             let diff = (i - currentIndex) % total;
             if (diff > Math.floor(total / 2)) diff -= total;
             if (diff < -Math.floor(total / 2)) diff += total;
 
-            const absDiff = Math.abs(diff);
-            const offset = 140; 
-            const zOffset = 100; 
-            const rotation = 45; 
-            
-            let translateX = diff * offset;
-            let translateZ = -absDiff * zOffset; // Il motore 3D del browser gestisce l'ordinamento nativamente!
-            let rotateY = 0;
+            diff -= liveOffset; // scorrimento continuo (drag in corso), 0 quando fermo
 
-            if (diff < 0) { rotateY = rotation; translateX -= 20; } 
-            else if (diff > 0) { rotateY = -rotation; translateX += 20; } 
-            else { translateZ = 40; }
+            const absDiff = Math.abs(diff);
+            const clampedDiff = Math.max(-1, Math.min(1, diff)); // interpola solo tra i vicini immediati
+
+            const translateX = diff * offset + clampedDiff * 20;
+            const translateZ = -absDiff * zOffset + Math.max(0, 1 - absDiff) * 40; // "pop" del centro che sfuma gradualmente
+            const rotateY = -clampedDiff * rotation;
 
             img.style.transform = `translateX(${translateX}px) translateZ(${translateZ}px) rotateY(${rotateY}deg)`;
             img.style.opacity = absDiff > 4 ? 0 : (1 - absDiff * 0.15);
-            img.style.pointerEvents = absDiff > 2 ? 'none' : 'auto';
+            img.style.pointerEvents = absDiff > 4 ? 'none' : 'auto';
         });
     }
 
@@ -154,8 +154,9 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById(`track-${currentIndex}`).classList.add('playing');
     }
 
-    // === SCROLL FLUIDO UNIFICATO (Rotellina + Drag Mouse + Swipe Touch) ===
+    // === SCROLL FLUIDO UNIFICATO (Rotellina a scatti + Drag continuo Mouse/Touch) ===
     const SCROLL_THRESHOLD = 60;
+    const CARD_STEP_PX = 140; // stessa distanza usata in updateCarousel come "un carosello di distanza"
     let wheelDelta = 0;
     let dragSuppressClick = false; // Evita che un drag venga interpretato come click sulla cover
 
@@ -172,62 +173,62 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // --- Rotellina (Desktop) ---
+    // --- Rotellina (Desktop): a scatti, va benissimo così per un mouse a "tacche" ---
     mpCarousel.addEventListener('wheel', (e) => {
         e.preventDefault();
         stepCarousel((Math.abs(e.deltaX) > Math.abs(e.deltaY)) ? e.deltaX : e.deltaY);
     }, { passive: false });
 
-    // --- Drag con Mouse (Click + Trascina, Desktop) ---
-    let isDragging = false;
-    let lastPointerX = 0;
-    let dragDistance = 0;
+    // --- Drag continuo (Mouse su Desktop + Touch su Mobile): la cover segue il dito/il puntatore ---
+    let isLiveDragging = false;
+    let dragStartX = 0;
+    let liveDragOffset = 0; // in "frazioni di carosello": 0 = fermo, 1 = una cover di distanza
+    let dragTravelPx = 0;   // distanza assoluta percorsa, per distinguere un click da un drag
 
-    mpCarousel.addEventListener('mousedown', (e) => {
-        isDragging = true;
+    function startLiveDrag(clientX) {
+        isLiveDragging = true;
         dragSuppressClick = false;
-        dragDistance = 0;
-        wheelDelta = 0;
-        lastPointerX = e.clientX;
-        mpCarousel.classList.add('is-dragging');
-    });
+        dragTravelPx = 0;
+        dragStartX = clientX;
+        liveDragOffset = 0;
+        mpCarousel.classList.add('is-dragging'); // disattiva la transition CSS per seguire il dito 1:1
+    }
 
-    window.addEventListener('mousemove', (e) => {
-        if (!isDragging) return;
-        const delta = lastPointerX - e.clientX;
-        dragDistance += Math.abs(delta);
-        if (dragDistance > 5) dragSuppressClick = true; // oltre 5px è un drag, non un click
-        stepCarousel(delta);
-        lastPointerX = e.clientX;
-    });
+    function moveLiveDrag(clientX) {
+        if (!isLiveDragging) return;
+        const deltaPx = dragStartX - clientX;
+        dragTravelPx = Math.max(dragTravelPx, Math.abs(deltaPx));
+        if (dragTravelPx > 5) dragSuppressClick = true; // oltre 5px è un drag, non più un click
+        liveDragOffset = deltaPx / CARD_STEP_PX;
+        updateCarousel(liveDragOffset); // aggiorna la posizione visiva ad ogni pixel, niente scatti
+    }
 
-    window.addEventListener('mouseup', () => {
-        if (!isDragging) return;
-        isDragging = false;
-        wheelDelta = 0;
-        mpCarousel.classList.remove('is-dragging');
-        // Piccolo ritardo per far ignorare al click che segue il mouseup dopo un drag
+    function endLiveDrag() {
+        if (!isLiveDragging) return;
+        isLiveDragging = false;
+        mpCarousel.classList.remove('is-dragging'); // riattiva la transition per l'assestamento finale
+
+        const steps = Math.round(liveDragOffset);
+        if (steps !== 0) {
+            const newIndex = (currentIndex + steps + portfolioData.length * 10) % portfolioData.length;
+            loadTrack(newIndex); // loadTrack chiama updateCarousel(0): anima dolcemente fino alla posizione esatta
+            if (isPlaying) playAudio();
+        } else {
+            updateCarousel(0); // sotto la soglia di uno scatto: torna elasticamente al punto di partenza
+        }
+        liveDragOffset = 0;
         if (dragSuppressClick) setTimeout(() => { dragSuppressClick = false; }, 50);
-    });
+    }
 
-    // --- Swipe Touch (Mobile) — progressivo, non solo a fine gesto ---
-    let lastTouchX = 0;
+    // Mouse (Desktop)
+    mpCarousel.addEventListener('mousedown', (e) => startLiveDrag(e.clientX));
+    window.addEventListener('mousemove', (e) => moveLiveDrag(e.clientX));
+    window.addEventListener('mouseup', endLiveDrag);
 
-    mpCarousel.addEventListener('touchstart', (e) => {
-        lastTouchX = e.changedTouches[0].screenX;
-        wheelDelta = 0;
-    }, { passive: true });
-
-    mpCarousel.addEventListener('touchmove', (e) => {
-        const currentX = e.changedTouches[0].screenX;
-        const delta = lastTouchX - currentX;
-        stepCarousel(delta);
-        lastTouchX = currentX;
-    }, { passive: true });
-
-    mpCarousel.addEventListener('touchend', () => {
-        wheelDelta = 0;
-    }, { passive: true });
+    // Touch (Mobile) — stesso identico meccanismo del mouse, quindi stessa fluidità
+    mpCarousel.addEventListener('touchstart', (e) => startLiveDrag(e.touches[0].clientX), { passive: true });
+    mpCarousel.addEventListener('touchmove', (e) => moveLiveDrag(e.touches[0].clientX), { passive: true });
+    mpCarousel.addEventListener('touchend', endLiveDrag, { passive: true });
 
     // === CONTROLLI PLAYBACK ===
     function playAudio() { currentAudio.play().catch(e => console.log("Attesa audio fisici")); isPlaying = true; updatePlayIcons(true); }
