@@ -1926,3 +1926,33 @@ h1, h2, h3 { font-weight: 300; }
         gap: 16px;
     }
 }
+
+/* --- FIX DEFITINIVO TOUCH STICKY MOBILE --- */
+@media (max-width: 768px) {
+    /* Rimuove qualsiasi stato focus permanente sui pulsanti fluttuanti */
+    .floating-btn:focus,
+    .floating-btn:focus-within,
+    #wa-btn:focus,
+    #lang-btn:focus {
+        background: linear-gradient(135deg, rgba(255, 255, 255, 0.12) 0%, rgba(18, 18, 18, 0.45) 100%) !important;
+        box-shadow: 
+            0 12px 28px rgba(0, 0, 0, 0.6),
+            inset 0 1px 2px rgba(255, 255, 255, 0.3),
+            inset 0 -1px 2px rgba(0, 0, 0, 0.4) !important;
+        transform: translateY(0) scale(1) !important;
+    }
+
+    /* Spegne immediatamente il bagliore posteriore su mobile */
+    .floating-btn:focus::before,
+    #wa-btn:focus::before,
+    #lang-btn:focus::before {
+        opacity: 0 !important;
+        transform: scale(1) !important;
+    }
+
+    /* Il feedback visivo dura SOLO finché il dito è premuto sullo schermo */
+    .floating-btn:active {
+        transform: scale(0.92) !important;
+        transition: transform 0.05s ease !important;
+    }
+}

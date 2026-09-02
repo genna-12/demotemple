@@ -11,6 +11,15 @@ document.addEventListener('DOMContentLoaded', () => {
     initLogoClick();
 });
 
+// Rimuove il focus dai tasti fluttuanti al termine del tocco su mobile
+document.querySelectorAll('.floating-btn').forEach(btn => {
+    btn.addEventListener('touchend', () => {
+        setTimeout(() => {
+            btn.blur();
+        }, 100);
+    });
+});
+
 // --- 1. NAVIGAZIONE E MENU ---
 function initNavigation() {
     const navbar = document.getElementById('navbar');
