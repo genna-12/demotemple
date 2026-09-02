@@ -686,6 +686,7 @@ h1.is-visible {
 }
 
 /* --- 7. FLOATING BUTTONS (WHATSAPP & LINGUA) --- */
+/* --- FLOATING BUTTONS BASE & TRANSIZIONI --- */
 .floating-btn {
     position: fixed;
     bottom: 30px;
@@ -715,9 +716,11 @@ h1.is-visible {
     cursor: pointer;
     overflow: hidden;
     
-    transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1), 
-                box-shadow 0.4s ease, 
-                border-color 0.4s ease, 
+    /* TRANSIZIONE DI RITORNO MODERATA (Fade-out morbido di 0.5 secondi) */
+    transition: transform 0.5s cubic-bezier(0.25, 1, 0.5, 1), 
+                box-shadow 0.5s ease, 
+                border-color 0.5s ease, 
+                background 0.5s ease,
                 opacity 0.4s ease;
                 
     opacity: 0;
@@ -733,9 +736,46 @@ h1.is-visible {
     border-radius: 50%;
     opacity: 0;
     filter: blur(12px);
-    transition: opacity 0.4s ease, transform 0.4s ease;
+    /* Ritorno morbido per il glow */
+    transition: opacity 0.6s ease, transform 0.6s ease;
     z-index: 1;
     pointer-events: none;
+}
+
+/* TAP / TOUCH REACTION (Mobile e Desktop) */
+.floating-btn:active,
+.floating-btn.touch-active {
+    transform: translateY(-8px) scale(1.1) !important;
+    border-color: rgba(255, 255, 255, 0.5) !important;
+    /* Salita rapida e reattiva */
+    transition: transform 0.12s cubic-bezier(0.175, 0.885, 0.32, 1.275), 
+                box-shadow 0.12s ease, 
+                background 0.12s ease !important;
+}
+
+#wa-btn:active,
+#wa-btn.touch-active {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.25) 0%, rgba(37, 211, 102, 0.25) 100%) !important;
+    box-shadow: 
+        0 18px 35px rgba(37, 211, 102, 0.35),
+        0 10px 20px rgba(0, 0, 0, 0.8),
+        inset 0 1px 3px rgba(255, 255, 255, 0.6) !important;
+}
+
+#lang-btn:active,
+#lang-btn.touch-active {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.25) 0%, rgba(207, 92, 54, 0.22) 100%) !important;
+    box-shadow: 
+        0 18px 35px rgba(207, 92, 54, 0.3),
+        0 10px 20px rgba(0, 0, 0, 0.8),
+        inset 0 1px 3px rgba(255, 255, 255, 0.6) !important;
+}
+
+.floating-btn:active::before,
+.floating-btn.touch-active::before {
+    opacity: 1 !important;
+    transform: scale(1.15) !important;
+    transition: opacity 0.12s ease, transform 0.12s ease !important;
 }
 
 #wa-btn::before {
@@ -836,35 +876,6 @@ body.menu-open .floating-btn {
         transform: scale(1.1);
         filter: drop-shadow(0 0 8px rgba(207, 92, 54, 0.6));
     }
-}
-
-/* TAP / TOUCH REACTION (MOBILE INSTANT) */
-.floating-btn:active {
-    transform: translateY(-6px) scale(1.08) !important;
-    border-color: rgba(255, 255, 255, 0.5) !important;
-    transition: transform 0.15s ease, box-shadow 0.15s ease !important;
-}
-
-#wa-btn:active {
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.22) 0%, rgba(37, 211, 102, 0.2) 100%) !important;
-    box-shadow: 
-        0 15px 30px rgba(37, 211, 102, 0.3),
-        0 10px 20px rgba(0, 0, 0, 0.8),
-        inset 0 1px 3px rgba(255, 255, 255, 0.6) !important;
-}
-
-#lang-btn:active {
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.22) 0%, rgba(207, 92, 54, 0.18) 100%) !important;
-    box-shadow: 
-        0 15px 30px rgba(207, 92, 54, 0.25),
-        0 10px 20px rgba(0, 0, 0, 0.8),
-        inset 0 1px 3px rgba(255, 255, 255, 0.6) !important;
-}
-
-.floating-btn:active::before {
-    opacity: 1 !important;
-    transform: scale(1.1) !important;
-    transition: opacity 0.15s ease, transform 0.15s ease !important;
 }
 
 #wa-btn:active svg {
