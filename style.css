@@ -1,4 +1,8 @@
-/* --- RESET & VARIABLES --- */
+/* ========================================================
+   TINY TEMPLE - CORE STYLESHEET (CLEAN & OPTIMIZED)
+   ======================================================== */
+
+/* --- 1. RESET & VARIABLES --- */
 :root {
     --bg-color: #080808;
     --text-primary: #e6e6e6;
@@ -12,14 +16,15 @@
     --ease-cinematic: cubic-bezier(0.65, 0, 0.35, 1);
 }
 
-/* --- SCROLLBAR HIDDEN --- */
-html,
-body {
-    scrollbar-width: none;
-    -ms-overflow-style: none;
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
 }
 
-html {
+html, body {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
     scroll-behavior: smooth;
 }
 
@@ -29,13 +34,6 @@ body::-webkit-scrollbar,
     display: none;
     width: 0;
     height: 0;
-}
-
-/* --- BASE STYLES --- */
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
 }
 
 body {
@@ -54,7 +52,11 @@ body.menu-open {
     overflow: hidden;
 }
 
-/* EFFETTO FILM GRAIN */
+h1, h2, h3 { 
+    font-weight: 300; 
+}
+
+/* Film Grain Overlay */
 body::after {
     content: "";
     position: fixed;
@@ -68,7 +70,7 @@ body::after {
     mix-blend-mode: overlay;
 }
 
-/* --- INTRO & LOGO --- */
+/* --- 2. INTRO LAYER & LOGO --- */
 #intro-layer {
     position: fixed;
     top: 0;
@@ -103,7 +105,8 @@ body::after {
     transition: all 1.2s var(--ease-cinematic);
 }
 
-.logo-wrapper.in-nav {
+.logo-wrapper.in-nav,
+.logo-wrapper.static-nav {
     top: 58px;
     left: 50px;
     transform: translate(-50%, -50%) scale(0.5);
@@ -137,7 +140,7 @@ body.menu-open .logo-wrapper {
     animation: heartbeat 0.8s ease-in-out forwards;
 }
 
-/* --- MENU TRIGGER & NAVBAR --- */
+/* --- 3. NAVBAR & FULLSCREEN MENU --- */
 #navbar {
     position: fixed;
     top: 0;
@@ -192,12 +195,6 @@ body.menu-open .menu-trigger .line:last-child {
     width: 35px;
 }
 
-.nav-visible {
-    opacity: 1;
-    transform: translateY(0);
-}
-
-/* --- FULLSCREEN MENU OVERLAY --- */
 #fullscreen-menu {
     position: fixed;
     top: 0;
@@ -291,7 +288,7 @@ body.menu-open .menu-link {
     text-shadow: 0 0 20px rgba(207, 92, 54, 0.4);
 }
 
-/* --- HERO SECTION --- */
+/* --- 4. HERO SECTION --- */
 .hero-section {
     height: 100vh;
     width: 100%;
@@ -356,7 +353,19 @@ h1.is-visible {
     transform: translateY(0);
 }
 
-/* --- SEZIONE NARRATIVA & EFFETTO HOVER 3D --- */
+.hero-subtitle {
+    font-family: var(--font-text);
+    font-size: 1.2rem;
+    color: var(--text-muted);
+    margin-top: 20px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    font-weight: 300;
+    opacity: 0;
+    transition: opacity 1s ease, transform 1s ease;
+}
+
+/* --- 5. NARRATIVE SECTION --- */
 .narrative-section {
     position: relative;
     padding: 120px 5%;
@@ -484,13 +493,7 @@ h1.is-visible {
 .content-box.is-visible h2::after { width: 40px; transition-delay: 0.6s; }
 .content-box.is-visible p { opacity: 1; transform: translateY(0); transition-delay: 0.8s; }
 
-.image-box,
-.content-box {
-    will-change: transform, opacity, filter;
-    transition: transform 1.2s cubic-bezier(0.16, 1, 0.3, 1), opacity 1.2s ease, filter 1.2s ease, box-shadow 1.2s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-/* HOVER PER DISPOSITIVI CON MOUSE */
+/* Desktop Hover 3D per Sezione Narrativa */
 @media (hover: hover) and (pointer: fine) {
     .story-block:has(.image-box:hover) .image-box {
         transform: scale(1.02) translateZ(40px);
@@ -517,10 +520,7 @@ h1.is-visible {
     }
 }
 
-/* ======================================================== */
-/* --- SPATIAL UI & LIQUID GLASS: CONNECT SECTION --- */
-/* ======================================================== */
-
+/* --- 6. SPATIAL UI: CONNECT SECTION & SOCIAL GRID --- */
 .connect-section {
     position: relative;
     padding: 140px 5% 160px;
@@ -539,7 +539,6 @@ h1.is-visible {
     transform: translateY(0);
 }
 
-/* Bagliore Sfondo Ultra-Morbido */
 .spatial-glow {
     position: absolute;
     top: 50%;
@@ -559,7 +558,6 @@ h1.is-visible {
     opacity: 1;
 }
 
-/* Glass Card Spaziale */
 .spatial-glass-card {
     position: relative;
     z-index: 2;
@@ -609,7 +607,6 @@ h1.is-visible {
     flex-wrap: wrap;
 }
 
-/* TASTO SPAZIALE SOCIAL */
 .spatial-btn,
 .spatial-btn:visited,
 .spatial-btn:active,
@@ -665,7 +662,6 @@ h1.is-visible {
     pointer-events: none;
 }
 
-/* Palette Cromatiche Brand Social */
 .tiktok-btn .btn-glow { background: radial-gradient(circle at 30% 30%, rgba(0, 242, 254, 0.6), rgba(254, 9, 121, 0.6)); }
 .instagram-btn .btn-glow { background: radial-gradient(circle, rgba(253, 89, 73, 0.6), rgba(214, 36, 159, 0.6), rgba(40, 90, 235, 0.6)); }
 .whatsapp-btn .btn-glow { background: radial-gradient(circle, rgba(37, 211, 102, 0.6), rgba(18, 140, 126, 0.6)); }
@@ -689,9 +685,7 @@ h1.is-visible {
     transform: translateY(-2px) scale(0.98);
 }
 
-/* ======================================================== */
-/* --- FLOATING BUTTONS (WhatsApp & Lingua) --- */
-/* ======================================================== */
+/* --- 7. FLOATING BUTTONS (WHATSAPP & LINGUA) --- */
 .floating-btn {
     position: fixed;
     bottom: 30px;
@@ -778,7 +772,28 @@ h1.is-visible {
     transform: scale(1.15) rotate(360deg) !important;
 }
 
-/* --- REAZIONI HOVER / GLOW (ATTIVE SOLO SU DESKTOP CON MOUSE) --- */
+.floating-btn.nav-visible {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateY(0);
+}
+
+.floating-btn.nav-hidden-scroll {
+    transform: translateY(150%) !important;
+    opacity: 0;
+    pointer-events: none;
+}
+
+body.menu-open .floating-btn {
+    opacity: 1 !important;
+    transform: translateY(0) !important;
+    pointer-events: auto;
+}
+
+.float-left { left: 30px; }
+.float-right { right: 30px; }
+
+/* HOVER REACTION (DESKTOP) */
 @media (hover: hover) and (pointer: fine) {
     .floating-btn:hover {
         transform: translateY(-6px) scale(1.08) !important;
@@ -823,35 +838,55 @@ h1.is-visible {
     }
 }
 
-/* --- FEEDBACK TOUCH MOMENTANEO (MOBILE) --- */
+/* TAP / TOUCH REACTION (MOBILE INSTANT) */
 .floating-btn:active {
-    transform: translateY(-2px) scale(0.95) !important;
-    transition: transform 0.1s ease !important;
+    transform: translateY(-6px) scale(1.08) !important;
+    border-color: rgba(255, 255, 255, 0.5) !important;
+    transition: transform 0.15s ease, box-shadow 0.15s ease !important;
 }
 
-/* Visibilità Navigazione */
-.floating-btn.nav-visible {
-    opacity: 1;
-    pointer-events: auto;
-    transform: translateY(0);
+#wa-btn:active {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.22) 0%, rgba(37, 211, 102, 0.2) 100%) !important;
+    box-shadow: 
+        0 15px 30px rgba(37, 211, 102, 0.3),
+        0 10px 20px rgba(0, 0, 0, 0.8),
+        inset 0 1px 3px rgba(255, 255, 255, 0.6) !important;
 }
 
-.floating-btn.nav-hidden-scroll {
-    transform: translateY(150%) !important;
-    opacity: 0;
-    pointer-events: none;
+#lang-btn:active {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.22) 0%, rgba(207, 92, 54, 0.18) 100%) !important;
+    box-shadow: 
+        0 15px 30px rgba(207, 92, 54, 0.25),
+        0 10px 20px rgba(0, 0, 0, 0.8),
+        inset 0 1px 3px rgba(255, 255, 255, 0.6) !important;
 }
 
-body.menu-open .floating-btn {
+.floating-btn:active::before {
     opacity: 1 !important;
-    transform: translateY(0) !important;
-    pointer-events: auto;
+    transform: scale(1.1) !important;
+    transition: opacity 0.15s ease, transform 0.15s ease !important;
 }
 
-.float-left { left: 30px; }
-.float-right { right: 30px; }
+#wa-btn:active svg {
+    fill: #ffffff !important;
+    transform: scale(1.1) !important;
+    filter: drop-shadow(0 0 8px rgba(37, 211, 102, 0.6)) !important;
+}
 
-/* --- FOOTER & MARQUEE --- */
+#lang-btn:active .lang-icon {
+    stroke: #ffffff !important;
+    fill: none !important;
+    transform: scale(1.1) !important;
+    filter: drop-shadow(0 0 8px rgba(207, 92, 54, 0.6)) !important;
+}
+
+.floating-btn:focus,
+.floating-btn:focus-within {
+    outline: none !important;
+    -webkit-tap-highlight-color: transparent !important;
+}
+
+/* --- 8. FOOTER & MARQUEE --- */
 footer {
     text-align: center;
     padding: 30px;
@@ -912,23 +947,10 @@ footer {
     100% { transform: translateX(-50%); }
 }
 
-/* --- ALTRE SEZIONI (PORTFOLIO, SERVIZI, ETC.) --- */
-.hero-subtitle {
-    font-family: var(--font-text);
-    font-size: 1.2rem;
-    color: var(--text-muted);
-    margin-top: 20px;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    font-weight: 300;
-    opacity: 0;
-    transition: opacity 1s ease, transform 1s ease;
-}
-
+/* --- 9. PORTFOLIO & SERVIZI SECTIONS --- */
 .process-bar {
     text-align: center;
     padding: 80px 20px 60px;
-    margin-top: 0;
     position: relative;
     z-index: 5;
     background: transparent;
@@ -945,18 +967,6 @@ footer {
     text-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
     display: block;
     white-space: nowrap;
-}
-
-.logo-wrapper.static-nav {
-    top: 58px;
-    left: 50px;
-    transform: translate(-50%, -50%) scale(0.5);
-    background: #000;
-    border-radius: 50%;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
-    cursor: pointer;
-    pointer-events: auto;
-    transition: transform 0.3s cubic-bezier(0.65, 0, 0.35, 1);
 }
 
 .portfolio-hero {
@@ -1121,54 +1131,7 @@ footer {
     letter-spacing: 0.5px;
 }
 
-/* --- FIX ICONE TEAM / BIO SOCIALS --- */
-.social-btn.mini-btn,
-.social-btn.mini-btn:visited,
-.social-btn.mini-btn:active,
-.social-btn.mini-btn:focus {
-    color: #ffffff !important;
-    display: inline-flex !important;
-    justify-content: center;
-    align-items: center;
-    border-radius: 50%;
-    text-decoration: none;
-    -webkit-tap-highlight-color: transparent;
-}
-
-.social-btn.mini-btn i {
-    font-size: 1.2rem;
-    color: #ffffff !important;
-    line-height: 1;
-    display: block;
-}
-
-.social-btn.mini-btn svg {
-    width: 20px;
-    height: 20px;
-    fill: #ffffff !important;
-    color: #ffffff !important;
-    display: block;
-}
-
-.social-btn.mini-btn:hover {
-    background: var(--accent-orange);
-    transform: scale(1.1);
-}
-
-.social-btn.mini-btn:hover i {
-    color: #ffffff !important;
-}
-
-.social-btn.mini-btn:hover svg {
-    fill: #ffffff !important;
-    color: #ffffff !important;
-}
-
-h1, h2, h3 { font-weight: 300; }
-
-/* ========================================= */
-/* --- COVERFLOW PLAYER SECTION --- */
-/* ========================================= */
+/* --- 10. COVERFLOW PLAYER SECTION --- */
 .coverflow-section {
     width: 100vw;
     padding: 90px 0 30px;
@@ -1390,9 +1353,7 @@ h1, h2, h3 { font-weight: 300; }
     background: rgba(207, 92, 54, 0.1);
 }
 
-/* ========================================= */
-/* --- TRACKLIST TABLE --- */
-/* ========================================= */
+/* --- 11. TRACKLIST TABLE --- */
 .tracklist-container {
     max-width: 1400px;
     margin: 0 auto 150px;
@@ -1482,10 +1443,7 @@ h1, h2, h3 { font-weight: 300; }
 
 .mobile-stack { display: contents; }
 
-/* ======================================================== */
-/* --- SPATIAL LIQUID GLASS CONTACT FORM --- */
-/* ======================================================== */
-
+/* --- 12. CONTACT FORM SECTION --- */
 .contact-form-section {
     position: relative;
     padding: 100px 5% 140px;
@@ -1717,7 +1675,7 @@ h1, h2, h3 { font-weight: 300; }
     color: #ff7070;
 }
 
-/* --- ICONE TEAM / BIO SOCIALS --- */
+/* Team Mini Socials */
 .bio-socials {
     display: flex !important;
     gap: 15px !important;
@@ -1763,9 +1721,7 @@ h1, h2, h3 { font-weight: 300; }
     stroke: #ffffff !important;
 }
 
-/* ======================================================== */
-/* --- MOBILE RESPONSIVE UNIFICATO (Max Width 768px) --- */
-/* ======================================================== */
+/* --- 13. MOBILE RESPONSIVE UNIFICATO (Max Width 768px) --- */
 @media (max-width: 768px) {
     main h1 {
         font-size: 2.2rem;
@@ -1924,35 +1880,5 @@ h1, h2, h3 { font-weight: 300; }
     .form-grid {
         grid-template-columns: 1fr;
         gap: 16px;
-    }
-}
-
-/* --- FIX DEFITINIVO TOUCH STICKY MOBILE --- */
-@media (max-width: 768px) {
-    /* Rimuove qualsiasi stato focus permanente sui pulsanti fluttuanti */
-    .floating-btn:focus,
-    .floating-btn:focus-within,
-    #wa-btn:focus,
-    #lang-btn:focus {
-        background: linear-gradient(135deg, rgba(255, 255, 255, 0.12) 0%, rgba(18, 18, 18, 0.45) 100%) !important;
-        box-shadow: 
-            0 12px 28px rgba(0, 0, 0, 0.6),
-            inset 0 1px 2px rgba(255, 255, 255, 0.3),
-            inset 0 -1px 2px rgba(0, 0, 0, 0.4) !important;
-        transform: translateY(0) scale(1) !important;
-    }
-
-    /* Spegne immediatamente il bagliore posteriore su mobile */
-    .floating-btn:focus::before,
-    #wa-btn:focus::before,
-    #lang-btn:focus::before {
-        opacity: 0 !important;
-        transform: scale(1) !important;
-    }
-
-    /* Il feedback visivo dura SOLO finché il dito è premuto sullo schermo */
-    .floating-btn:active {
-        transform: scale(0.92) !important;
-        transition: transform 0.05s ease !important;
     }
 }
