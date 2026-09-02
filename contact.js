@@ -19,7 +19,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- 2. CONFIGURAZIONE INVIO MAIL ---
     // OPZIONE A: Web3Forms (Consigliata: 100% Gratuita e Illimitata)
     // Iscriviti su https://web3forms.com inserendo tinytempleproduction@gmail.com e incolla la chiave qui sotto:
-    const WEB3FORMS_ACCESS_KEY = "INSERISCI_QUI_LA_TUA_ACCESS_KEY_WEB3FORMS";
+    const WEB3FORMS_ACCESS_KEY = "72795f7b-1882-4732-84bd-c2f678a2a54c";
 
     // --- 3. CONTROLLI ANTI-SPAM, ANTI-BOT & DOS ---
     const form = document.getElementById('tiny-contact-form');
