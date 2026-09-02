@@ -1,5 +1,5 @@
 /**
- * Tiny Temple - Master Player (Fluid Coverflow & Native Touch Inertia Engine)
+ * Tiny Temple - Master Player (Ultra-Fluid Ice Glide & Kinetic Inertia Engine)
  */
 document.addEventListener('DOMContentLoaded', () => {
     // === 1. DATABASE ===
@@ -22,7 +22,7 @@ document.addEventListener('DOMContentLoaded', () => {
     ];
 
     let currentIndex = Math.floor(Math.random() * portfolioData.length);
-    let virtualIndex = currentIndex; // Indice continuo in virgola mobile per animazioni a 60/120 fps
+    let virtualIndex = currentIndex;
     let currentAudio = new Audio();
     let isPlaying = false;
     let coverElements = [];
@@ -48,8 +48,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const mpTimeTotal = document.getElementById('mp-time-total');
     const tracklistBody = document.getElementById('tracklist-body');
 
-    // Helper: calcola la sensibilità di trascinamento in base allo schermo
-    const getStepPx = () => (window.innerWidth <= 768 ? 95 : 135);
+    // Sensibilità: passo più corto = carosello più leggero e scattante
+    const getStepPx = () => (window.innerWidth <= 768 ? 75 : 115);
 
     // === 2. INIZIALIZZAZIONE COVERFLOW ===
     portfolioData.forEach((track, i) => {
@@ -71,7 +71,6 @@ document.addEventListener('DOMContentLoaded', () => {
         coverElements.push(img);
     });
 
-    // Funzione di rendering 3D fluida ad indice continuo
     function renderCoverflow(vIndex) {
         const total = portfolioData.length;
         const isMobile = window.innerWidth <= 768;
@@ -80,7 +79,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const rotation = isMobile ? 38 : 45;
 
         coverElements.forEach((img, i) => {
-            // Modulo simmetrico continuo senza salti: [-total/2, +total/2]
             let diff = (i - vIndex) % total;
             if (diff > total / 2) diff -= total;
             if (diff < -total / 2) diff += total;
@@ -132,7 +130,7 @@ document.addEventListener('DOMContentLoaded', () => {
         tracklistBody.appendChild(row);
     });
 
-    // === 4. SINCRONIZZAZIONE DATI & AUDIO ===
+    // === 4. SYNC UI & AUDIO ===
     function syncTrackUI(index) {
         document.querySelectorAll('.track-row').forEach(el => el.classList.remove('playing'));
         document.querySelectorAll('.icon-play').forEach(el => el.style.display = 'block');
@@ -162,15 +160,21 @@ document.addEventListener('DOMContentLoaded', () => {
         updatePlayIcons(isPlaying);
     }
 
-    // === 5. MOTORE FISICO DI INERZIA & SNAP (NATIVE FEEL) ===
+    // === 5. FISICA "GHIACCIO" (HIGH VELOCITY & FRICTIONLESS GLIDE) ===
     let isDragging = false;
     let dragSuppressClick = false;
     let touchStartX = 0;
     let touchStartY = 0;
-    let isHorizontalGesture = null; // Distingue lo scroll della pagina dal drag del carosello
+    let isHorizontalGesture = null;
     let dragStartVirtualIndex = 0;
     let samples = [];
     let animationRAF = null;
+
+    // PARAMETRI FISICI REGOLABILI:
+    const ICE_FRICTION = 0.972;       // Più vicino a 1.0 = più scivola su ghiaccio (default precedente: 0.925)
+    const FLING_MULTIPLIER = 1.65;    // Moltiplicatore spinta cinetica
+    const STOP_VELOCITY = 0.00035;    // Soglia minima prima del magnetismo
+    const MAX_VELOCITY = 0.038;       // Velocità massima consentita
 
     function cancelActivePhysics() {
         if (animationRAF) {
@@ -179,12 +183,11 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Transizione fluida guidata verso una card target
+    // Snap magnetico rapido
     function animateToIndex(targetIdx, startAudioIfPlaying = false) {
         cancelActivePhysics();
         const total = portfolioData.length;
 
-        // Calcola la distanza minima lungo il loop circolare
         let diff = (targetIdx - virtualIndex) % total;
         if (diff > total / 2) diff -= total;
         if (diff < -total / 2) diff += total;
@@ -192,22 +195,21 @@ document.addEventListener('DOMContentLoaded', () => {
         const startV = virtualIndex;
         const targetV = startV + diff;
         let startTime = performance.now();
-        const duration = 380; // ms
+        const duration = 280; // Transizione più scattante (era 380ms)
 
-        // Smooth cubic ease out
-        const easeOut = (t) => 1 - Math.pow(1 - t, 3);
+        // Ease-out rapido e scattante
+        const easeOutQuad = (t) => t * (2 - t);
 
         function step(now) {
             const elapsed = now - startTime;
             const progress = Math.min(1, elapsed / duration);
 
-            virtualIndex = startV + (targetV - startV) * easeOut(progress);
+            virtualIndex = startV + (targetV - startV) * easeOutQuad(progress);
             renderCoverflow(virtualIndex);
 
             if (progress < 1) {
                 animationRAF = requestAnimationFrame(step);
             } else {
-                // Allineamento finale perfetto
                 const finalNormalized = ((Math.round(targetV) % total) + total) % total;
                 virtualIndex = finalNormalized;
                 renderCoverflow(virtualIndex);
@@ -221,17 +223,15 @@ document.addEventListener('DOMContentLoaded', () => {
         animationRAF = requestAnimationFrame(step);
     }
 
-    // Navigazione programmata (bottoni Prev/Next, click tracklist, etc.)
     function goToTrack(index, autoPlay = false) {
         animateToIndex(index, autoPlay);
         if (autoPlay) playAudio();
     }
 
-    // Avvio Momentum (Inerzia post-rilascio)
+    // Scivolamento inerziale su ghiaccio
     function runMomentum(initialVelocity) {
         let currentVel = initialVelocity;
         let lastT = performance.now();
-        const friction = 0.925; // Decadimento naturale stile iOS
 
         function momentumFrame(now) {
             const dt = Math.min(now - lastT, 32);
@@ -240,10 +240,10 @@ document.addEventListener('DOMContentLoaded', () => {
             virtualIndex += currentVel * dt;
             renderCoverflow(virtualIndex);
 
-            currentVel *= Math.pow(friction, dt / 16.67);
+            // Decadimento a frizione minima
+            currentVel *= Math.pow(ICE_FRICTION, dt / 16.67);
 
-            // Quando la velocità scende sotto la soglia minima, aggancia dolcemente la card più vicina
-            if (Math.abs(currentVel) < 0.0008) {
+            if (Math.abs(currentVel) < STOP_VELOCITY) {
                 const nearest = Math.round(virtualIndex);
                 animateToIndex(nearest, isPlaying);
                 return;
@@ -253,7 +253,7 @@ document.addEventListener('DOMContentLoaded', () => {
         animationRAF = requestAnimationFrame(momentumFrame);
     }
 
-    // --- GESTIONE INPUT (UNIFICATA TOUCH & MOUSE) ---
+    // --- GESTIONE TOUCH & MOUSE ---
     function onPointerStart(clientX, clientY) {
         cancelActivePhysics();
         isDragging = true;
@@ -272,26 +272,23 @@ document.addEventListener('DOMContentLoaded', () => {
         const deltaX = touchStartX - clientX;
         const deltaY = touchStartY - clientY;
 
-        // Riconoscimento intelligente dell'asse del gesto su mobile
-        if (isHorizontalGesture === null && (Math.abs(deltaX) > 6 || Math.abs(deltaY) > 6)) {
+        if (isHorizontalGesture === null && (Math.abs(deltaX) > 5 || Math.abs(deltaY) > 5)) {
             isHorizontalGesture = Math.abs(deltaX) >= Math.abs(deltaY);
         }
 
-        // Se l'utente sta scrollando la pagina in verticale, non bloccare la pagina
         if (isHorizontalGesture === false) return;
 
-        // Se il movimento è orizzontale, previene lo scroll verticale accidentale
         if (isHorizontalGesture === true && e && e.cancelable) {
             e.preventDefault();
         }
 
-        if (Math.abs(deltaX) > 6) dragSuppressClick = true;
+        if (Math.abs(deltaX) > 5) dragSuppressClick = true;
 
         virtualIndex = dragStartVirtualIndex + (deltaX / getStepPx());
         renderCoverflow(virtualIndex);
 
         samples.push({ x: clientX, t: now });
-        while (samples.length > 2 && samples[0].t < now - 90) {
+        while (samples.length > 2 && samples[0].t < now - 70) {
             samples.shift();
         }
     }
@@ -306,24 +303,20 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // Calcolo velocità istantanea di rilascio negli ultimi ~90ms
         let flingVelocityCardsMs = 0;
         if (samples.length >= 2) {
             const first = samples[0];
             const last = samples[samples.length - 1];
             const dt = last.t - first.t;
-            if (dt > 10) {
-                const deltaPx = first.x - last.x; // Positivo = swipe verso sinistra (avanti)
-                flingVelocityCardsMs = (deltaPx / getStepPx()) / dt;
+            if (dt > 8) {
+                const deltaPx = first.x - last.x;
+                flingVelocityCardsMs = ((deltaPx / getStepPx()) / dt) * FLING_MULTIPLIER;
             }
         }
 
-        // Limitiamo la velocità massima per evitare rotazioni incontrollate
-        const maxVelocity = 0.015;
-        flingVelocityCardsMs = Math.max(-maxVelocity, Math.min(maxVelocity, flingVelocityCardsMs));
+        flingVelocityCardsMs = Math.max(-MAX_VELOCITY, Math.min(MAX_VELOCITY, flingVelocityCardsMs));
 
-        // Soglia realistica per le dita su schermo (0.0015 card/ms)
-        if (Math.abs(flingVelocityCardsMs) > 0.0015) {
+        if (Math.abs(flingVelocityCardsMs) > 0.001) {
             runMomentum(flingVelocityCardsMs);
         } else {
             animateToIndex(Math.round(virtualIndex), isPlaying);
@@ -335,12 +328,12 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Listener Mouse (Desktop)
+    // Mouse
     mpCarousel.addEventListener('mousedown', (e) => onPointerStart(e.clientX, e.clientY));
     window.addEventListener('mousemove', (e) => onPointerMove(e.clientX, e.clientY, e));
     window.addEventListener('mouseup', onPointerEnd);
 
-    // Listener Touch (Mobile con rilevamento asse e fluidità nativa)
+    // Touch
     mpCarousel.addEventListener('touchstart', (e) => {
         if (e.touches.length === 1) onPointerStart(e.touches[0].clientX, e.touches[0].clientY);
     }, { passive: true });
@@ -351,23 +344,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
     mpCarousel.addEventListener('touchend', onPointerEnd, { passive: true });
 
-    // Rotellina / Trackpad Desktop
+    // Wheel
     let wheelAccumulator = 0;
     mpCarousel.addEventListener('wheel', (e) => {
         e.preventDefault();
         const delta = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
         wheelAccumulator += delta;
 
-        if (Math.abs(wheelAccumulator) > 40) {
+        if (Math.abs(wheelAccumulator) > 30) {
             const direction = wheelAccumulator > 0 ? 1 : -1;
             goToTrack((currentIndex + direction + portfolioData.length) % portfolioData.length, isPlaying);
             wheelAccumulator = 0;
         }
     }, { passive: false });
 
-    // === 6. CONTROLLI AUDIO PLAYBACK ===
+    // === 6. CONTROLLI AUDIO ===
     function playAudio() {
-        currentAudio.play().catch(() => console.log("Riproduzione audio in attesa"));
+        currentAudio.play().catch(() => console.log("Audio in attesa di interazione"));
         isPlaying = true;
         updatePlayIcons(true);
     }
@@ -396,7 +389,6 @@ document.addEventListener('DOMContentLoaded', () => {
     mpNextBtn.addEventListener('click', () => goToTrack((currentIndex + 1) % portfolioData.length, isPlaying));
     mpPrevBtn.addEventListener('click', () => goToTrack((currentIndex - 1 + portfolioData.length) % portfolioData.length, isPlaying));
 
-    // Progress bar & Loop
     currentAudio.addEventListener('loadedmetadata', () => {
         const totalMins = Math.floor(currentAudio.duration / 60);
         const totalSecs = Math.floor(currentAudio.duration % 60).toString().padStart(2, '0');
@@ -428,7 +420,6 @@ document.addEventListener('DOMContentLoaded', () => {
         goToTrack((currentIndex + 1) % portfolioData.length, true);
     });
 
-    // Avvio iniziale
     setTimeout(() => {
         document.body.classList.remove('loading-state');
         syncTrackUI(currentIndex);
