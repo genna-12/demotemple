@@ -13,6 +13,13 @@ document.addEventListener('DOMContentLoaded', () => {
     }, 100);
 
     // --- 2. CONFIGURAZIONE INVIO MAIL ---
+    // NOTA SICUREZZA: la access key qui sotto e' pubblica per progetto (non e' una
+    // credenziale segreta), ma senza restrizione chiunque la copi puo' inviare
+    // messaggi dall'account dello studio. Nel pannello Web3Forms va attivata la
+    // restrizione per dominio, che accetta l'invio solo se l'Origin corrisponde al
+    // sito. Dominio definitivo da impostare: <<<TODO-H8-DOMINIO>>>
+    // Le difese qui sotto (honeypot, time-gate, rate limit) sono tutte lato client:
+    // ragionevoli e proporzionate, ma non sufficienti da sole.
     // OPZIONE A: Web3Forms (Consigliata: 100% Gratuita e Illimitata)
     // Iscriviti su https://web3forms.com inserendo tinytempleproduction@gmail.com e incolla la chiave qui sotto:
     const WEB3FORMS_ACCESS_KEY = "72795f7b-1882-4732-84bd-c2f678a2a54c";

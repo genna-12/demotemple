@@ -8,13 +8,43 @@
     <title>Tiny Temple | Servizi</title>
     <link rel="icon" type="image/png" href="assets/trasparente.ico">
 
+    <!-- ============================================================
+         COOKIE BANNER (Iubenda Cookie Solution) - DA ATTIVARE
+         Sostituire i due segnaposto con i valori del pannello Iubenda,
+         poi togliere questo commento. Deve restare il primo script della pagina.
+         Finche' e' disattivato il sito non carica alcuno script di terze parti:
+         il consenso per il lettore Spotify e' gestito da consent.js (click-to-load).
+
+    <script type="text/javascript">
+        var _iub = _iub || [];
+        _iub.csConfiguration = {
+            siteId: <<<TODO-H2-IUBENDA-SITEID>>>,
+            cookiePolicyId: <<<TODO-H2-IUBENDA-COOKIEPOLICYID>>>,
+            lang: "it",
+            countryDetection: true,
+            perPurposeConsent: true,
+            enableRemoteConsent: true,
+            invalidateConsentWithoutLog: true,
+            banner: {
+                acceptButtonDisplay: true,
+                customizeButtonDisplay: true,
+                rejectButtonDisplay: true,
+                closeButtonDisplay: false,
+                position: "float-bottom-center",
+                acceptButtonCaptionColor: "#ffffff",
+                rejectButtonCaptionColor: "#ffffff",
+                listPurposes: true,
+                explicitWithdrawal: true
+            }
+        };
+    </script>
+    <script type="text/javascript" src="https://cs.iubenda.com/autoblocking/<<<TODO-H2-IUBENDA-SITEID>>>.js"></script>
+    <script type="text/javascript" src="//cdn.iubenda.com/cs/iubenda_cs.js" charset="UTF-8" async></script>
+         ============================================================ -->
+
     <script src="preload.js"></script>
     <link rel="preload" href="assets/trasparente.png" as="image">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link
-        href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=Inter:wght@300;400;500&display=swap"
-        rel="stylesheet">
+    <link rel="preload" href="assets/fonts/archivo-600-latin.woff2" as="font" type="font/woff2" crossorigin>
     <link rel="stylesheet" href="style.css">
 </head>
 
@@ -169,13 +199,26 @@
         </section>
 
         <footer>
-            <p class="footer-address">Via Forreta, 2, Forlì, FC</p>
-            <p>&copy; 2026 Tiny Temple Studio di Francesco Pontillo. All rights reserved.</p>
-            <p>P.iva 04337140406</p>
-            <a href="https://www.iubenda.com/privacy-policy/35861019"
-                style="color: inherit; text-decoration: underline;">Privacy Policy</a>
-            <a href="https://www.iubenda.com/privacy-policy/35861019/cookie-policy"
-                style="color: inherit; text-decoration: underline;">Cookie Policy</a>
+            <p class="footer-address">
+                Studio: Via Forreta 2, Forl&igrave; (FC)<br>
+                Sede legale: Piazzale della Commenda 26, 47121 Forl&igrave; (FC)
+            </p>
+            <p>&copy; 2025&ndash;2026 Tiny Temple Studio di Francesco Pontillo. All rights reserved.</p>
+            <p>P.IVA 04337140406<!-- &middot; REA <<<TODO-H1-REA>>> --></p>
+            <p class="footer-legal-note" data-translate="footer-legal-note">
+                Tiny Temple Studio &egrave; il nome commerciale dell'attivit&agrave; di Francesco Pontillo, impresa
+                individuale. I professionisti indicati sul sito collaborano con lo studio in qualit&agrave; di
+                lavoratori autonomi indipendenti.
+            </p>
+            <div class="footer-links">
+                <a href="https://www.iubenda.com/privacy-policy/35861019" target="_blank" rel="noopener"
+                    data-translate="footer-privacy">Privacy Policy</a>
+                <a href="https://www.iubenda.com/privacy-policy/35861019/cookie-policy" target="_blank" rel="noopener"
+                    data-translate="footer-cookie">Cookie Policy</a>
+                <a href="note-legali.html" data-translate="nav-note-legali">Note legali</a>
+                <a href="#" class="iubenda-cs-preferences-link"
+                    data-translate="footer-cookie-prefs">Preferenze cookie</a>
+            </div>
             <p>Designed by Genna</p>
         </footer>
 
@@ -201,6 +244,7 @@
         </svg>
     </a>
 
+    <script src="consent.js"></script>
     <script src="main.js"></script>
     <script src="page.js"></script>
 </body>
