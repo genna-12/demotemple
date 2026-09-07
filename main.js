@@ -9,6 +9,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initGlobalScrollAnimations();
     initTranslationSystem();
     initLogoClick();
+    initTouchFeedback();
 });
 
 // Rimuove il focus dai tasti fluttuanti al termine del tocco su mobile
@@ -19,6 +20,65 @@ document.querySelectorAll('.floating-btn').forEach(btn => {
         }, 100);
     });
 });
+
+// --- 0. FEEDBACK AL TOCCO ---
+/*
+ * Su desktop lo stato premuto arriva dall'hover, che su mobile non esiste;
+ * :active da solo e' inaffidabile (iOS lo ignora senza un listener di tocco,
+ * e su Android un tap veloce spesso non fa in tempo a mostrarlo).
+ * Qui applichiamo una classe .is-pressed a qualunque elemento interattivo,
+ * la teniamo per almeno 120 ms perche' il tap si veda, e la togliamo appena
+ * il dito si alza o inizia uno scorrimento.
+ */
+function initTouchFeedback() {
+    const SELECTOR = [
+        '.hero-services a',
+        '.service-card',
+        '.direct-contact-btn',
+        '.landing-nav a',
+        '.mp-consent-btn',
+        '.footer-links a',
+        '.direct-contact-alt a',
+        '.form-privacy a',
+        '.landing-section a',
+        '.spatial-btn',
+        '.floating-btn',
+        '.menu-link',
+        '.bio-socials .social-btn',
+        '.mp-btn',
+        '.list-play-btn',
+        '.spotify-btn',
+        '.spatial-submit-btn'
+    ].join(', ');
+
+    const MIN_VISIBLE_MS = 120;
+    let pressed = null;
+    let pressedAt = 0;
+
+    const release = () => {
+        const el = pressed;
+        if (!el) return;
+        pressed = null;
+        const wait = Math.max(0, MIN_VISIBLE_MS - (Date.now() - pressedAt));
+        setTimeout(() => el.classList.remove('is-pressed'), wait);
+    };
+
+    document.addEventListener('pointerdown', (e) => {
+        const el = e.target.closest(SELECTOR);
+        if (!el) return;
+        if (pressed && pressed !== el) pressed.classList.remove('is-pressed');
+        pressed = el;
+        pressedAt = Date.now();
+        el.classList.add('is-pressed');
+    }, { passive: true });
+
+    ['pointerup', 'pointercancel', 'touchend', 'touchcancel', 'dragstart'].forEach(ev => {
+        document.addEventListener(ev, release, { passive: true });
+    });
+
+    // se il tocco diventa uno scorrimento, il tasto non e' stato premuto
+    window.addEventListener('scroll', release, { passive: true });
+}
 
 // --- 1. NAVIGAZIONE E MENU ---
 function initNavigation() {
