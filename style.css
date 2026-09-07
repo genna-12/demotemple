@@ -1900,47 +1900,67 @@ footer {
     transition: opacity 1s ease, transform 1s ease;
 }
 
-/* --- 14.2 HOME: I TRE SERVIZI NELLA HERO --- */
+/* --- 14.2 HOME: I TRE SERVIZI COME SOTTOTITOLO --- */
 .hero-services {
     display: flex;
-    flex-direction: column;
-    align-items: center;
+    flex-wrap: wrap;
+    justify-content: center;
     gap: 14px;
-    font-size: 3rem;
-    line-height: 1.1;
+    margin-top: 34px;
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 1s ease, transform 1s ease;
+}
+
+.hero-services.is-visible {
+    opacity: 1;
+    transform: translateY(0);
 }
 
 .hero-services a {
-    position: relative;
     display: inline-flex;
     align-items: center;
-    gap: 0.4em;
+    gap: 9px;
+    padding: 13px 26px;
+    border-radius: 50px;
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    background: rgba(10, 10, 10, 0.35);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    font-family: var(--font-text);
+    font-size: 0.78rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 2px;
     color: var(--text-primary);
     text-decoration: none;
-    transition: color 0.4s var(--ease-cinematic), transform 0.4s var(--ease-cinematic);
+    transition: all 0.4s var(--ease-cinematic);
     -webkit-tap-highlight-color: transparent;
 }
 
 .hero-services a::after {
     content: '\2192';
-    font-size: 0.55em;
-    opacity: 0.3;
-    transform: translateX(-6px);
+    font-size: 0.95em;
+    opacity: 0.45;
+    transform: translateX(-4px);
     transition: opacity 0.4s ease, transform 0.4s ease;
 }
 
 .hero-services a:active {
-    color: var(--accent-orange);
+    border-color: var(--accent-orange);
+    background: rgba(207, 92, 54, 0.18);
 }
 
 @media (hover: hover) and (pointer: fine) {
     .hero-services a:hover {
-        color: var(--accent-orange);
-        transform: translateX(6px);
+        border-color: var(--accent-orange);
+        background: rgba(207, 92, 54, 0.15);
+        transform: translateY(-3px);
+        box-shadow: 0 12px 26px rgba(0, 0, 0, 0.5), 0 0 26px rgba(207, 92, 54, 0.18);
     }
     .hero-services a:hover::after {
         opacity: 1;
-        transform: translateX(0);
+        transform: translateX(2px);
     }
 }
 
@@ -2224,8 +2244,8 @@ footer {
     }
 }
 
-/* --- 14.6 MAIL DIRETTA --- */
-.direct-mail {
+/* --- 14.6 CONTATTO DIRETTO (porta al form) --- */
+.direct-contact {
     position: relative;
     z-index: 10;
     max-width: 860px;
@@ -2234,56 +2254,90 @@ footer {
     text-align: center;
 }
 
-.direct-mail-label {
+.direct-contact-label {
     display: block;
     font-family: var(--font-text);
     font-size: 0.72rem;
     text-transform: uppercase;
     letter-spacing: 3px;
     color: var(--accent-orange);
-    margin-bottom: 16px;
+    margin-bottom: 18px;
 }
 
-.direct-mail-link {
+.direct-contact-btn {
     display: inline-flex;
     align-items: center;
     gap: 12px;
-    padding: 16px 32px;
+    padding: 16px 40px;
     border-radius: 50px;
-    border: 1px solid rgba(255, 255, 255, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.2);
     background: rgba(255, 255, 255, 0.04);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
     font-family: var(--font-text);
-    font-size: 1.05rem;
+    font-size: 0.82rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 2px;
     color: var(--text-primary);
     text-decoration: none;
-    word-break: break-word;
     transition: all 0.4s var(--ease-cinematic);
     -webkit-tap-highlight-color: transparent;
 }
 
-.direct-mail-link svg {
+.direct-contact-btn svg {
     flex-shrink: 0;
     stroke: var(--accent-orange);
-    transition: transform 0.4s ease;
+    transition: transform 0.4s ease, stroke 0.4s ease;
 }
 
-.direct-mail-link:active {
+.direct-contact-btn:active {
     border-color: var(--accent-orange);
-    box-shadow: 0 0 25px rgba(207, 92, 54, 0.25);
+    background: rgba(207, 92, 54, 0.18);
 }
 
 @media (hover: hover) and (pointer: fine) {
-    .direct-mail-link:hover {
+    .direct-contact-btn:hover {
         border-color: var(--accent-orange);
-        background: rgba(207, 92, 54, 0.12);
+        background: rgba(207, 92, 54, 0.15);
         transform: translateY(-3px);
         box-shadow: 0 15px 30px rgba(0, 0, 0, 0.5), 0 0 30px rgba(207, 92, 54, 0.2);
     }
-    .direct-mail-link:hover svg {
+    .direct-contact-btn:hover svg {
         transform: scale(1.1);
+        stroke: #fff;
     }
+}
+
+.direct-contact-alt,
+.form-mail {
+    margin-top: 18px;
+    font-size: 0.88rem;
+    color: #7a6d64;
+    font-weight: 300;
+}
+
+.form-mail {
+    margin-top: 14px;
+}
+
+.direct-contact-alt a,
+.form-mail a {
+    color: var(--text-muted);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    word-break: break-word;
+    transition: color 0.3s ease;
+}
+
+.direct-contact-alt a:hover,
+.form-mail a:hover {
+    color: var(--accent-orange);
+}
+
+/* l'ancora dal pulsante non deve finire sotto il logo */
+#contact-form-section {
+    scroll-margin-top: 110px;
 }
 
 /* --- 14.7 TEAM (CONTATTI) --- */
@@ -2384,10 +2438,20 @@ footer {
         margin-top: 20px;
     }
 
+    .hero-content h1 {
+        font-size: 1.95rem;
+    }
+
     .hero-services {
-        font-size: 1.5rem;
-        gap: 18px;
-        padding: 0 18px;
+        gap: 10px;
+        margin-top: 26px;
+        padding: 0 16px;
+    }
+
+    .hero-services a {
+        padding: 11px 20px;
+        font-size: 0.7rem;
+        letter-spacing: 1.5px;
     }
 
     .story-block.full-width .content-box {
@@ -2429,13 +2493,18 @@ footer {
         padding: 34px 0 0;
     }
 
-    .direct-mail {
+    .direct-contact {
         padding: 30px 22px 10px;
     }
 
-    .direct-mail-link {
-        font-size: 0.9rem;
-        padding: 14px 22px;
+    .direct-contact-btn {
+        font-size: 0.75rem;
+        padding: 14px 30px;
+    }
+
+    .direct-contact-alt,
+    .form-mail {
+        font-size: 0.82rem;
     }
 
     .team-section {

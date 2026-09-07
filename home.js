@@ -6,6 +6,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const introLayer = document.getElementById('intro-layer');
     const navbar = document.getElementById('navbar');
     const heroTitle = document.querySelector('.hero-content h1');
+    const heroServices = document.querySelector('.hero-services');
 
     const runIntro = () => {
         const hasVibrated = sessionStorage.getItem('hasVibrated');
@@ -31,6 +32,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             if (heroTitle) heroTitle.classList.add('is-visible');
+            if (heroServices) setTimeout(() => heroServices.classList.add('is-visible'), 350);
             document.body.classList.remove('loading-state');
         }, 900);
     };
