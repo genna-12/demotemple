@@ -3,8 +3,11 @@
  * Le altre pagine non hanno più immagini di sfondo.
  */
 (function () {
-    const path = window.location.pathname;
-    const isHome = path === '/' || path.endsWith('/index.html') || path.endsWith('index.html');
+    /* Il sito puo' essere servito da una sottocartella (es. /demotemple/ su GitHub
+       Pages), quindi non basta confrontare il percorso con '/': guardiamo l'ultimo
+       segmento, che e' vuoto sulla home e vale '<pagina>.html' su tutte le altre. */
+    const file = window.location.pathname.split('/').pop();
+    const isHome = file === '' || file === 'index.html';
     if (!isHome) return;
 
     const folder = 'home_main';
