@@ -2067,7 +2067,8 @@ footer {
     z-index: 10;
     max-width: 1300px;
     margin: 0 auto;
-    padding: 210px 5% 60px;
+    /* compatta: il contenuto della pagina deve iniziare dentro il primo schermo */
+    padding: clamp(96px, 13vh, 150px) 5% 30px;
     text-align: center;
 }
 
@@ -2082,28 +2083,15 @@ footer {
 }
 
 .page-header h1 {
-    font-size: 3.2rem;
+    font-size: clamp(2.1rem, 4vw, 2.7rem);
     line-height: 1.05;
     text-shadow: none;
 }
 
-.page-header.compact {
-    padding: clamp(96px, 13vh, 150px) 5% 30px;
-}
-
-.page-header.compact h1 {
-    font-size: clamp(2.1rem, 4vw, 2.7rem);
-}
-
-.page-header.compact .page-intro {
-    margin-top: 16px;
-    font-size: 1rem;
-}
-
 .page-header .page-intro {
     max-width: 720px;
-    margin: 26px auto 0;
-    font-size: 1.1rem;
+    margin: 16px auto 0;
+    font-size: 1rem;
     line-height: 1.8;
     color: var(--text-muted);
     font-weight: 300;
@@ -2194,7 +2182,7 @@ footer {
     z-index: 10;
     max-width: 1300px;
     margin: 0 auto;
-    padding: 40px 5% 40px;
+    padding: 0 5% 40px;
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     gap: 28px;
@@ -2636,7 +2624,10 @@ footer {
     font-weight: 400;
     text-transform: uppercase;
     letter-spacing: 2px;
+    line-height: 1.5;
     color: var(--accent-orange);
+    /* riserva due righe: cosi' i ruoli piu' lunghi non disallineano le icone */
+    min-height: 3em;
 }
 
 .team-info .bio-socials {
@@ -2653,16 +2644,11 @@ footer {
 
 @media (max-width: 768px) {
     .page-header {
-        padding: 150px 22px 40px;
-    }
-
-    .page-header h1 {
-        font-size: 2.1rem;
+        padding: clamp(90px, 12vh, 130px) 22px 26px;
     }
 
     .page-header .page-intro {
-        font-size: 1rem;
-        margin-top: 20px;
+        font-size: 0.95rem;
     }
 
     .hero-content h1 {
