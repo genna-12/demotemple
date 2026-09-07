@@ -1888,6 +1888,19 @@ footer {
     text-shadow: none;
 }
 
+.page-header.compact {
+    padding: clamp(96px, 13vh, 150px) 5% 30px;
+}
+
+.page-header.compact h1 {
+    font-size: clamp(2.1rem, 4vw, 2.7rem);
+}
+
+.page-header.compact .page-intro {
+    margin-top: 16px;
+    font-size: 1rem;
+}
+
 .page-header .page-intro {
     max-width: 720px;
     margin: 26px auto 0;
@@ -2344,12 +2357,12 @@ footer {
 .team-section {
     position: relative;
     z-index: 10;
-    max-width: 1100px;
+    max-width: 940px;
     margin: 0 auto;
-    padding: 20px 5% 40px;
+    padding: 0 5% 40px;
     display: grid;
     grid-template-columns: repeat(2, 1fr);
-    gap: 40px;
+    gap: 32px;
 }
 
 .team-member {
@@ -2369,6 +2382,8 @@ footer {
     position: relative;
     width: 100%;
     aspect-ratio: 4 / 5;
+    /* le due foto devono stare intere nel primo schermo */
+    max-height: min(44vh, 470px);
     overflow: hidden;
     border-radius: 16px;
     background: #111;
@@ -2379,6 +2394,7 @@ footer {
     width: 100%;
     height: 100%;
     object-fit: cover;
+    object-position: center 22%;
     display: block;
     transition: transform 0.8s var(--ease-cinematic), filter 0.6s ease;
 }
@@ -2390,7 +2406,7 @@ footer {
 }
 
 .team-info {
-    padding-top: 26px;
+    padding-top: 20px;
 }
 
 .team-info h2 {
@@ -2510,11 +2526,12 @@ footer {
     .team-section {
         grid-template-columns: 1fr 1fr;
         gap: 16px;
-        padding: 10px 20px 30px;
+        padding: 0 20px 30px;
     }
 
     .team-photo-box {
         border-radius: 12px;
+        max-height: none;
     }
 
     .team-info {

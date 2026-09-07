@@ -3,17 +3,13 @@
  */
 document.addEventListener('DOMContentLoaded', () => {
     // --- 1. HERO ANIMATIONS ---
-    const heroTitle = document.querySelector('.hero-content h1');
-    const heroSubtitle = document.querySelector('.hero-subtitle');
+    const pageTitle = document.querySelector('.page-header h1, .hero-content h1');
+    const pageIntro = document.querySelector('.page-header .page-intro, .hero-subtitle');
 
     setTimeout(() => {
         document.body.classList.remove('loading-state');
-        if (heroTitle) heroTitle.classList.add('is-visible');
-        if (heroSubtitle) {
-            heroSubtitle.style.opacity = '0';
-            heroSubtitle.style.transform = 'translateY(20px)';
-            setTimeout(() => heroSubtitle.classList.add('is-visible'), 300);
-        }
+        if (pageTitle) pageTitle.classList.add('is-visible');
+        if (pageIntro) setTimeout(() => pageIntro.classList.add('is-visible'), 300);
     }, 100);
 
     // --- 2. CONFIGURAZIONE INVIO MAIL ---
