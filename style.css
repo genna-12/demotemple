@@ -2752,6 +2752,9 @@ footer {
     .team-info h2 {
         font-size: 1rem;
         line-height: 1.2;
+        /* i nomi lunghi vanno su due righe: riservo lo spazio a entrambi,
+           altrimenti tutto cio' che segue slitta e le due colonne si sfalsano */
+        min-height: 2.4em;
     }
 
     .team-role {
@@ -3129,6 +3132,9 @@ footer {
 @media (max-width: 768px) {
     .team-title {
         font-size: 0.82rem;
+        line-height: 1.35;
+        /* riserva due righe: i titoli piu' lunghi non disallineano le icone */
+        min-height: 2.7em;
     }
 
     .team-bio-btn {
