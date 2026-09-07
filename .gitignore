@@ -1,6 +1,8 @@
 bugs.txt
 tree.txt
-loghi/
-foto/
 modifiche/
 legale/
+
+# Materiali non usati dal sito: restano sul disco, fuori dal repository.
+# Contiene anche le vecchie cartelle foto/ e loghi/, consolidate qui dentro.
+archivio/

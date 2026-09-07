@@ -1,6 +1,10 @@
 /**
- * Tiny Temple - Preload dell'immagine hero (solo Home)
- * Le altre pagine non hanno più immagini di sfondo.
+ * Tiny Temple - Immagine hero della Home
+ *
+ * Una sola immagine per formato, decisa a monte: niente rotazione casuale,
+ * cosi' la prima schermata e' sempre la stessa per tutti.
+ * Il preload parte prima del CSS, quindi l'immagine e' gia' in arrivo quando
+ * il browser incontra la regola di sfondo.
  */
 (function () {
     /* Il sito puo' essere servito da una sottocartella (es. /demotemple/ su GitHub
@@ -10,18 +14,9 @@
     const isHome = file === '' || file === 'index.html';
     if (!isHome) return;
 
-    const folder = 'home_main';
-    const maxImages = 3;
-    const isMobile = window.innerWidth <= 768;
-    const prefix = isMobile ? 'mobile_' : 'desktop_';
-
-    let randomNum = sessionStorage.getItem('heroImgNum_' + folder);
-    if (!randomNum) {
-        randomNum = Math.floor(Math.random() * maxImages) + 1;
-        sessionStorage.setItem('heroImgNum_' + folder, randomNum);
-    }
-
-    const imgUrl = `assets/${folder}/${prefix}${randomNum}.jpg`;
+    const imgUrl = window.innerWidth <= 768
+        ? 'assets/home_main/mobile_1.jpg'
+        : 'assets/home_main/desktop_3.jpg';
 
     const preloadLink = document.createElement('link');
     preloadLink.rel = 'preload';
