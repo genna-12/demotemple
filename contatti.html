@@ -13,7 +13,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link
-        href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400&family=Playfair+Display:ital,wght@0,400;0,600;1,400&display=swap"
+        href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=Inter:wght@300;400;500&display=swap"
         rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
@@ -47,61 +47,26 @@
     </div>
 
     <main>
-        <!-- Hero Section -->
-        <section id="hero" class="hero-section">
-            <div class="hero-overlay"></div>
-            <div id="hero-image-container"></div>
-            <div class="hero-content">
-                <h1 data-translate="hero-title-cont">Parliamo.</h1>
-                <p class="hero-subtitle scroll-reveal" data-translate="hero-subtitle-cont">Raccontaci la tua idea.</p>
-            </div>
-        </section>
+        <!-- Intestazione di pagina -->
+        <header class="page-header">
+            <span class="eyebrow" data-translate="cont-eyebrow">Contatti</span>
+            <h1 data-translate="cont-title">Parliamo</h1>
+            <p class="page-intro" data-translate="cont-intro">Raccontaci la tua idea. Ti rispondiamo di persona.</p>
+        </header>
 
-        <!-- Testo Gigante Scorrevole (Sfondo Dinamico Multi-Livello) -->
-        <div class="marquee-section">
-            <div class="marquee-track">
-                <div class="marquee-text">ANALOG HEART &nbsp;•&nbsp; DIGITAL MIND &nbsp;•&nbsp; SOUND IS A RITUAL
-                    &nbsp;•&nbsp; ANALOG HEART &nbsp;•&nbsp; DIGITAL MIND &nbsp;•&nbsp; SOUND IS A RITUAL &nbsp;•&nbsp;
+        <!-- Le persone -->
+        <section id="team" class="team-section">
+
+            <article class="team-member scroll-reveal">
+                <div class="team-photo-box">
+                    <img class="team-photo" src="assets/team/ponz.jpg" alt="Francesco Pontillo" loading="lazy"
+                        decoding="async">
                 </div>
-            </div>
-            <div class="marquee-track">
-                <div class="marquee-text reverse outline">CREATIVE VISION &nbsp;•&nbsp; NO FILTERS &nbsp;•&nbsp; PURE
-                    FREQUENCIES &nbsp;•&nbsp; CREATIVE VISION &nbsp;•&nbsp; NO FILTERS &nbsp;•&nbsp; PURE FREQUENCIES
-                    &nbsp;•&nbsp;</div>
-            </div>
-            <div class="marquee-track">
-                <div class="marquee-text">ORGANIC SOUND &nbsp;•&nbsp; WOOD AND TUBES &nbsp;•&nbsp; SONIC ALCHEMY
-                    &nbsp;•&nbsp; ORGANIC SOUND &nbsp;•&nbsp; WOOD AND TUBES &nbsp;•&nbsp; SONIC ALCHEMY &nbsp;•&nbsp;
-                </div>
-            </div>
-            <div class="marquee-track">
-                <div class="marquee-text reverse outline">VOLTAGE CONTROL &nbsp;•&nbsp; SONIC TEXTURES &nbsp;•&nbsp;
-                    OBSESSION FOR DETAIL &nbsp;•&nbsp; VOLTAGE CONTROL &nbsp;•&nbsp; SONIC TEXTURES &nbsp;•&nbsp;
-                    OBSESSION FOR DETAIL &nbsp;•&nbsp;</div>
-            </div>
-            <div class="marquee-track">
-                <div class="marquee-text">RAW SIGNALS &nbsp;•&nbsp; HARMONIC DISTORTION &nbsp;•&nbsp; TRANSIENT DESIGN
-                    &nbsp;•&nbsp; RAW SIGNALS &nbsp;•&nbsp; HARMONIC DISTORTION &nbsp;•&nbsp; TRANSIENT DESIGN
-                    &nbsp;•&nbsp;</div>
-            </div>
-        </div>
-
-        <!-- Sezione Team (Narrative Style) -->
-        <section id="team" class="narrative-section">
-
-            <!-- Blocco 1: Francesco (Ponz) -->
-            <article class="story-block text-left">
-                <div class="content-box scroll-reveal">
+                <div class="team-info">
                     <h2>Francesco Pontillo</h2>
-                    <p class="role-text" data-translate="ponz-role">Produttore</p>
-                    <p data-translate="ponz-bio">
-                        L'orecchio che vede oltre. Specializzato nel trovare l'anima sonora di un progetto
-                        prima ancora che venga registrata la prima nota. Guida la visione d'insieme con
-                        un approccio che fonde tecnica e istinto.
-                    </p>
+                    <p class="team-role" data-translate="ponz-role">Produzione, Direzione artistica</p>
                     <div class="bio-socials">
-                        <a href="https://www.instagram.com/francesco_ponz_" target="_blank" class="social-btn mini-btn"
-                            aria-label="Instagram">
+                        <a href="https://www.instagram.com/francesco_ponz_" target="_blank" class="social-btn mini-btn" aria-label="Instagram">
                             <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor"
                                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                 <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
@@ -119,33 +84,18 @@
                         </a>
                     </div>
                 </div>
-                <div class="image-box scroll-reveal parallax-target">
-                    <picture>
-                        <source media="(max-width: 768px)" srcset="assets/team/ponz.jpg">
-                        <img src="assets/team/ponz.jpg" alt="Francesco Pontillo" class="detail-img" loading="lazy">
-                    </picture>
-                </div>
             </article>
 
-            <!-- Blocco 2: Andrea (Missi) -->
-            <article class="story-block text-right">
-                <div class="image-box scroll-reveal parallax-target">
-                    <picture>
-                        <source media="(max-width: 768px)" srcset="assets/team/andrea.jpg">
-                        <img src="assets/team/andrea.jpg" alt="Andrea Missiroli" class="detail-img" loading="lazy">
-                    </picture>
+            <article class="team-member scroll-reveal">
+                <div class="team-photo-box">
+                    <img class="team-photo" src="assets/team/andrea.jpg" alt="Andrea Missiroli" loading="lazy"
+                        decoding="async">
                 </div>
-                <div class="content-box scroll-reveal">
+                <div class="team-info">
                     <h2>Andrea Missiroli</h2>
-                    <p class="role-text" data-translate="andrea-role">Polistrumentista / Arrangiatore</p>
-                    <p data-translate="andrea-bio">
-                        Le mani che traducono l'idea in armonia. Dal pianoforte ai synth, dagli archi
-                        all'elettronica. Costruisce le fondamenta musicali su cui il brano può
-                        elevarsi e respirare.
-                    </p>
+                    <p class="team-role" data-translate="andrea-role">Arrangiamento, Polistrumentismo</p>
                     <div class="bio-socials">
-                        <a href="https://www.instagram.com/andrea.missiroli" target="_blank" class="social-btn mini-btn"
-                            aria-label="Instagram">
+                        <a href="https://www.instagram.com/andrea.missiroli" target="_blank" class="social-btn mini-btn" aria-label="Instagram">
                             <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor"
                                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                 <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
@@ -159,13 +109,26 @@
 
         </section>
 
+        <!-- Contatto diretto via mail -->
+        <div class="direct-mail scroll-reveal">
+            <span class="direct-mail-label" data-translate="mail-label">Scrivici direttamente</span>
+            <a class="direct-mail-link" href="mailto:tinytempleproduction@gmail.com">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                    <polyline points="22,6 12,13 2,6"></polyline>
+                </svg>
+                tinytempleproduction@gmail.com
+            </a>
+        </div>
+
         <!-- SEZIONE CONTACT FORM (Spatial Liquid Glass) -->
         <section id="contact-form-section" class="contact-form-section scroll-reveal">
             <div class="spatial-glow"></div>
 
             <div class="form-glass-card">
                 <div class="form-header">
-                    <span class="connect-tag" data-translate="form-badge">Direct Communication</span>
+                    <span class="connect-tag" data-translate="form-badge">Comunicazione diretta</span>
                     <h2 class="form-title" data-translate="form-title">Scrivi al Tempio.</h2>
                     <p class="form-subtitle" data-translate="form-subtitle">Parlaci del tuo progetto. Rispondiamo
                         solitamente entro 24 ore.</p>
@@ -199,14 +162,11 @@
                         <label for="service_type" data-translate="form-service-label">Cosa hai in mente?</label>
                         <div class="select-wrapper">
                             <select id="service_type" name="service_type">
-                                <option value="Produzione Musicale" data-translate="opt-prod">Produzione Musicale
-                                    Completa</option>
-                                <option value="Recording Studio" data-translate="opt-rec">Recording & Registrazione
+                                <option value="Artist Development" data-translate="opt-artist">Artist Development
                                 </option>
-                                <option value="Mix e Master" data-translate="opt-mix">Mixing & Mastering</option>
-                                <option value="Direzione Artistica" data-translate="opt-dir">Direzione Artistica /
-                                    Consulenza</option>
-                                <option value="Altro Progetto" data-translate="opt-other">Altro / Info Generali</option>
+                                <option value="Music Production" data-translate="opt-prod">Music Production</option>
+                                <option value="Mixing & Mastering" data-translate="opt-mix">Mixing & Mastering</option>
+                                <option value="Altro Progetto" data-translate="opt-other">Altro / Info generali</option>
                             </select>
                         </div>
                     </div>
@@ -242,7 +202,7 @@
 
             <div class="spatial-glass-card">
                 <div class="connect-content">
-                    <span class="connect-tag">Sound & Synergy</span>
+                    <span class="connect-tag" data-translate="connect-tag">Seguici</span>
                     <h2 class="connect-title" data-translate="connect-title-contacts">Facciamo squadra.</h2>
 
                     <div class="social-grid">

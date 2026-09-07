@@ -1,21 +1,14 @@
 /**
- * Tiny Temple - Preload Script (Fixato per conteggio foto dinamico)
+ * Tiny Temple - Preload dell'immagine hero (solo Home)
+ * Le altre pagine non hanno più immagini di sfondo.
  */
-(function() {
+(function () {
     const path = window.location.pathname;
-    let folder = 'home_main';
-    let maxImages = 3; // Di default (Home) ne abbiamo 3
+    const isHome = path === '/' || path.endsWith('/index.html') || path.endsWith('index.html');
+    if (!isHome) return;
 
-    if (path.includes('servizi')) {
-        folder = 'services_main';
-        maxImages = 2; // FIX: In servizi ce ne sono solo 2!
-    } 
-    else if (path.includes('contatti')) {
-        folder = 'home_main';
-        maxImages = 3; // Usiamo le 3 della home per i contatti
-    } 
-    else if (path.includes('portfolio')) return;
-
+    const folder = 'home_main';
+    const maxImages = 3;
     const isMobile = window.innerWidth <= 768;
     const prefix = isMobile ? 'mobile_' : 'desktop_';
 
