@@ -2579,10 +2579,14 @@ footer {
 
 .team-photo-box {
     position: relative;
+    display: block;
+    text-decoration: none;
+    -webkit-tap-highlight-color: transparent;
     width: 100%;
     aspect-ratio: 4 / 5;
-    /* le due foto devono stare intere nel primo schermo */
-    max-height: min(44vh, 470px);
+    /* le due foto devono stare intere nel primo schermo, insieme a nome,
+       titolo, ruolo, pulsante bio e social */
+    max-height: min(36vh, 420px);
     overflow: hidden;
     border-radius: 16px;
     background: #111;
@@ -2616,6 +2620,16 @@ footer {
     letter-spacing: -0.01em;
     color: var(--text-primary);
     margin-bottom: 10px;
+}
+
+.team-title {
+    font-family: var(--font-title);
+    font-size: 0.95rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    color: var(--text-primary);
+    margin-bottom: 4px;
 }
 
 .team-role {
@@ -3011,4 +3025,126 @@ footer {
 .spatial-submit-btn.is-pressed .btn-lens {
     background: linear-gradient(135deg, rgba(207, 92, 54, 0.62) 0%, rgba(148, 93, 56, 0.72) 100%);
     border-color: rgba(255, 255, 255, 0.5);
+}
+
+/* ========================================================
+   17. BIO: pulsante nei contatti e pagine dedicate
+   ======================================================== */
+
+.team-bio-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 16px;
+    padding: 9px 20px;
+    border-radius: 50px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    font-family: var(--font-text);
+    font-size: 0.68rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: var(--text-muted);
+    text-decoration: none;
+    transition: all 0.4s var(--ease-cinematic);
+    -webkit-tap-highlight-color: transparent;
+}
+
+.team-bio-btn span:last-child {
+    transition: transform 0.4s var(--ease-cinematic);
+}
+
+.team-bio-btn.is-pressed {
+    border-color: var(--accent-orange);
+    color: #fff;
+    background: rgba(207, 92, 54, 0.18);
+    transform: scale(0.97);
+}
+
+.team-photo-box.is-pressed {
+    transform: scale(0.985);
+    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.85), 0 0 30px rgba(207, 92, 54, 0.18);
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .team-bio-btn:hover {
+        color: #fff;
+        border-color: var(--accent-orange);
+        background: rgba(207, 92, 54, 0.14);
+    }
+    .team-bio-btn:hover span:last-child {
+        transform: translateX(3px);
+    }
+    .team-photo-box:hover {
+        box-shadow: 0 30px 70px rgba(0, 0, 0, 0.85), 0 0 34px rgba(207, 92, 54, 0.14);
+    }
+}
+
+/* Ritratto in cima alla pagina bio */
+.bio-portrait {
+    position: relative;
+    z-index: 10;
+    max-width: 400px;
+    margin: 0 auto;
+    padding: 0 20px 34px;
+    opacity: 0;
+    transform: translateY(30px);
+    transition: opacity 1s cubic-bezier(0.16, 1, 0.3, 1), transform 1s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.bio-portrait.is-visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.bio-portrait img {
+    width: 100%;
+    aspect-ratio: 4 / 5;
+    object-fit: cover;
+    object-position: center 22%;
+    display: block;
+    border-radius: 16px;
+    background: #111;
+    box-shadow: 0 25px 60px rgba(0, 0, 0, 0.8);
+}
+
+.bio-sep {
+    color: var(--accent-orange);
+    margin: 0 4px;
+}
+
+.bio-socials-wrap {
+    position: relative;
+    z-index: 10;
+    display: flex;
+    justify-content: center;
+    padding: 0 5% 10px;
+}
+
+.bio-socials-wrap .bio-socials {
+    margin-top: 0 !important;
+    justify-content: center;
+}
+
+@media (max-width: 768px) {
+    .team-title {
+        font-size: 0.82rem;
+    }
+
+    .team-bio-btn {
+        margin-top: 12px;
+        padding: 8px 15px;
+        font-size: 0.62rem;
+        letter-spacing: 1.4px;
+    }
+
+    .bio-portrait {
+        max-width: 100%;
+        padding: 0 22px 26px;
+    }
+
+    .bio-portrait img {
+        max-height: 42vh;
+        border-radius: 12px;
+    }
 }
