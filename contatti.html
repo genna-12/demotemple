@@ -8,40 +8,6 @@
     <title>Tiny Temple | Contatti</title>
     <link rel="icon" type="image/png" href="assets/trasparente.ico">
 
-    <!-- ============================================================
-         COOKIE BANNER (Iubenda Cookie Solution) - DA ATTIVARE
-         Sostituire i due segnaposto con i valori del pannello Iubenda,
-         poi togliere questo commento. Deve restare il primo script della pagina.
-         Finche' e' disattivato il sito non carica alcuno script di terze parti:
-         il consenso per il lettore Spotify e' gestito da consent.js (click-to-load).
-
-    <script type="text/javascript">
-        var _iub = _iub || [];
-        _iub.csConfiguration = {
-            siteId: <<<TODO-H2-IUBENDA-SITEID>>>,
-            cookiePolicyId: <<<TODO-H2-IUBENDA-COOKIEPOLICYID>>>,
-            lang: "it",
-            countryDetection: true,
-            perPurposeConsent: true,
-            enableRemoteConsent: true,
-            invalidateConsentWithoutLog: true,
-            banner: {
-                acceptButtonDisplay: true,
-                customizeButtonDisplay: true,
-                rejectButtonDisplay: true,
-                closeButtonDisplay: false,
-                position: "float-bottom-center",
-                acceptButtonCaptionColor: "#ffffff",
-                rejectButtonCaptionColor: "#ffffff",
-                listPurposes: true,
-                explicitWithdrawal: true
-            }
-        };
-    </script>
-    <script type="text/javascript" src="https://cs.iubenda.com/autoblocking/<<<TODO-H2-IUBENDA-SITEID>>>.js"></script>
-    <script type="text/javascript" src="//cdn.iubenda.com/cs/iubenda_cs.js" charset="UTF-8" async></script>
-         ============================================================ -->
-
     <script src="preload.js"></script>
     <link rel="preload" href="assets/trasparente.png" as="image">
     <link rel="preload" href="assets/fonts/archivo-600-latin.woff2" as="font" type="font/woff2" crossorigin>
@@ -177,14 +143,14 @@
                         <div class="input-group">
                             <label for="user_name" data-translate="form-name-label">Nome / Nome d'Arte *</label>
                             <input type="text" id="user_name" name="user_name" required placeholder="Es. Marco Rossi"
-                                autocomplete="name">
+                                autocomplete="name" maxlength="100">
                         </div>
 
                         <!-- Email -->
                         <div class="input-group">
                             <label for="user_email" data-translate="form-email-label">Email di Contatto *</label>
                             <input type="email" id="user_email" name="user_email" required
-                                placeholder="nome@dominio.com" autocomplete="email">
+                                placeholder="nome@dominio.com" autocomplete="email" maxlength="150">
                         </div>
                     </div>
 
@@ -205,7 +171,7 @@
                     <!-- Messaggio -->
                     <div class="input-group">
                         <label for="message" data-translate="form-msg-label">Raccontaci la tua visione *</label>
-                        <textarea id="message" name="message" rows="5" required
+                        <textarea id="message" name="message" rows="5" required maxlength="5000"
                             placeholder="Genere, riferimenti sonori, scadenze o dettagli sul brano..."></textarea>
                     </div>
 
@@ -220,7 +186,9 @@
                             href="https://www.iubenda.com/privacy-policy/35861019" target="_blank" rel="noopener"
                             data-translate="form-privacy-link">informativa privacy</a><span
                             data-translate="form-privacy-2">. Se hai meno di 18 anni, scrivici insieme a un
-                            genitore.</span>
+                            genitore.</span> <span data-translate="form-privacy-3">Dettagli su come trattiamo i
+                            messaggi nelle</span> <a href="note-legali.html#modulo-contatto"
+                            data-translate="form-privacy-link2">note legali</a><span>.</span>
                     </p>
 
                     <!-- Tasto Invio Spaziale -->
@@ -322,8 +290,8 @@
                 <a href="https://www.iubenda.com/privacy-policy/35861019/cookie-policy" target="_blank" rel="noopener"
                     data-translate="footer-cookie">Cookie Policy</a>
                 <a href="note-legali.html" data-translate="nav-note-legali">Note legali</a>
-                <a href="#" class="iubenda-cs-preferences-link"
-                    data-translate="footer-cookie-prefs">Preferenze cookie</a>
+                <a href="#" class="consent-revoke-link"
+                    data-translate="footer-consent">Consenso contenuti esterni</a>
             </div>
             <p>Designed by Genna</p>
         </footer>

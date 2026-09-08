@@ -2869,9 +2869,26 @@ footer {
     background: rgba(207, 92, 54, 0.22);
 }
 
-.mp-consent-btn.is-unavailable {
-    opacity: 0.4;
-    cursor: default;
+/* il riquadro ora contiene l'informativa: serve piu' respiro e un link vero */
+.mp-consent-box {
+    align-items: flex-start;
+}
+
+.mp-consent-text p strong {
+    color: var(--text-primary);
+    font-weight: 500;
+}
+
+.mp-consent-note {
+    margin-top: 10px;
+    font-size: 0.72rem !important;
+    color: #6f635b !important;
+}
+
+a.mp-consent-btn {
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
 }
 
 @media (max-width: 768px) {

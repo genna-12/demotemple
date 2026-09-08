@@ -59,7 +59,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // NODI EMBED / CONSENSO
     const consentBox = document.getElementById('mp-consent-box');
     const consentAllowBtn = document.getElementById('mp-consent-allow');
-    const consentPrefsBtn = document.getElementById('mp-consent-prefs');
     const spotifyWrap = document.getElementById('mp-spotify-wrap');
     const spotifyHost = document.getElementById('mp-spotify-host');
 
@@ -496,15 +495,6 @@ document.addEventListener('DOMContentLoaded', () => {
         consentAllowBtn.addEventListener('click', () => {
             if (window.TinyConsent) window.TinyConsent.grant();
             activateEmbed();
-        });
-    }
-
-    if (consentPrefsBtn) {
-        consentPrefsBtn.addEventListener('click', (e) => {
-            e.preventDefault();
-            if (window.TinyConsent && window.TinyConsent.openPreferences()) return;
-            // nessun CMP installato: il pulsante sopra resta la strada per attivare il player
-            consentPrefsBtn.classList.add('is-unavailable');
         });
     }
 

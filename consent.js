@@ -1,47 +1,34 @@
 /**
- * Tiny Temple - Gestione del consenso per i contenuti di terze parti (Spotify)
+ * Tiny Temple - Consenso ai contenuti di terze parti (click-to-load)
  *
- * Regola: nessuna richiesta verso Spotify finche' l'utente non ha acconsentito.
- * Due strade, entrambe valide:
- *   1. il CMP (Iubenda) registra il consenso per la finalita' 3 (targeting/terze parti);
- *   2. click-to-load: l'utente attiva esplicitamente il player dal riquadro segnaposto.
- * In entrambi i casi il consenso e' revocabile: dalle preferenze cookie del footer,
- * o svuotando i dati del sito.
+ * Il sito NON usa un cookie banner, ed e' una scelta deliberata: non ci sono
+ * analytics, pixel o profilazione, e l'unico contenuto di terze parti e' il
+ * player Spotify nella pagina Portfolio. Il consenso viene quindi raccolto
+ * dove serve e quando serve: il riquadro nel portfolio informa l'utente, e il
+ * clic su "Attiva il player" E' il consenso. Finche' quel clic non arriva,
+ * verso Spotify non parte nulla - nemmeno lo script della iFrame API.
+ *
+ * ATTENZIONE per chi legge in futuro: questa architettura regge finche' la
+ * configurazione resta questa. Aggiungere un analytics, un pixel o un secondo
+ * contenuto esterno la fa decadere, e a quel punto serve un CMP vero.
+ *
+ * Il consenso e' revocabile da qualunque pagina, con il link "Consenso
+ * contenuti esterni" nel pie' di pagina.
  */
 (function () {
     'use strict';
 
     const STORAGE_KEY = 'tinyTempleSpotifyConsent';
-    const PURPOSE_THIRD_PARTY = 3;
     const listeners = [];
 
-    function iubendaConsent() {
-        try {
-            const cs = window._iub && window._iub.cs;
-            if (!cs || !cs.consent) return null;
-            const purposes = cs.consent.purposes;
-            if (purposes && typeof purposes[PURPOSE_THIRD_PARTY] !== 'undefined') {
-                return purposes[PURPOSE_THIRD_PARTY] === true;
-            }
-            if (typeof cs.consent.consent === 'boolean') return cs.consent.consent;
-            return null;
-        } catch (e) {
-            return null;
-        }
-    }
-
-    function localConsent() {
+    function isGranted() {
         try {
             return window.localStorage.getItem(STORAGE_KEY) === 'granted';
         } catch (e) {
+            /* storage non disponibile (navigazione privata, cookie bloccati):
+               senza memoria del consenso il player resta spento. */
             return false;
         }
-    }
-
-    function isGranted() {
-        const fromCmp = iubendaConsent();
-        if (fromCmp === true) return true;
-        return localConsent();
     }
 
     function notify() {
@@ -62,7 +49,7 @@
             listeners.push(cb);
         },
 
-        /* Consenso esplicito dato dall'utente sul singolo contenuto (click-to-load). */
+        /* Consenso esplicito dell'utente sul contenuto: il clic sul riquadro. */
         grant: function () {
             try { window.localStorage.setItem(STORAGE_KEY, 'granted'); } catch (e) {}
             notify();
@@ -70,47 +57,18 @@
 
         revoke: function () {
             try { window.localStorage.removeItem(STORAGE_KEY); } catch (e) {}
-        },
-
-        /* Apre il pannello preferenze del CMP, quando e' installato. */
-        openPreferences: function () {
-            try {
-                if (window._iub && window._iub.cs && window._iub.cs.api &&
-                    typeof window._iub.cs.api.openPreferences === 'function') {
-                    window._iub.cs.api.openPreferences();
-                    return true;
-                }
-            } catch (e) {}
-            return false;
-        },
-
-        hasCmp: function () {
-            return !!(window._iub && window._iub.cs && window._iub.cs.api);
         }
     };
 
     window.TinyConsent = TinyConsent;
 
-    /* Il CMP puo' caricarsi dopo di noi: ricontrolliamo per un po'. */
-    let checks = 0;
-    const poll = setInterval(function () {
-        checks++;
-        if (isGranted()) { notify(); clearInterval(poll); }
-        if (checks > 40) clearInterval(poll);
-    }, 500);
-
-    /* Iubenda espone questi eventi quando l'utente si esprime sul banner. */
-    document.addEventListener('iubenda-consent-given', notify);
-    document.addEventListener('iubenda-preference-expressed', notify);
-
-    /* Link "Preferenze cookie" del footer.
-       Con il CMP installato apre il suo pannello; finche' non c'e', revoca il
-       consenso dato al lettore Spotify - la revoca deve restare sempre possibile. */
+    /* Link "Consenso contenuti esterni" nel footer, presente su tutte le pagine.
+       Revoca e ricarica: il riquadro torna al suo posto e l'utente vede che e'
+       successo qualcosa. */
     document.addEventListener('click', function (e) {
-        const link = e.target.closest('.iubenda-cs-preferences-link');
+        const link = e.target.closest('.consent-revoke-link');
         if (!link) return;
         e.preventDefault();
-        if (TinyConsent.openPreferences()) return;
         TinyConsent.revoke();
         window.location.reload();
     });
