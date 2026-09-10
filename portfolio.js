@@ -86,9 +86,37 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // === 3. COVERFLOW ===
+
+    // Caricamento progressivo: partono subito solo le cover vicine al centro,
+    // le altre (invisibili, opacity 0) si caricano appena il resto della pagina e' pronto.
+    const EAGER_RANGE = 3;
+
+    function ensureCoverLoaded(img) {
+        const src = img.dataset.src;
+        if (src) {
+            delete img.dataset.src;
+            img.src = src;
+        }
+    }
+
+    // La tracklist mostra le cover a 45px: usa le miniature, non i file grandi.
+    function thumbOf(cover) {
+        return cover.replace('portfolio_covers/', 'portfolio_covers/thumbs/');
+    }
+
+    function circularDistance(i, center, total) {
+        const raw = Math.abs(i - center);
+        return Math.min(raw, total - raw);
+    }
+
     portfolioData.forEach((track, i) => {
         const img = document.createElement('img');
-        img.src = track.cover;
+        img.decoding = 'async';
+        if (circularDistance(i, currentIndex, portfolioData.length) <= EAGER_RANGE) {
+            img.src = track.cover;
+        } else {
+            img.dataset.src = track.cover;
+        }
         img.className = 'carousel-item';
         img.alt = `${track.title} - ${track.artist}`;
 
@@ -123,6 +151,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const absDiff = Math.abs(diff);
             const clampedDiff = Math.max(-1, Math.min(1, diff));
 
+            if (absDiff <= 4) ensureCoverLoaded(img);
+
             const translateX = diff * offset + clampedDiff * (isMobile ? 12 : 20);
             const translateZ = -absDiff * zOffset + Math.max(0, 1 - absDiff) * (isMobile ? 28 : 40);
             const rotateY = -clampedDiff * rotation;
@@ -146,7 +176,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <svg class="icon-pause" viewBox="0 0 24 24" fill="currentColor" style="display:none;"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
                 </button>
             </div>
-            <div class="col-cover"><img src="${track.cover}" alt="Cover" loading="lazy"></div>
+            <div class="col-cover"><img src="${thumbOf(track.cover)}" alt="" aria-hidden="true" loading="lazy" decoding="async" width="140" height="140"></div>
             <div class="mobile-stack"><div class="col-title">${track.title}</div><div class="col-artist">${track.artist}</div></div>
             <div class="col-genre">${track.genre}</div>
             <div class="col-roles">${track.roles}</div>
@@ -195,7 +225,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // il riquadro di consenso mostra la copertina di questa uscita
         if (consentBox) {
             const ph = consentBox.querySelector('.mp-consent-cover');
-            if (ph) { ph.src = track.cover; ph.alt = `${track.title} - ${track.artist}`; }
+            if (ph) { ph.src = thumbOf(track.cover); ph.alt = ''; }
         }
 
         updateCarousel(0);
@@ -503,6 +533,19 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // === 10. AVVIO ===
+
+    // Le cover rimaste fuori dal range iniziale vengono caricate a pagina pronta.
+    const loadRemainingCovers = () => coverElements.forEach(ensureCoverLoaded);
+    const scheduleRemaining = () => {
+        if ('requestIdleCallback' in window) {
+            requestIdleCallback(loadRemainingCovers, { timeout: 3000 });
+        } else {
+            setTimeout(loadRemainingCovers, 800);
+        }
+    };
+    if (document.readyState === 'complete') scheduleRemaining();
+    else window.addEventListener('load', scheduleRemaining, { once: true });
+
     setTimeout(() => {
         document.body.classList.remove('loading-state');
         loadTrack(currentIndex);

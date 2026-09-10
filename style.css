@@ -3193,3 +3193,35 @@ a.mp-consent-btn {
     white-space: nowrap !important;
     border: 0 !important;
 }
+
+
+/* ========================================================
+   19. MOVIMENTO RIDOTTO (prefers-reduced-motion)
+   Chi ha attivato la riduzione del movimento nel sistema operativo
+   vede lo stesso sito, ma senza animazioni: le transizioni arrivano
+   subito allo stato finale, quindi nulla resta nascosto.
+   ======================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+
+    html {
+        scroll-behavior: auto !important;
+    }
+
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-delay: 0ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        transition-delay: 0ms !important;
+    }
+
+    /* Lo zoom continuo della hero viene spento del tutto:
+       lasciarlo saltare al fotogramma finale la mostrerebbe ingrandita. */
+    #hero-image-container {
+        animation: none !important;
+        transform: none !important;
+    }
+}
