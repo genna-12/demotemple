@@ -1,0 +1,10 @@
+# robots.txt - Tiny Temple Studio
+# Al lancio sul dominio definitivo va aggiornata la riga Sitemap <<<TODO-H8-DOMINIO>>>
+
+User-agent: *
+Allow: /
+
+# Pagine di servizio non utili all'indicizzazione
+Disallow: /404.html
+
+Sitemap: https://genna-12.github.io/demotemple/sitemap.xml

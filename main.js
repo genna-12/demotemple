@@ -343,7 +343,16 @@ function initTranslationSystem() {
             "form-msg-label": "Share your vision *",
             "form-btn-send": "Send Message",
             "connect-title-contacts": "Let's team up.",
-            "connect-title-portfolio": "The next project could be yours."
+            "connect-title-portfolio": "The next project could be yours.",
+            "aria-prev": "Previous track",
+            "aria-play": "Play or pause",
+            "aria-next": "Next track",
+            "aria-wa": "Write to us on WhatsApp",
+            "aria-spotify": "Listen on Spotify",
+            "e404-eyebrow": "Error 404",
+            "e404-title": "Page not found",
+            "e404-intro": "The link you followed leads nowhere: the page has been moved or never existed.",
+            "e404-outro": "From here you can get back to where you were headed."
         },
         'it': {
             "footer-consent": "Consenso contenuti esterni",
@@ -497,7 +506,16 @@ function initTranslationSystem() {
             "form-msg-label": "Raccontaci la tua visione *",
             "form-btn-send": "Invia Messaggio",
             "connect-title-contacts": "Facciamo squadra.",
-            "connect-title-portfolio": "Il prossimo progetto potrebbe essere il tuo."
+            "connect-title-portfolio": "Il prossimo progetto potrebbe essere il tuo.",
+            "aria-prev": "Brano precedente",
+            "aria-play": "Riproduci o metti in pausa",
+            "aria-next": "Brano successivo",
+            "aria-wa": "Scrivici su WhatsApp",
+            "aria-spotify": "Ascolta su Spotify",
+            "e404-eyebrow": "Errore 404",
+            "e404-title": "Pagina non trovata",
+            "e404-intro": "Il link che hai seguito non porta da nessuna parte: la pagina &egrave; stata spostata oppure non &egrave; mai esistita.",
+            "e404-outro": "Da qui puoi tornare dove volevi andare."
         }
     };
 
@@ -515,6 +533,14 @@ function initTranslationSystem() {
                 } else {
                     el.innerHTML = dict[lang][key];
                 }
+            }
+        });
+
+        // Etichette per screen reader (aria-label) tradotte
+        document.querySelectorAll('[data-translate-aria]').forEach(el => {
+            const key = el.getAttribute('data-translate-aria');
+            if (dict[lang] && dict[lang][key]) {
+                el.setAttribute('aria-label', dict[lang][key]);
             }
         });
     };

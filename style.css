@@ -851,7 +851,6 @@ h1.is-visible {
     justify-content: center;
     align-items: center;
     text-decoration: none;
-    outline: none;
     cursor: pointer;
     overflow: hidden;
     
@@ -1030,8 +1029,8 @@ body.menu-open .floating-btn {
     filter: drop-shadow(0 0 8px rgba(207, 92, 54, 0.6)) !important;
 }
 
-.floating-btn:focus,
-.floating-btn:focus-within {
+.floating-btn:focus:not(:focus-visible),
+.floating-btn:focus-within:not(:focus-visible) {
     outline: none !important;
     -webkit-tap-highlight-color: transparent !important;
 }
@@ -1693,7 +1692,6 @@ footer {
     color: var(--text-primary);
     font-family: var(--font-text);
     font-size: 0.95rem;
-    outline: none;
     transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
     box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.4);
 }
@@ -1852,7 +1850,6 @@ footer {
     align-items: center !important;
     padding: 0 !important;
     margin: 0 !important;
-    outline: none !important;
     box-shadow: none !important;
     text-decoration: none !important;
     transition: all 0.3s ease !important;
@@ -3170,4 +3167,29 @@ a.mp-consent-btn {
         max-height: 42vh;
         border-radius: 12px;
     }
+}
+
+
+/* ========================================================
+   18. ACCESSIBILITA' - FOCUS DA TASTIERA E TESTO PER SCREEN READER
+   ======================================================== */
+
+/* Anello di focus visibile solo per chi naviga da tastiera.
+   Il mouse/tap non lo attiva (:focus-visible), quindi l'estetica resta invariata. */
+:focus-visible {
+    outline: 2px solid var(--accent-orange) !important;
+    outline-offset: 3px !important;
+}
+
+/* Titoli letti dagli screen reader ma non visibili a schermo. */
+.sr-only {
+    position: absolute !important;
+    width: 1px !important;
+    height: 1px !important;
+    padding: 0 !important;
+    margin: -1px !important;
+    overflow: hidden !important;
+    clip: rect(0, 0, 0, 0) !important;
+    white-space: nowrap !important;
+    border: 0 !important;
 }
