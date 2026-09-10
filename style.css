@@ -155,6 +155,13 @@
     box-sizing: border-box;
 }
 
+/* Gli attributi width/height sui tag <img> servono solo a prenotare lo spazio
+   prima che l'immagine arrivi: le proporzioni restano decise dal CSS.
+   Sta qui in alto apposta, cosi' ogni regola successiva puo' sovrascriverlo. */
+img {
+    height: auto;
+}
+
 html, body {
     scrollbar-width: none;
     -ms-overflow-style: none;
@@ -1072,6 +1079,8 @@ footer {
 .footer-links a {
     color: var(--text-muted);
     font-size: 0.78rem;
+    /* area di tocco: il testo non si muove, il bersaglio arriva a 25px */
+    padding: 5px 2px;
     text-decoration: underline;
     text-underline-offset: 3px;
     transition: color 0.3s ease;
@@ -1452,6 +1461,8 @@ footer {
 .mp-btn {
     background: transparent;
     border: none;
+    /* area di tocco: l'icona resta da 22px, il bersaglio diventa 32px */
+    padding: 5px;
     color: var(--text-primary);
     cursor: pointer;
     transition: color 0.2s, transform 0.2s;
@@ -3224,4 +3235,31 @@ a.mp-consent-btn {
         animation: none !important;
         transform: none !important;
     }
+}
+
+
+/* ========================================================
+   20. LINK DI REVOCA DEL CONSENSO + AREE DI TOCCO
+   ======================================================== */
+
+/* Il link compare solo quando c'e' un consenso da revocare (lo decide consent.js). */
+.footer-links a[hidden],
+.consent-revoke-link[hidden] {
+    display: none !important;
+}
+
+/* Conferma che prende il posto del link dopo la revoca. */
+.consent-revoked-msg {
+    color: var(--text-muted);
+    font-size: 0.78rem;
+    padding: 5px 2px;
+}
+
+/* Link dentro ai paragrafi: il padding allarga solo il bersaglio del dito,
+   il testo attorno non si sposta. */
+.direct-contact-alt a,
+.form-mail a,
+.form-privacy a,
+.footer-legal-note a {
+    padding: 4px 0;
 }

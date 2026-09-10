@@ -192,7 +192,8 @@ function initTranslationSystem() {
 
     const dict = {
         'en': {
-            "footer-consent": "External content consent",
+            "footer-consent": "Withdraw Spotify consent",
+            "footer-consent-done": "Spotify consent withdrawn",
             "cookie-placeholder-text": "The player is provided by <strong>Spotify</strong>. If you enable it, Spotify may set cookies and receive browsing data, including your IP address. Nothing is sent until you click.",
             "cookie-placeholder-policy": "Cookie policy",
             "cookie-placeholder-alt": "Rather not enable it? The &ldquo;Listen on Spotify&rdquo; button above always works.",
@@ -355,7 +356,8 @@ function initTranslationSystem() {
             "e404-outro": "From here you can get back to where you were headed."
         },
         'it': {
-            "footer-consent": "Consenso contenuti esterni",
+            "footer-consent": "Revoca consenso Spotify",
+            "footer-consent-done": "Consenso Spotify revocato",
             "cookie-placeholder-text": "Il player è fornito da <strong>Spotify</strong>. Attivandolo, Spotify potrà installare cookie e ricevere dati di navigazione, compreso il tuo indirizzo IP. Nessun dato viene inviato finché non clicchi.",
             "cookie-placeholder-policy": "Cookie policy",
             "cookie-placeholder-alt": "Non vuoi attivarlo? Il pulsante &ldquo;Ascolta su Spotify&rdquo; qui sopra funziona sempre.",
@@ -541,6 +543,14 @@ function initTranslationSystem() {
             const key = el.getAttribute('data-translate-aria');
             if (dict[lang] && dict[lang][key]) {
                 el.setAttribute('aria-label', dict[lang][key]);
+            }
+        });
+
+        // Messaggio di conferma della revoca del consenso, tradotto
+        document.querySelectorAll('[data-translate-done]').forEach(el => {
+            const key = el.getAttribute('data-translate-done');
+            if (dict[lang] && dict[lang][key]) {
+                el.setAttribute('data-done-label', dict[lang][key]);
             }
         });
     };

@@ -62,14 +62,40 @@
 
     window.TinyConsent = TinyConsent;
 
-    /* Link "Consenso contenuti esterni" nel footer, presente su tutte le pagine.
-       Revoca e ricarica: il riquadro torna al suo posto e l'utente vede che e'
-       successo qualcosa. */
+    /* Link di revoca nel footer, presente su tutte le pagine.
+       E' nascosto finche' non c'e' un consenso da revocare: se l'utente non ha
+       mai attivato il player, un link che non fa nulla di visibile sembra rotto.
+       Appena il consenso c'e', il link compare su tutte le pagine. */
+    function updateRevokeLinks() {
+        const granted = isGranted();
+        document.querySelectorAll('.consent-revoke-link').forEach(function (link) {
+            link.hidden = !granted;
+        });
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', updateRevokeLinks);
+    } else {
+        updateRevokeLinks();
+    }
+    listeners.push(updateRevokeLinks);
+
     document.addEventListener('click', function (e) {
         const link = e.target.closest('.consent-revoke-link');
         if (!link) return;
         e.preventDefault();
         TinyConsent.revoke();
-        window.location.reload();
+
+        /* Nel portfolio si ricarica: il riquadro di consenso torna al suo posto,
+           che e' la conferma piu' chiara possibile. Altrove il link si trasforma
+           in un messaggio, cosi' l'utente vede che il clic ha avuto effetto. */
+        if (document.getElementById('mp-carousel')) {
+            window.location.reload();
+            return;
+        }
+        const done = document.createElement('span');
+        done.className = 'consent-revoked-msg';
+        done.textContent = link.getAttribute('data-done-label') || 'Consenso Spotify revocato';
+        link.replaceWith(done);
     });
 })();
