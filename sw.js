@@ -20,7 +20,7 @@
  *  - l'invio del modulo contatti (e' una POST, e le POST non si intercettano)
  */
 
-const VERSION = 'v1';
+const VERSION = 'v2';
 const CACHE = 'tiny-temple-' + VERSION;
 
 /* Il guscio dell'app: scaricato subito, serve a far funzionare tutto offline. */
@@ -54,6 +54,7 @@ const CORE = [
     'assets/apple-touch-icon.png',
     'assets/icon-192.png',
     'assets/icon-512.png',
+    'assets/icon-maskable-512.png',
 
     'assets/home_main/desktop_3.jpg',
     'assets/home_main/mobile_1.jpg',
