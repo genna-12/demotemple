@@ -13,19 +13,17 @@ document.addEventListener('DOMContentLoaded', () => {
     }, 100);
 
     // --- 2. CONFIGURAZIONE INVIO MAIL ---
-    // NOTA SICUREZZA: questa access key e' pubblica per chiunque apra il sorgente,
-    // e chi la copia puo' mandare messaggi nella casella dello studio. La
-    // restrizione per dominio di Web3Forms e' a pagamento, quindi la stessa
-    // protezione la fa functions/api/contatto.js: la chiave vive li' sul server
-    // e il browser non la vede. La riga qui sotto resta solo come rete di
-    // sicurezza finche' non si e' verificato che l'inoltro funziona online.
-    // QUANDO L'INOLTRO E' CONFERMATO: cancellare la costante e il blocco di
-    // fallback piu' sotto, e rigenerare la chiave nel pannello Web3Forms
-    // (quella attuale e' gia' finita in chiaro nel repository).
-    // Le difese qui sotto (honeypot, time-gate, rate limit) sono tutte lato client:
-    // ragionevoli e proporzionate, ma non sufficienti da sole.
-    // OPZIONE A: Web3Forms (Consigliata: 100% Gratuita e Illimitata)
-    // Iscriviti su https://web3forms.com inserendo tinytempleproduction@gmail.com e incolla la chiave qui sotto:
+    // NOTA SICUREZZA: questa access key e' visibile a chiunque apra il sorgente.
+    // Non e' aggirabile: la restrizione per dominio di Web3Forms e' a pagamento,
+    // e nasconderla dietro una funzione lato server fa scattare il loro limite
+    // per IP (vedi il commento sull'invio, piu' sotto). Web3Forms stessa la
+    // descrive come "un alias della tua email, solo un po' piu' difficile da
+    // indovinare": chi la copia puo' solo mandare messaggi alla casella dello
+    // studio, non leggerli ne' cambiare destinatario. Le difese sono: firewall e
+    // antispam di Web3Forms, filtri di Gmail, piu' honeypot, time-gate e rate
+    // limit qui sotto (lato client: ragionevoli, non risolutivi).
+    // SE UN GIORNO ARRIVA SPAM: si chiede una chiave nuova su un indirizzo email
+    // diverso, si aggiorna qui, e si filtra il vecchio indirizzo su Gmail.
     const WEB3FORMS_ACCESS_KEY = "72795f7b-1882-4732-84bd-c2f678a2a54c";
 
     // --- 3. CONTROLLI ANTI-SPAM, ANTI-BOT & DOS ---
@@ -100,41 +98,22 @@ document.addEventListener('DOMContentLoaded', () => {
                     message: message
                 };
 
-                /* Invio: prima si prova il nostro inoltro su Cloudflare, che
-                   tiene la chiave sul server. Se non e' ancora attivo (404/403/500)
-                   si ricade sull'invio diretto, cosi' il modulo non si rompe mai. */
-                let response = null;
-                try {
-                    const { access_key, ...senzaChiave } = payload;
-                    const viaProxy = await fetch("/api/contatto", {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json", "Accept": "application/json" },
-                        body: JSON.stringify(senzaChiave)
-                    });
-                    /* Si ripiega sull'invio diretto per QUALUNQUE errore del
-                       server o dell'inoltro: il modulo non deve mai restare muto. */
-                    if (viaProxy.status < 400) {
-                        response = viaProxy;
-                    } else {
-                        let diag = '';
-                        try { diag = (await viaProxy.clone().json()).diag || ''; } catch (e) {}
-                        console.warn("[form] inoltro non riuscito (" + viaProxy.status + ")"
-                            + (diag ? " - " + diag : "") + ": invio diretto");
-                    }
-                } catch (e) {
-                    console.warn("[form] inoltro non raggiungibile: invio diretto");
-                }
-
-                if (!response) {
-                    response = await fetch("https://api.web3forms.com/submit", {
-                        method: "POST",
-                        headers: {
-                            "Content-Type": "application/json",
-                            "Accept": "application/json"
-                        },
-                        body: JSON.stringify(payload)
-                    });
-                }
+                /* Invio diretto a Web3Forms, dal browser di chi scrive.
+                   NOTA (15 settembre 2026): si era provato a farlo passare da una
+                   funzione Cloudflare per tenere la chiave sul server. Non funziona:
+                   Web3Forms limita le richieste per indirizzo IP, e una funzione
+                   Cloudflare esce da IP condivisi fra migliaia di siti, gia' oltre
+                   il limite. Risultato: "429 Rate limit exceeded, IP temporarily
+                   blocked" a ogni invio. Dal browser invece l'IP e' quello del
+                   visitatore e il limite non si tocca mai. */
+                const response = await fetch("https://api.web3forms.com/submit", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Accept": "application/json"
+                    },
+                    body: JSON.stringify(payload)
+                });
 
                 const result = await response.json();
 

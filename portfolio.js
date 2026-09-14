@@ -69,6 +69,65 @@ document.addEventListener('DOMContentLoaded', () => {
     let positionMs = 0;
     let pendingPlay = false;        // "play" chiesto prima che il controller fosse pronto
 
+    /* Caricamento dei brani su Spotify: scorrere il coverflow cambia indice
+       decine di volte in pochi secondi, e chiedere a Spotify un brano nuovo a
+       ogni scatto si traduce in un "429 Too Many Requests" che blocca l'embed
+       finche' non lo si ricrea. Quindi: la grafica segue il dito subito, il
+       player Spotify segue solo quando l'utente si ferma. */
+    let spotifyApi = null;          // riferimento alla iFrame API, serve per ricreare
+    let uriDesiderata = null;       // il brano che l'utente sta guardando ora
+    let uriCaricata = null;         // il brano realmente chiesto a Spotify
+    let timerCarica = null;
+    let ultimoCarica = 0;
+    let playbackVisto = false;      // Spotify ha risposto dall'ultimo caricamento?
+    let timerRecupero = null;
+    let ultimoRecupero = 0;
+    const ATTESA_MS = 550;          // quanto si aspetta che l'utente si fermi
+    const INTERVALLO_MIN_MS = 1100; // distanza minima fra due richieste a Spotify
+
+    function caricaOra() {
+        if (!spotifyController || !uriDesiderata) return;
+        if (uriDesiderata === uriCaricata) return;
+        try {
+            spotifyController.loadUri(uriDesiderata);
+            uriCaricata = uriDesiderata;
+            ultimoCarica = Date.now();
+            playbackVisto = false;
+            /* Dopo un cambio di brano il comando "play" va ripetuto: l'embed
+               ha appena ricaricato e il primo resume() spesso si perde. */
+            if (pendingPlay) {
+                setTimeout(() => { if (pendingPlay && !playbackVisto) spotifyPlay(); }, 500);
+                setTimeout(() => { if (pendingPlay && !playbackVisto) spotifyPlay(); }, 1400);
+            }
+        } catch (err) {
+            console.warn('[player] caricamento brano non riuscito', err);
+        }
+    }
+
+    /* subito = true quando l'utente ha premuto play: si accorcia l'attesa,
+       ma si rispetta comunque la distanza minima fra due richieste. */
+    function programmaCarica(subito) {
+        if (!uriDesiderata || uriDesiderata === uriCaricata) return;
+        const daUltimo = Date.now() - ultimoCarica;
+        const attesa = Math.max(subito ? 0 : ATTESA_MS, INTERVALLO_MIN_MS - daUltimo);
+        clearTimeout(timerCarica);
+        timerCarica = setTimeout(caricaOra, attesa);
+    }
+
+    /* Se l'embed resta muto (tipico dopo un 429) lo si ricostruisce da zero.
+       Al massimo una volta ogni 20 secondi, per non peggiorare la situazione. */
+    function ricreaController() {
+        if (!spotifyApi || !spotifyHost) return;
+        if (Date.now() - ultimoRecupero < 20000) return;
+        ultimoRecupero = Date.now();
+        console.warn('[player] embed bloccato: lo ricreo');
+        try { if (spotifyController && spotifyController.destroy) spotifyController.destroy(); } catch (e) {}
+        spotifyController = null;
+        spotifyHost.innerHTML = '';
+        uriCaricata = null;
+        creaController(uriDesiderata || resolveUri(portfolioData[currentIndex]));
+    }
+
     function fmt(ms) {
         if (!ms || ms < 0 || !isFinite(ms)) return '0:00';
         const total = Math.floor(ms / 1000);
@@ -239,10 +298,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const activeRow = document.getElementById(`track-${currentIndex}`);
         if (activeRow) activeRow.classList.add('playing');
 
-        if (spotifyController) {
-            const uri = resolveUri(track);
-            if (uri) spotifyController.loadUri(uri);
-        }
+        uriDesiderata = resolveUri(track);
+        programmaCarica(false);
 
         updatePlayIcons(isPlaying);
     }
@@ -411,10 +468,18 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         pendingPlay = true;
         ensureSpotifyApi();
+        programmaCarica(true);
         if (spotifyPlay()) {
             isPlaying = true;
             updatePlayIcons(true);
         }
+
+        /* Se entro qualche secondo Spotify non ha dato segni di vita,
+           l'embed e' bloccato: si ricostruisce. */
+        clearTimeout(timerRecupero);
+        timerRecupero = setTimeout(() => {
+            if (pendingPlay && !playbackVisto) ricreaController();
+        }, 6000);
     }
 
     function pausePlayback() {
@@ -478,10 +543,26 @@ document.addEventListener('DOMContentLoaded', () => {
         apiRequested = true;
 
         window.onSpotifyIframeApiReady = (IFrameAPI) => {
+            spotifyApi = IFrameAPI;
             const uri = resolveUri(portfolioData[currentIndex]);
             if (!uri) { console.warn('[portfolio] nessun URI Spotify per questa uscita'); return; }
+            creaController(uri);
+        };
 
-            IFrameAPI.createController(
+        const s = document.createElement('script');
+        s.src = 'https://open.spotify.com/embed/iframe-api/v1';
+        s.async = true;
+        document.head.appendChild(s);
+    }
+
+    function creaController(uri) {
+        if (!spotifyApi || !uri) return;
+        uriDesiderata = uriDesiderata || uri;
+        uriCaricata = uri;
+        ultimoCarica = Date.now();
+        playbackVisto = false;
+
+        spotifyApi.createController(
                 spotifyHost,
                 { uri: uri, width: '100%', height: 80 },
                 (controller) => {
@@ -489,6 +570,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                     controller.addListener('playback_update', (e) => {
                         if (!e || !e.data) return;
+                        playbackVisto = true;
                         positionMs = e.data.position || 0;
                         durationMs = e.data.duration || 0;
                         const nowPlaying = e.data.isPaused === false;
@@ -500,6 +582,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     });
 
                     controller.addListener('ready', () => {
+                        /* se nel frattempo l'utente ha scelto un altro brano, si allinea */
+                        if (uriDesiderata && uriDesiderata !== uriCaricata) programmaCarica(true);
                         if (pendingPlay && spotifyPlay()) {
                             isPlaying = true;
                             updatePlayIcons(true);
@@ -508,12 +592,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 }
             );
-        };
-
-        const s = document.createElement('script');
-        s.src = 'https://open.spotify.com/embed/iframe-api/v1';
-        s.async = true;
-        document.head.appendChild(s);
     }
 
     function activateEmbed() {
