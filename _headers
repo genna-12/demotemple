@@ -90,7 +90,7 @@
   Cache-Control: public, max-age=86400, stale-while-revalidate=604800
 /assets/trasparente.ico
   Cache-Control: public, max-age=86400, stale-while-revalidate=604800
-/assets/og-image.jpg
+/assets/og-cover.png
   Cache-Control: public, max-age=86400, stale-while-revalidate=604800
 /assets/apple-touch-icon.png
   Cache-Control: public, max-age=86400, stale-while-revalidate=604800
