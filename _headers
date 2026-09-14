@@ -18,6 +18,14 @@
 #                        compare mai: e' la trappola del 15 settembre 2026.
 #                        Con il jolly perche' Spotify cambia host ogni tanto.
 #   api.web3forms.com -> l'invio del modulo contatti
+#   'unsafe-eval'     -> lo PRETENDE la iFrame API di Spotify, che costruisce
+#                        parte del proprio codice a runtime. Senza, il player
+#                        muore con "EvalError: Evaluating a string as JavaScript".
+#                        Non e' una svista: e' il prezzo del player. Il rischio
+#                        e' contenuto perche' il sito non esegue mai contenuti
+#                        scritti dagli utenti e non usa eval da nessuna parte.
+#                        Se un domani Spotify smette di averne bisogno, si toglie
+#                        e si ricontrolla il player online.
 # SE IL PLAYER SMETTE DI FUNZIONARE: console del browser (F12), cerca
 # "violates the following Content Security Policy directive", guarda quale
 # dominio e' bloccato e aggiungilo alla direttiva nominata dall'errore.
@@ -28,7 +36,7 @@
   Referrer-Policy: strict-origin-when-cross-origin
   Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=()
   Strict-Transport-Security: max-age=31536000
-  Content-Security-Policy: default-src 'self'; base-uri 'self'; object-src 'none'; script-src 'self' https://open.spotify.com https://*.spotifycdn.com; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' https://api.web3forms.com https://open.spotify.com https://*.spotifycdn.com https://*.spotify.com; form-action 'self' https://api.web3forms.com; frame-src https://open.spotify.com https://*.spotifycdn.com; worker-src 'self'; manifest-src 'self'; frame-ancestors 'self'; upgrade-insecure-requests
+  Content-Security-Policy: default-src 'self'; base-uri 'self'; object-src 'none'; script-src 'self' 'unsafe-eval' https://open.spotify.com https://*.spotifycdn.com; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' https://api.web3forms.com https://open.spotify.com https://*.spotifycdn.com https://*.spotify.com; form-action 'self' https://api.web3forms.com; frame-src https://open.spotify.com https://*.spotifycdn.com; worker-src 'self'; manifest-src 'self'; frame-ancestors 'self'; upgrade-insecure-requests
 
 # --- Pagine: sempre ricontrollate, cosi' una modifica si vede subito.
 #     Sono elencate una per una perche' gli indirizzi non hanno estensione
