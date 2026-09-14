@@ -5,6 +5,6 @@ User-agent: *
 Allow: /
 
 # Pagine di servizio non utili all'indicizzazione
-Disallow: /404.html
+Disallow: /404
 
 Sitemap: https://genna-12.github.io/demotemple/sitemap.xml

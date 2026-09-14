@@ -15,8 +15,8 @@
     if (!isHome) return;
 
     const imgUrl = window.innerWidth <= 768
-        ? 'assets/home_main/mobile_1.jpg'
-        : 'assets/home_main/desktop_3.jpg';
+        ? '/assets/home_main/mobile_1.jpg'
+        : '/assets/home_main/desktop_3.jpg';
 
     const preloadLink = document.createElement('link');
     preloadLink.rel = 'preload';

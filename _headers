@@ -1,0 +1,84 @@
+# ============================================================
+#  Tiny Temple Studio - intestazioni HTTP (Cloudflare Pages)
+#
+#  Attenzione alla regola d'oro di questo file: se due blocchi
+#  impostano la STESSA intestazione sullo stesso file, Cloudflare
+#  unisce i due valori con una virgola e ne esce una riga senza
+#  senso. Per questo le regole di Cache-Control qui sotto non si
+#  sovrappongono mai: ogni file ricade in una sola di esse.
+# ============================================================
+
+# --- Sicurezza: vale per tutto, e non tocca la cache -------------
+/*
+  X-Frame-Options: SAMEORIGIN
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=()
+  Strict-Transport-Security: max-age=31536000
+  Content-Security-Policy: default-src 'self'; base-uri 'self'; object-src 'none'; script-src 'self' https://open.spotify.com; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' https://api.web3forms.com; form-action 'self' https://api.web3forms.com; frame-src https://open.spotify.com; worker-src 'self'; manifest-src 'self'; frame-ancestors 'self'; upgrade-insecure-requests
+
+# --- Pagine: sempre ricontrollate, cosi' una modifica si vede subito.
+#     Sono elencate una per una perche' gli indirizzi non hanno estensione
+#     e un pattern generico non le prenderebbe.
+/
+  Cache-Control: public, max-age=0, must-revalidate
+/servizi
+  Cache-Control: public, max-age=0, must-revalidate
+/music-production
+  Cache-Control: public, max-age=0, must-revalidate
+/artist-development
+  Cache-Control: public, max-age=0, must-revalidate
+/mixing-mastering
+  Cache-Control: public, max-age=0, must-revalidate
+/portfolio
+  Cache-Control: public, max-age=0, must-revalidate
+/contatti
+  Cache-Control: public, max-age=0, must-revalidate
+/francesco-pontillo
+  Cache-Control: public, max-age=0, must-revalidate
+/andrea-missiroli
+  Cache-Control: public, max-age=0, must-revalidate
+/note-legali
+  Cache-Control: public, max-age=0, must-revalidate
+/404
+  Cache-Control: public, max-age=0, must-revalidate
+
+# --- CSS e JS: sempre ricontrollati. Comprende sw.js, ed e' fondamentale
+#     che sia cosi': e' lui a portare gli aggiornamenti a chi e' gia' passato.
+/*.css
+  Cache-Control: public, max-age=0, must-revalidate
+/*.js
+  Cache-Control: public, max-age=0, must-revalidate
+
+# --- I font non cambiano mai: un anno ---------------------------
+/assets/fonts/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# --- Immagini: un giorno, poi si aggiornano in sottofondo --------
+/assets/portfolio_covers/*
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+/assets/team/*
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+/assets/home_main/*
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+/assets/icons/*
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+
+# --- Logo, favicon, icone dell'app, anteprima social -------------
+/assets/trasparente.png
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+/assets/trasparente.ico
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+/assets/og-image.jpg
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+/assets/apple-touch-icon.png
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+/assets/icon-192.png
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+/assets/icon-512.png
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+/assets/icon-maskable-512.png
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+
+/site.webmanifest
+  Cache-Control: public, max-age=3600

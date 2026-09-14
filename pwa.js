@@ -16,7 +16,7 @@
 
     /* Registrato a pagina caricata: cosi' non ruba banda al primo caricamento. */
     window.addEventListener('load', function () {
-        navigator.serviceWorker.register('sw.js', { scope: './' }).catch(function (err) {
+        navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch(function (err) {
             console.warn('[pwa] service worker non registrato:', err);
         });
     });
