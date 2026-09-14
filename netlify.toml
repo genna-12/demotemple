@@ -1,0 +1,111 @@
+# ============================================================
+#  Tiny Temple Studio - configurazione Netlify
+#  Sito statico: nessuna build, si pubblica la cartella cosi' com'e'.
+# ============================================================
+
+[build]
+  publish = "."
+
+# ------------------------------------------------------------
+#  1. INTESTAZIONI DI SICUREZZA (tutte le pagine)
+# ------------------------------------------------------------
+[[headers]]
+  for = "/*"
+  [headers.values]
+    # Impedisce ad altri siti di incorniciare il sito in un iframe.
+    X-Frame-Options = "SAMEORIGIN"
+    # Il browser non "indovina" il tipo di file: usa quello dichiarato.
+    X-Content-Type-Options = "nosniff"
+    # Verso l'esterno viaggia solo il dominio, mai l'indirizzo completo.
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    # Nessuna pagina chiede fotocamera, microfono o posizione.
+    # NB: se un domani arrivano gli strumenti audio, qui va riaperto il microfono.
+    Permissions-Policy = "camera=(), microphone=(), geolocation=(), payment=()"
+    # Un anno di sola HTTPS. Aggiungere includeSubDomains solo quando
+    # si e' certi che ogni eventuale sottodominio sia in HTTPS.
+    Strict-Transport-Security = "max-age=31536000"
+
+    # --- Content Security Policy ---
+    # Dichiara da dove il sito puo' caricare le cose: tutto da se stesso,
+    # tranne i due servizi che usiamo davvero.
+    #   open.spotify.com  -> il player, solo dopo il consenso
+    #   api.web3forms.com -> l'invio del modulo contatti
+    # SE DOPO LA PUBBLICAZIONE IL PLAYER NON PARTISSE: commentare questa
+    # riga, ripubblicare, e il sito torna com'era mentre si indaga.
+    Content-Security-Policy = "default-src 'self'; base-uri 'self'; object-src 'none'; script-src 'self' https://open.spotify.com; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' https://api.web3forms.com; form-action 'self' https://api.web3forms.com; frame-src https://open.spotify.com; worker-src 'self'; manifest-src 'self'; frame-ancestors 'self'; upgrade-insecure-requests"
+
+# ------------------------------------------------------------
+#  2. CACHE
+#  I nomi dei file non hanno un codice di versione, quindi la regola e':
+#  cache lunghissima solo su cio' che non cambia mai (i font), breve su
+#  tutto il resto. Alle visite successive pensa comunque il service worker.
+#  Le regole qui sotto non si sovrappongono mai fra loro, cosi' non c'e'
+#  dubbio su quale vinca.
+# ------------------------------------------------------------
+
+# --- sempre ricontrollati: una modifica pubblicata si vede subito
+[[headers]]
+  for = "/*.html"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+[[headers]]
+  for = "/*.css"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+# Comprende sw.js, ed e' fondamentale che sia cosi': e' il service worker
+# a portare gli aggiornamenti a chi ha gia' visitato il sito.
+[[headers]]
+  for = "/*.js"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+# --- i font non cambiano mai: un anno
+[[headers]]
+  for = "/assets/fonts/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+# --- immagini: un giorno, poi si aggiornano in sottofondo
+[[headers]]
+  for = "/assets/portfolio_covers/*"
+  [headers.values]
+    Cache-Control = "public, max-age=86400, stale-while-revalidate=604800"
+
+[[headers]]
+  for = "/assets/team/*"
+  [headers.values]
+    Cache-Control = "public, max-age=86400, stale-while-revalidate=604800"
+
+[[headers]]
+  for = "/assets/home_main/*"
+  [headers.values]
+    Cache-Control = "public, max-age=86400, stale-while-revalidate=604800"
+
+[[headers]]
+  for = "/assets/icons/*"
+  [headers.values]
+    Cache-Control = "public, max-age=86400, stale-while-revalidate=604800"
+
+# --- logo, favicon, icone dell'app e immagine di anteprima social
+[[headers]]
+  for = "/assets/*.png"
+  [headers.values]
+    Cache-Control = "public, max-age=86400, stale-while-revalidate=604800"
+
+[[headers]]
+  for = "/assets/*.jpg"
+  [headers.values]
+    Cache-Control = "public, max-age=86400, stale-while-revalidate=604800"
+
+[[headers]]
+  for = "/assets/*.ico"
+  [headers.values]
+    Cache-Control = "public, max-age=86400, stale-while-revalidate=604800"
+
+[[headers]]
+  for = "/site.webmanifest"
+  [headers.values]
+    Cache-Control = "public, max-age=3600"
+    Content-Type = "application/manifest+json; charset=utf-8"
