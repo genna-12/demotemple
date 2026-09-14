@@ -20,7 +20,7 @@
  *  - l'invio del modulo contatti (e' una POST, e le POST non si intercettano)
  */
 
-const VERSION = 'v10';
+const VERSION = 'v11';
 const CACHE = 'tiny-temple-' + VERSION;
 
 /* Il guscio dell'app: scaricato subito, serve a far funzionare tutto offline. */
@@ -81,7 +81,7 @@ const CORE = [
 
 /* Il resto: scaricato subito dopo, senza far aspettare nessuno. */
 const EXTRA = [
-    '/assets/og-image.jpg'
+    '/assets/og-cover.jpg'
 ].concat([
     '/assets/portfolio_covers/cover_1.webp',
     '/assets/portfolio_covers/cover_2.webp',
