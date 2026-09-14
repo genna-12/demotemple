@@ -17,7 +17,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // credenziale segreta), ma senza restrizione chiunque la copi puo' inviare
     // messaggi dall'account dello studio. Nel pannello Web3Forms va attivata la
     // restrizione per dominio, che accetta l'invio solo se l'Origin corrisponde al
-    // sito. Dominio definitivo da impostare: <<<TODO-H8-DOMINIO>>>
+    // sito. Dominio da autorizzare nel pannello Web3Forms: tinytemplestudio.it
     // Le difese qui sotto (honeypot, time-gate, rate limit) sono tutte lato client:
     // ragionevoli e proporzionate, ma non sufficienti da sole.
     // OPZIONE A: Web3Forms (Consigliata: 100% Gratuita e Illimitata)
