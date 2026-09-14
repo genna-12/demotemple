@@ -20,7 +20,7 @@
  *  - l'invio del modulo contatti (e' una POST, e le POST non si intercettano)
  */
 
-const VERSION = 'v12';
+const VERSION = 'v13';
 const CACHE = 'tiny-temple-' + VERSION;
 
 /* Il guscio dell'app: scaricato subito, serve a far funzionare tutto offline. */
@@ -76,7 +76,8 @@ const CORE = [
     '/assets/fonts/inter-400-latin.woff2',
     '/assets/fonts/inter-400-latin-ext.woff2',
     '/assets/fonts/inter-500-latin.woff2',
-    '/assets/fonts/inter-500-latin-ext.woff2'
+    '/assets/fonts/inter-500-latin-ext.woff2',
+    '/assets/fonts/tiny-ampersand.woff'
 ];
 
 /* Il resto: scaricato subito dopo, senza far aspettare nessuno. */

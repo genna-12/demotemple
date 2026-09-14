@@ -135,6 +135,29 @@
     unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
 
+/* ========================================================
+   LA & COMMERCIALE
+   Un solo glifo, preso dal corsivo di Bitstream Charter
+   (Matthew Carter, 1987). La & di Archivo non piaceva: questa
+   ha la forma calligrafica che viene dalla "et" latina.
+   Il font pesa 1,1 KB e contiene SOLO la &: la regola
+   unicode-range fa si' che il browser lo usi per quel singolo
+   carattere e lasci tutto il resto ad Archivo e Inter.
+   size-adjust lo porta all'altezza giusta accanto ad Archivo.
+   Licenza (che consente modifica e ridistribuzione) in
+   assets/fonts/LICENSE-Charter.txt
+   ======================================================== */
+
+@font-face {
+    font-family: 'TT Ampersand';
+    font-style: normal;
+    font-weight: 100 900;
+    font-display: swap;
+    src: url('assets/fonts/tiny-ampersand.woff') format('woff');
+    unicode-range: U+0026;
+    size-adjust: 102%;
+}
+
 /* --- 1. RESET & VARIABLES --- */
 :root {
     --bg-color: #080808;
@@ -143,8 +166,8 @@
     --accent-brown: #4a3b32;
     --accent-orange: #cf5c36;
 
-    --font-title: 'Archivo', 'Helvetica Neue', Helvetica, Arial, sans-serif;
-    --font-text: 'Inter', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    --font-title: 'TT Ampersand', 'Archivo', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    --font-text: 'TT Ampersand', 'Inter', 'Helvetica Neue', Helvetica, Arial, sans-serif;
 
     --ease-cinematic: cubic-bezier(0.65, 0, 0.35, 1);
 }
