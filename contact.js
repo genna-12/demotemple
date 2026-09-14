@@ -111,8 +111,16 @@ document.addEventListener('DOMContentLoaded', () => {
                         headers: { "Content-Type": "application/json", "Accept": "application/json" },
                         body: JSON.stringify(senzaChiave)
                     });
-                    if (![403, 404, 405, 500, 501].includes(viaProxy.status)) response = viaProxy;
-                    else console.warn("[form] inoltro non disponibile (" + viaProxy.status + "): invio diretto");
+                    /* Si ripiega sull'invio diretto per QUALUNQUE errore del
+                       server o dell'inoltro: il modulo non deve mai restare muto. */
+                    if (viaProxy.status < 400) {
+                        response = viaProxy;
+                    } else {
+                        let diag = '';
+                        try { diag = (await viaProxy.clone().json()).diag || ''; } catch (e) {}
+                        console.warn("[form] inoltro non riuscito (" + viaProxy.status + ")"
+                            + (diag ? " - " + diag : "") + ": invio diretto");
+                    }
                 } catch (e) {
                     console.warn("[form] inoltro non raggiungibile: invio diretto");
                 }
