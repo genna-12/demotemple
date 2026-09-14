@@ -13,11 +13,15 @@ document.addEventListener('DOMContentLoaded', () => {
     }, 100);
 
     // --- 2. CONFIGURAZIONE INVIO MAIL ---
-    // NOTA SICUREZZA: la access key qui sotto e' pubblica per progetto (non e' una
-    // credenziale segreta), ma senza restrizione chiunque la copi puo' inviare
-    // messaggi dall'account dello studio. Nel pannello Web3Forms va attivata la
-    // restrizione per dominio, che accetta l'invio solo se l'Origin corrisponde al
-    // sito. Dominio da autorizzare nel pannello Web3Forms: tinytemplestudio.it
+    // NOTA SICUREZZA: questa access key e' pubblica per chiunque apra il sorgente,
+    // e chi la copia puo' mandare messaggi nella casella dello studio. La
+    // restrizione per dominio di Web3Forms e' a pagamento, quindi la stessa
+    // protezione la fa functions/api/contatto.js: la chiave vive li' sul server
+    // e il browser non la vede. La riga qui sotto resta solo come rete di
+    // sicurezza finche' non si e' verificato che l'inoltro funziona online.
+    // QUANDO L'INOLTRO E' CONFERMATO: cancellare la costante e il blocco di
+    // fallback piu' sotto, e rigenerare la chiave nel pannello Web3Forms
+    // (quella attuale e' gia' finita in chiaro nel repository).
     // Le difese qui sotto (honeypot, time-gate, rate limit) sono tutte lato client:
     // ragionevoli e proporzionate, ma non sufficienti da sole.
     // OPZIONE A: Web3Forms (Consigliata: 100% Gratuita e Illimitata)
@@ -96,14 +100,33 @@ document.addEventListener('DOMContentLoaded', () => {
                     message: message
                 };
 
-                const response = await fetch("https://api.web3forms.com/submit", {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        "Accept": "application/json"
-                    },
-                    body: JSON.stringify(payload)
-                });
+                /* Invio: prima si prova il nostro inoltro su Cloudflare, che
+                   tiene la chiave sul server. Se non e' ancora attivo (404/403/500)
+                   si ricade sull'invio diretto, cosi' il modulo non si rompe mai. */
+                let response = null;
+                try {
+                    const { access_key, ...senzaChiave } = payload;
+                    const viaProxy = await fetch("/api/contatto", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json", "Accept": "application/json" },
+                        body: JSON.stringify(senzaChiave)
+                    });
+                    if (![403, 404, 405, 500, 501].includes(viaProxy.status)) response = viaProxy;
+                    else console.warn("[form] inoltro non disponibile (" + viaProxy.status + "): invio diretto");
+                } catch (e) {
+                    console.warn("[form] inoltro non raggiungibile: invio diretto");
+                }
+
+                if (!response) {
+                    response = await fetch("https://api.web3forms.com/submit", {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                            "Accept": "application/json"
+                        },
+                        body: JSON.stringify(payload)
+                    });
+                }
 
                 const result = await response.json();
 

@@ -20,7 +20,7 @@
  *  - l'invio del modulo contatti (e' una POST, e le POST non si intercettano)
  */
 
-const VERSION = 'v5';
+const VERSION = 'v8';
 const CACHE = 'tiny-temple-' + VERSION;
 
 /* Il guscio dell'app: scaricato subito, serve a far funzionare tutto offline. */
