@@ -260,6 +260,12 @@ function initTranslationSystem() {
             "nav-servizi": "Services",
             "nav-portfolio": "Portfolio",
             "nav-contatti": "Contact",
+            "nav-toolbox": "Toolbox",
+            "home-toolbox-title": "Tools for your project, right in the browser.",
+            "home-toolbox-text": "Coming soon: metronome, tuner and more tools for artists and producers, right in your browser.",
+            "home-toolbox-cta": "Open the Toolbox",
+            "home-toolbox-ios": "Open the Toolbox, then tap Share (the square with the arrow) and choose Add to Home Screen.",
+            "home-toolbox-android": "Open the Toolbox and tap Install.",
             "connect-tag": "Follow us",
             "cta-discover": "Discover",
             "contact-label": "Let's talk about it",
@@ -432,6 +438,12 @@ function initTranslationSystem() {
             "nav-servizi": "Servizi",
             "nav-portfolio": "Portfolio",
             "nav-contatti": "Contatti",
+            "nav-toolbox": "Toolbox",
+            "home-toolbox-title": "Strumenti per il tuo progetto, dentro il browser.",
+            "home-toolbox-text": "In arrivo: metronomo, accordatore e altri strumenti per artisti e producer, dentro il browser.",
+            "home-toolbox-cta": "Apri la Toolbox",
+            "home-toolbox-ios": "Apri la Toolbox, poi tocca Condividi (il quadrato con la freccia) &rarr; Aggiungi alla schermata Home.",
+            "home-toolbox-android": "Apri la Toolbox e tocca Installa.",
             "connect-tag": "Seguici",
             "cta-discover": "Scopri",
             "contact-label": "Parliamone",
@@ -569,7 +581,16 @@ function initTranslationSystem() {
                 el.setAttribute('data-done-label', dict[lang][key]);
             }
         });
+
+        // Link verso la Toolbox (altro sottodominio): porta la lingua corrente
+        document.querySelectorAll('[data-toolbox-link]').forEach(el => {
+            el.setAttribute('href', 'https://toolbox.tinytemplestudio.it/?lang=' + lang);
+        });
     };
+
+    document.querySelectorAll('[data-toolbox-link]').forEach(el => {
+        el.setAttribute('href', 'https://toolbox.tinytemplestudio.it/?lang=' + currentLang);
+    });
 
     if (currentLang !== 'it') applyLanguage(currentLang, false);
 

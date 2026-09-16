@@ -1,0 +1,9 @@
+# robots.txt - Tiny Temple Toolbox
+
+User-agent: *
+Allow: /
+
+# Pagina di servizio non utile all'indicizzazione
+Disallow: /404
+
+Sitemap: https://toolbox.tinytemplestudio.it/sitemap.xml

@@ -1,0 +1,45 @@
+# ============================================================
+#  Tiny Temple Toolbox - intestazioni HTTP (Cloudflare Pages,
+#  progetto con Root directory "toolbox")
+#
+#  Regola d'oro: blocchi che coincidono si SOMMANO. Se due blocchi
+#  impostano la stessa intestazione sullo stesso file, Cloudflare unisce
+#  i valori con una virgola e l'intestazione diventa invalida.
+#  Per questo: sicurezza solo in "/*", Cache-Control solo in blocchi
+#  che non si sovrappongono (lo verifica scripts/check.mjs).
+# ============================================================
+
+# --- Sicurezza: vale per tutto, non tocca la cache ----------------
+# Permissions-Policy: il microfono e' aperto SOLO a questa origine
+# (accordatore e simili), mai a iframe o terzi.
+# CSP: tutto da se stessi, nessun terzo. blob: per audio/immagini generati
+# nel browser. 'wasm-unsafe-eval' e blob: in worker-src NON ci sono: li
+# aggiunge, motivandoli, la spec dello strumento che ne ha bisogno.
+/*
+  X-Frame-Options: DENY
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  Cross-Origin-Opener-Policy: same-origin
+  Strict-Transport-Security: max-age=31536000
+  Permissions-Policy: camera=(), microphone=(self), geolocation=(), payment=(), usb=()
+  Content-Security-Policy: default-src 'self'; base-uri 'self'; object-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data: blob:; media-src 'self' blob:; font-src 'self'; connect-src 'self'; worker-src 'self'; manifest-src 'self'; frame-src 'none'; form-action 'none'; frame-ancestors 'none'; upgrade-insecure-requests
+
+# --- Cache ---------------------------------------------------------
+# HTML, JS e CSS (compreso sw.js) NON hanno una regola: vale il default di
+# Pages (max-age=0, must-revalidate), ed e' voluto. Una regola "/*.js"
+# si sovrapporrebbe a "/vendor/*".
+
+# Librerie: il percorso contiene la versione, quindi non cambiano mai.
+/vendor/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# Font: copie identiche a quelli della vetrina, non cambiano mai.
+/assets/fonts/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# Icone: un giorno, poi si aggiornano in sottofondo.
+/assets/icons/*
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+
+/manifest.webmanifest
+  Cache-Control: public, max-age=3600
