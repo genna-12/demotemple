@@ -27,12 +27,17 @@
 
 <body>
 
+    <!-- tb-bar resta senza sfondo/posizione propri (nessuna barra visibile,
+         feedback Genna): e' solo il contenitore atteso da shared/nav.js
+         (mountBar), i due figli sono `position: fixed` per conto loro.
+         Niente intro qui (come .static-nav della vetrina): logo gia'
+         'in-nav', hamburger gia' 'is-visible'. -->
     <header class="tb-bar">
-        <a class="tb-logo" href="/" data-i18n-aria="bar-logo-aria" aria-label="Tiny Temple Toolbox — vai alla dashboard">
-            <img src="/assets/brand/logo-arancione-96.png" width="36" height="36" alt="" loading="eager">
+        <a class="tb-logo in-nav" href="/" data-i18n-aria="bar-logo-aria" aria-label="Tiny Temple Toolbox — vai alla dashboard">
+            <img src="/assets/brand/logo-arancione.png" width="100" height="100" alt="" loading="eager">
             <span class="sr-only">Tiny Temple Toolbox</span>
         </a>
-        <button type="button" class="tb-menu-toggle" aria-controls="tb-menu" aria-expanded="false"
+        <button type="button" class="tb-menu-toggle is-visible" aria-controls="tb-menu" aria-expanded="false"
             data-i18n-aria="bar-menu-open" aria-label="Apri il menu">
             <span class="tb-menu-toggle-line"></span>
             <span class="tb-menu-toggle-line"></span>

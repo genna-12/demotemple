@@ -1,8 +1,8 @@
 /* ========================================================
    TINY TEMPLE TOOLBOX - BASE
    Reset minimo, tipografia di pagina, layout condiviso
-   (.tb-shell, .tb-bar/.tb-intro/.tb-menu, .tb-footer), safe-area,
-   focus da tastiera e movimento ridotto. Richiede shared/tokens.css
+   (.tb-shell, .tb-logo/.tb-menu-toggle/.tb-intro/.tb-menu, .tb-footer),
+   safe-area, focus da tastiera e movimento ridotto. Richiede shared/tokens.css
    (variabili e font, incluso il "vetro" --glass-*) caricato prima
    di questo file. Nomi generici (nessun "toolbox"): riusabili da
    un altro sottodominio (spec 02 §6).
@@ -37,9 +37,9 @@ html {
     height: 100%;
 }
 
-/* Safe-area in alto: solo sulla barra (.tb-bar). In basso: solo sul
-   footer (.tb-footer). Qui restano solo i lati, comuni a tutta la pagina
-   (notch in orizzontale, es. iPhone in landscape). */
+/* Safe-area in alto: solo su logo/hamburger fissi (.tb-logo/.tb-menu-toggle).
+   In basso: solo sul footer (.tb-footer). Qui restano solo i lati, comuni
+   a tutta la pagina (notch in orizzontale, es. iPhone in landscape). */
 body {
     min-height: 100dvh;
     background-color: var(--bg-color);
@@ -67,12 +67,14 @@ button {
 }
 
 /* --- LAYOUT DI PAGINA --- */
-/* .tb-bar e' `position: fixed` (fuori dal flusso): il padding in alto
-   qui sotto la compensa, con la safe-area sommata una volta sola. */
+/* Niente piu' barra/header: solo logo (in alto a sx) e hamburger (in alto
+   a dx) flottanti, `position: fixed` (vedi sotto). Il padding in alto qui
+   li libera (bordo inferiore dei due cerchi ~83px/80px da fixed) con la
+   safe-area sommata una volta sola. */
 .tb-shell {
     max-width: 1100px;
     margin: 0 auto;
-    padding: calc(56px + var(--tb-safe-t)) 5% 120px;
+    padding: calc(100px + var(--tb-safe-t)) 5% 120px;
     min-height: 100dvh;
 }
 
@@ -109,31 +111,72 @@ button {
     font-weight: 300;
 }
 
-/* --- BARRA `tb-bar` (spec 02 §1): fissa, piatta, nessun bordo. --- */
-/* Safe-area in alto SOLO qui: altezza reale 56px, la safe-area si somma
-   sopra (box-sizing: border-box fa si' che il content-box resti 56px). */
-.tb-bar {
+/* --- LOGO `tb-logo` (ritocco Genna): nudo, fisso, in alto a sx --- */
+/* Stesse misure/posizione di `.logo-wrapper` nello style.css della vetrina
+   (righe 256-300 e 1985-1996, prese con `tr -d '\r'`): 100px, ancorato con
+   translate(-50%,-50%) cosi' le coordinate sono il CENTRO del cerchio.
+   E' lo stesso elemento dell'intro (vedi sezione tb-intro sotto): qui sta
+   lo stato "in-nav" (barra); li' lo stato di riposo (centro schermo). */
+.tb-logo {
     position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    z-index: 10012;
-    box-sizing: border-box;
-    height: calc(56px + var(--tb-safe-t));
-    padding: var(--tb-safe-t) 5% 0;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    background: rgba(8, 8, 8, 0.5);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
+    top: 50%;
+    left: 50%;
+    z-index: 10020;
+    width: 100px;
+    height: 100px;
+    transform: translate(-50%, -50%) scale(1);
+    transition: all 1.2s var(--ease-cinematic);
+    will-change: top, left, transform;
 }
 
+.tb-logo img {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    display: block;
+    transition: transform 0.3s ease;
+}
+
+/* Aggangiato in barra (spec 02, ritocco Genna): sfondo trasparente, nessun
+   bordo/vetro ("logo nudo"). Uguale su index.html (dopo l'intro, aggiunta
+   da shared/intro.js) e su 404.html (gia' cosi' nell'HTML, niente intro). */
+.tb-logo.in-nav {
+    top: calc(58px + var(--tb-safe-t));
+    left: 50px;
+    transform: translate(-50%, -50%) scale(0.5);
+    background: transparent !important;
+    cursor: pointer;
+    pointer-events: auto;
+    transition: all 1.2s var(--ease-cinematic);
+}
+
+@media (max-width: 768px) {
+    .tb-logo.in-nav {
+        top: calc(45px + var(--tb-safe-t));
+        left: 40px;
+        transform: translate(-50%, -50%) scale(0.6);
+    }
+}
+
+.tb-logo.is-pressed img,
+.tb-logo:active img {
+    transform: scale(0.9);
+}
+
+/* --- TITOLO IN BARRA `tb-bar-title` (pagine strumento, contratto shared/nav.js) --- */
+/* Centrato fra logo (sx) e hamburger (dx), stesso centro verticale
+   (58px/45px come .tb-logo.in-nav e .tb-menu-toggle), `position: fixed`
+   come loro. Condivisa da tutte le pagine strumento. */
 .tb-bar-title {
-    flex: 1;
-    min-width: 0;
+    position: fixed;
+    top: calc(58px + var(--tb-safe-t));
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 10012;
+    max-width: min(46vw, 220px);
+    margin: 0;
     font-family: var(--font-title);
-    font-size: 1rem;
+    font-size: 0.95rem;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.02em;
@@ -142,15 +185,48 @@ button {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    pointer-events: none;
 }
 
-/* Logo e hamburger: cerchi "vetro", stessa ricetta di .floating-btn
-   nello style.css della vetrina (presa con grep). La barra resta piatta:
-   il vetro sta solo su questi due cerchi, non sulla barra. */
-.tb-logo,
+@media (max-width: 768px) {
+    .tb-bar-title {
+        top: calc(45px + var(--tb-safe-t));
+        max-width: min(54vw, 200px);
+    }
+}
+
+/* Il titolo sta nella barra: l'h1 della pagina resta solo per i lettori di
+   schermo, cosi' non compare due volte (pagine senza barra-titolo, come
+   404.html, non sono toccate). */
+body:has(.tb-bar-title) .tb-page-header h1 {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+body:has(.tb-bar-title) .tb-page-header {
+    padding: 0;
+}
+
+/* --- HAMBURGER `tb-menu-toggle`: cerchio "vetro", fisso, in alto a dx --- */
+/* Stessa ricetta di .floating-btn nello style.css della vetrina (grep):
+   vetro/blur/ombra sui token --glass-*. Nascosto di default (come i
+   .floating-btn della vetrina, opacity/pointer-events, non [hidden]):
+   shared/intro.js aggiunge .is-visible insieme all'aggancio del logo
+   (vedi CONTRATTO sotto). Su 404.html (niente intro) parte gia'
+   .is-visible nell'HTML. Centro allineato al logo (58px/50px desktop,
+   45px/40px sotto 768px), specchiato sul lato destro. */
 .tb-menu-toggle {
-    position: relative;
-    flex-shrink: 0;
+    position: fixed;
+    top: calc(36px + var(--tb-safe-t));
+    right: calc(28px + var(--tb-safe-r));
+    z-index: 10015;
     width: 44px;
     height: 44px;
     border-radius: 50%;
@@ -164,30 +240,37 @@ button {
     border-top: 1px solid var(--glass-border-top);
     box-shadow: var(--glass-shadow);
     color: var(--text-primary);
-    transition: transform 0.3s var(--ease-cinematic), border-color 0.3s ease;
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(-10px);
+    transition: opacity 0.4s ease, transform 0.4s var(--ease-cinematic), border-color 0.3s ease;
 }
 
-.tb-menu-toggle {
-    margin-left: auto;
+.tb-menu-toggle.is-visible {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateY(0);
 }
 
-.tb-logo img {
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    display: block;
+@media (max-width: 768px) {
+    .tb-menu-toggle {
+        top: calc(23px + var(--tb-safe-t));
+        right: calc(18px + var(--tb-safe-r));
+    }
 }
 
-.tb-logo.is-pressed,
-.tb-logo:active,
 .tb-menu-toggle.is-pressed,
 .tb-menu-toggle:active {
     transform: scale(0.92);
     border-color: rgba(255, 255, 255, 0.5);
 }
 
+.tb-menu-toggle.is-visible.is-pressed,
+.tb-menu-toggle.is-visible:active {
+    transform: translateY(0) scale(0.92);
+}
+
 @media (hover: hover) and (pointer: fine) {
-    .tb-logo:hover,
     .tb-menu-toggle:hover {
         border-color: rgba(255, 255, 255, 0.5);
     }
@@ -221,51 +304,71 @@ button {
     transform: translateY(0) rotate(-45deg);
 }
 
-/* --- INTRO `tb-intro` (spec 02 §2): solo dashboard, una volta a sessione. --- */
-/* CONTRATTO shared/intro.js (proposta builder, adegua se diverge):
-     markup gia' pronto in index.html: #tb-intro[hidden] > img.tb-intro-logo.
-     1) se sessionStorage.tbIntro, o prefers-reduced-motion, o pagina non e'
-        la dashboard: non toccare nulla, resta [hidden] (di gia' nell'HTML).
-     2) altrimenti: tb-intro.hidden = false; tb-intro-logo.classList.add('is-pulse')
-        (battito, 0.8s, vedi @keyframes tb-heartbeat).
-     3) dopo 800ms: rimuovi 'is-pulse', forza un reflow, poi aggiungi 'is-dock'
-        a tb-intro-logo e 'is-fading' a tb-intro (0.4s: il logo scivola/rimpicciolisce
-        verso l'angolo, lo sfondo sfuma) - totale 1.2s, misure fisse qui sotto.
-     4) dopo altri 400ms (1.2s totali): tb-intro.hidden = true (o .remove());
-        sessionStorage.setItem('tbIntro', '1'). Niente vibrazione. */
+/* --- INTRO `tb-intro` (ritocco Genna: ESATTAMENTE come #intro-layer della
+   vetrina, home.js righe 1-40 e style.css righe 237-305): solo dashboard,
+   una volta a sessione. Sta SEMPRE nel markup (niente [hidden], come
+   #intro-layer: stesso --bg-color della pagina sotto, quindi nessun flash
+   prima che intro.js giri), copre tutto lo schermo finche' non diventa
+   trasparente. Il logo (.tb-logo, vedi sopra) e' DENTRO questo elemento
+   sulla dashboard: e' lo stesso elemento della barra, non una copia.
+   CONTRATTO shared/intro.js:
+     al load (se la pagina ha #tb-intro): .tb-logo.classList.add('is-pulse')
+       (battito 0.8s, vedi @keyframes tb-heartbeat).
+     dopo 900ms: rimuovi 'is-pulse', forza un reflow (offsetWidth), poi:
+       - .tb-logo.classList.add('in-nav')            (1.2s verso l'angolo)
+       - #tb-intro.classList.add('is-complete')       (sfondo trasparente
+         in 1.5s, pointer-events:none; l'overlay RESTA nel DOM, come
+         #intro-layer nella vetrina: niente hidden/remove())
+       - .tb-menu-toggle.classList.add('is-visible')  (compare col logo)
+     Sequenza totale dichiarata: 900ms + 1.2s (fine aggancio logo) = 2.1s;
+     lo sfondo continua a sfumare fino a 900ms+1.5s=2.4s ma non blocca
+     nulla (pointer-events:none gia' dai 900ms). Niente vibrazione.
+     Skip (nessuna animazione, stato finale subito) quando sessionStorage
+     .tbIntro e' gia' impostato o prefers-reduced-motion: applica súbito
+     'in-nav'/'is-complete'/'is-visible' senza il giro is-pulse. Sempre:
+     sessionStorage.setItem('tbIntro','1') alla fine.
+     Pagine senza #tb-intro (es. 404.html): .tb-logo parte gia' 'in-nav' e
+     .tb-menu-toggle gia' 'is-visible' nell'HTML statico (= .static-nav
+     della vetrina): intro.js non ha nulla da fare li'. */
 .tb-intro {
     position: fixed;
     inset: 0;
-    z-index: 10040;
+    z-index: 9999;
     background: var(--bg-color);
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: background-color 0.4s ease-out;
+    transition: background-color 1.5s ease-out;
 }
 
-.tb-intro[hidden] {
-    display: none;
-}
-
-.tb-intro.is-fading {
+.tb-intro.is-complete {
     background-color: transparent;
     pointer-events: none;
 }
 
-.tb-intro-logo {
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    width: 100px;
-    height: 100px;
-    border-radius: 50%;
-    transform: translate(-50%, -50%) scale(1);
-    transition: top 0.4s var(--ease-cinematic), left 0.4s var(--ease-cinematic), transform 0.4s var(--ease-cinematic);
-    will-change: top, left, transform;
+/* Senza intro (gia' vista in questa sessione o movimento ridotto): la classe
+   tb-no-intro la mette shared/lang-boot.js prima del primo paint, cosi' il
+   logo nasce gia' agganciato in alto a sinistra e l'overlay non si vede. */
+html.tb-no-intro .tb-logo {
+    top: calc(58px + var(--tb-safe-t));
+    left: 50px;
+    transform: translate(-50%, -50%) scale(0.5);
+    transition: none;
 }
 
-.tb-intro-logo.is-pulse {
+@media (max-width: 768px) {
+    html.tb-no-intro .tb-logo {
+        top: calc(45px + var(--tb-safe-t));
+        left: 40px;
+        transform: translate(-50%, -50%) scale(0.6);
+    }
+}
+
+html.tb-no-intro .tb-intro {
+    display: none;
+}
+
+.tb-logo.is-pulse {
     animation: tb-heartbeat 0.8s ease-in-out forwards;
 }
 
@@ -275,18 +378,9 @@ button {
     100% { transform: translate(-50%, -50%) scale(1); }
 }
 
-/* Punto di arrivo: dove sta il logo nella barra, a misura fissa (niente
-   getBoundingClientRect a runtime). Una lieve imprecisione non si vede:
-   sotto lo sfondo sta gia' sfumando via. */
-.tb-intro-logo.is-dock {
-    top: calc(var(--tb-safe-t) + 28px);
-    left: calc(5% + 22px);
-    transform: translate(-50%, -50%) scale(0.36);
-}
-
 @media (prefers-reduced-motion: reduce) {
     .tb-intro,
-    .tb-intro-logo {
+    .tb-logo {
         transition: none !important;
         animation: none !important;
     }
@@ -324,19 +418,20 @@ button {
     opacity: 1;
 }
 
-/* Sotto i 768px: foglio a tutta altezza sotto la barra. `top` = barra +
-   safe-area; l'altezza e' un max-height (non piu' `bottom`, che con la
-   toolbar mobile dinamica non si ridimensiona sempre in modo affidabile)
-   calcolato con lo stesso `top`: fallback 100vh, poi 100dvh dove supportata. */
+/* Sotto i 768px: foglio a tutta altezza sotto logo/hamburger (niente piu'
+   barra: 100px libera entrambi, vedi .tb-shell). L'altezza e' un
+   max-height (non piu' `bottom`, che con la toolbar mobile dinamica non si
+   ridimensiona sempre in modo affidabile): fallback 100vh, poi 100dvh dove
+   supportata. */
 .tb-menu-panel {
     position: fixed;
     z-index: 10011;
     box-sizing: border-box;
-    top: calc(56px + var(--tb-safe-t));
+    top: calc(90px + var(--tb-safe-t));
     left: max(12px, var(--tb-safe-l));
     right: max(12px, var(--tb-safe-r));
-    max-height: calc(100vh - 56px - var(--tb-safe-t));
-    max-height: calc(100dvh - 56px - var(--tb-safe-t));
+    max-height: calc(100vh - 90px - var(--tb-safe-t));
+    max-height: calc(100dvh - 90px - var(--tb-safe-t));
     border-radius: 20px;
     padding: 16px max(16px, var(--tb-safe-l)) calc(16px + var(--tb-safe-b));
     background: var(--glass-bg);
@@ -364,12 +459,13 @@ button {
 /* Da 768px: pannello ancorato sotto l'hamburger, a destra, max 380px. */
 @media (min-width: 768px) {
     .tb-menu-panel {
-        top: calc(56px + var(--tb-safe-t) + 8px);
+        top: calc(100px + var(--tb-safe-t));
         left: auto;
         right: max(5%, var(--tb-safe-r));
         bottom: auto;
         width: min(380px, calc(100vw - 40px));
-        max-height: calc(100vh - 56px - var(--tb-safe-t) - 24px);
+        max-height: calc(100vh - 100px - var(--tb-safe-t) - 24px);
+        max-height: calc(100dvh - 100px - var(--tb-safe-t) - 24px);
         padding: 16px;
     }
 }
@@ -684,7 +780,7 @@ a.tb-menu-link[aria-current="page"] {
 /* --- BREAKPOINT MOBILE (layout) --- */
 @media (max-width: 768px) {
     .tb-shell {
-        padding: calc(56px + var(--tb-safe-t)) 6% 110px;
+        padding: calc(90px + var(--tb-safe-t)) 6% 110px;
     }
 }
 

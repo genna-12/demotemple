@@ -1,0 +1,57 @@
+// Tiny Temple Toolbox - Metronomo - dizionario (IT/EN)
+// Modulo dati puro: nessun effetto all'import. Unito a shared/i18n-common.js
+// da metronomo.js (init(commonDict, toolDict), spec 10 §1).
+// Le battute (2/4, 3/4...) non si traducono: testo statico nell'HTML,
+// nessuna chiave qui (spec 10 §7).
+export default {
+    it: {
+        'met-title': 'Metronomo',
+        'met-bpm-aria': 'Tempo in battiti al minuto',
+        'met-step-minus1': 'Meno 1',
+        'met-step-plus1': 'Più 1',
+        'met-step-minus5': 'Meno 5',
+        'met-step-plus5': 'Più 5',
+        'met-tap': 'Tap',
+        'met-tap-aria': 'Tocca a tempo per impostare il BPM',
+        'met-meter': 'Battuta',
+        'met-subdiv': 'Suddivisione',
+        'met-sub-1': 'Quarti',
+        'met-sub-2': 'Ottavi',
+        'met-sub-3': 'Terzine',
+        'met-sub-4': 'Sedicesimi',
+        'met-sound': 'Suono',
+        'met-volume': 'Volume',
+        'met-sound-legno': 'Legno',
+        'met-sound-beep': 'Beep',
+        'met-sound-rimshot': 'Rimshot',
+        'met-start': 'Avvia',
+        'met-stop': 'Ferma',
+        'met-toggle-aria': 'Avvia o ferma (barra spaziatrice)',
+        'met-hint': 'Barra spaziatrice per avviare'
+    },
+    en: {
+        'met-title': 'Metronome',
+        'met-bpm-aria': 'Tempo in beats per minute',
+        'met-step-minus1': 'Minus 1',
+        'met-step-plus1': 'Plus 1',
+        'met-step-minus5': 'Minus 5',
+        'met-step-plus5': 'Plus 5',
+        'met-tap': 'Tap',
+        'met-tap-aria': 'Tap in time to set the BPM',
+        'met-meter': 'Time signature',
+        'met-subdiv': 'Subdivision',
+        'met-sub-1': 'Quarters',
+        'met-sub-2': 'Eighths',
+        'met-sub-3': 'Triplets',
+        'met-sub-4': 'Sixteenths',
+        'met-sound': 'Sound',
+        'met-volume': 'Volume',
+        'met-sound-legno': 'Wood',
+        'met-sound-beep': 'Beep',
+        'met-sound-rimshot': 'Rimshot',
+        'met-start': 'Start',
+        'met-stop': 'Stop',
+        'met-toggle-aria': 'Start or stop (spacebar)',
+        'met-hint': 'Spacebar to start'
+    }
+};

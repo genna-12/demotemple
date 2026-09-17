@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="format-detection" content="telephone=no, address=no, email=no">
-    <title>Tiny Temple Toolbox</title>
+    <title>Metronomo | Tiny Temple Toolbox</title>
 
     <link rel="icon" href="/assets/icons/favicon.ico">
     <link rel="apple-touch-icon" href="/assets/icons/apple-touch-icon.png">
@@ -16,48 +16,39 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black">
     <link rel="manifest" href="/manifest.webmanifest">
 
-    <meta name="description" content="Strumenti gratuiti per artisti e producer di Tiny Temple Studio: metronomo, accordatore e altro, direttamente nel browser.">
-    <link rel="canonical" href="https://toolbox.tinytemplestudio.it/">
+    <meta name="description" content="Metronomo online gratuito: BPM 30-300, tap tempo, battute da 2/4 a 12/8, suddivisioni e suoni sintetizzati. Funziona offline, nel browser.">
+    <link rel="canonical" href="https://toolbox.tinytemplestudio.it/metronomo/">
 
     <script src="/shared/lang-boot.js"></script>
     <link rel="stylesheet" href="/shared/tokens.css">
     <link rel="stylesheet" href="/shared/base.css">
     <link rel="stylesheet" href="/shared/components.css">
+    <link rel="stylesheet" href="/metronomo/metronomo.css">
 </head>
 
 <body>
 
-    <!-- tb-bar resta senza sfondo/posizione propri (nessuna barra visibile,
-         feedback Genna): e' solo il contenitore atteso da shared/nav.js
-         (mountBar), i due figli sono `position: fixed` per conto loro. -->
+    <!-- tb-bar resta senza sfondo/posizione propri: e' solo il contenitore
+         atteso da shared/nav.js (mountBar), i tre figli sono `position: fixed`
+         per conto loro (vedi base.css). Niente intro qui (pagina strumento,
+         come 404.html): logo gia' 'in-nav', hamburger gia' 'is-visible'.
+         h1.tb-bar-title presente gia' in HTML (testo IT di default) cosi'
+         shared/nav.js (mountBar con titleKey) non deve crearlo a runtime
+         senza testo (niente flash). -->
     <header class="tb-bar">
-        <a class="tb-logo" href="/" data-i18n-aria="bar-logo-aria" aria-label="Tiny Temple Toolbox — vai alla dashboard">
+        <a class="tb-logo in-nav" href="/" data-i18n-aria="bar-logo-aria" aria-label="Tiny Temple Toolbox — vai alla dashboard">
             <img src="/assets/brand/logo-arancione.png" width="100" height="100" alt="" loading="eager">
             <span class="sr-only">Tiny Temple Toolbox</span>
         </a>
-        <button type="button" class="tb-menu-toggle" aria-controls="tb-menu" aria-expanded="false"
+        <h1 class="tb-bar-title" data-i18n="met-title">Metronomo</h1>
+        <button type="button" class="tb-menu-toggle is-visible" aria-controls="tb-menu" aria-expanded="false"
             data-i18n-aria="bar-menu-open" aria-label="Apri il menu">
             <span class="tb-menu-toggle-line"></span>
             <span class="tb-menu-toggle-line"></span>
         </button>
     </header>
 
-    <!-- Overlay dell'intro (solo sfondo: il logo che anima e' quello sopra,
-         .tb-bar .tb-logo, tenuto sopra via z-index, non nidificato qui
-         perche' shared/nav.js si aspetta .tb-logo dentro .tb-bar). Vedi
-         CONTRATTO shared/intro.js in base.css. -->
-    <div id="tb-intro" class="tb-intro"></div>
-
-    <!--
-        CONTRATTO shared/nav.js (spec 02 §3): riempie .tb-menu-groups (per
-        famiglia, da shared/tools.js) e gestisce apertura/chiusura di
-        #tb-menu; vedi il commento sopra ".tb-menu[hidden]" in base.css per
-        la forma esatta attesa in ciascun gruppo/voce.
-        CONTRATTO shared/dash.js (spec 02 §4): riempie #tb-tiles (uguale,
-        icone dallo sprite qui sotto) e #tb-picker-groups dentro #tb-picker;
-        vedi il commento sopra ".tb-tiles" in components.css.
-        Entrambi leggono le icone da qui: <svg><use href="#tb-icon-<slug>">.
-    -->
+    <!-- CONTRATTO shared/nav.js: vedi il commento in index.html vicino a #tb-menu. -->
     <svg class="tb-sprite" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg">
         <symbol id="tb-icon-metronomo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M8 20h8"></path>
@@ -101,7 +92,7 @@
     <div id="tb-menu" class="tb-menu" hidden>
         <div class="tb-menu-scrim"></div>
         <div class="tb-menu-panel" role="dialog" aria-modal="true" aria-label="Menu">
-            <a class="tb-menu-home tb-menu-item" href="/" data-i18n="menu-all" aria-current="page">Dashboard</a>
+            <a class="tb-menu-home tb-menu-item" href="/" data-i18n="menu-all">Dashboard</a>
             <div class="tb-menu-groups"></div>
             <div class="tb-menu-foot tb-menu-item">
                 <div class="tb-menu-install-group">
@@ -140,19 +131,73 @@
     </div>
 
     <div class="tb-shell">
-        <main class="tb-dash">
-            <div class="tb-dash-top">
-                <h1 class="sr-only" data-i18n="idx-title">Toolbox</h1>
-                <button type="button" id="tb-edit" class="tb-edit" aria-pressed="false" data-i18n="dash-edit">Modifica</button>
+        <header class="tb-page-header">
+            <h1 data-i18n="met-title">Metronomo</h1>
+        </header>
+
+        <main id="met" class="met">
+            <div class="met-bpm-wrap">
+                <div id="met-bpm-control" class="met-bpm-control" role="slider" tabindex="0"
+                    aria-valuemin="30" aria-valuemax="300" aria-valuenow="120" aria-valuetext="120 BPM"
+                    data-i18n-aria="met-bpm-aria" aria-label="Tempo in battiti al minuto">
+                    <span id="met-bpm" class="met-bpm" aria-live="polite" aria-atomic="true">120</span>
+                    <span class="met-bpm-unit">BPM</span>
+                </div>
+                <div class="met-steps">
+                    <button type="button" class="met-step" data-met-step="-5" data-i18n-aria="met-step-minus5" aria-label="Meno 5">&minus;5</button>
+                    <button type="button" class="met-step" data-met-step="-1" data-i18n-aria="met-step-minus1" aria-label="Meno 1">&minus;1</button>
+                    <button type="button" class="met-step" data-met-step="+1" data-i18n-aria="met-step-plus1" aria-label="Più 1">+1</button>
+                    <button type="button" class="met-step" data-met-step="+5" data-i18n-aria="met-step-plus5" aria-label="Più 5">+5</button>
+                </div>
+                <button type="button" id="met-tap" class="met-tap" data-i18n="met-tap" data-i18n-aria="met-tap-aria" aria-label="Tocca a tempo per impostare il BPM">Tap</button>
             </div>
 
-            <ul class="tb-tiles" id="tb-tiles" aria-label="Toolbox"></ul>
-            <div id="tb-dash-live" class="sr-only" aria-live="polite"></div>
+            <div id="met-dots" class="met-dots" aria-hidden="true"></div>
 
-            <button type="button" id="tb-tile-add" class="tb-tile-add" hidden data-i18n-aria="dash-add" aria-label="Aggiungi strumento">+</button>
+            <div class="met-row">
+                <span class="met-label" id="met-meter-label" data-i18n="met-meter">Battuta</span>
+                <div id="met-meters" class="met-choices" role="radiogroup" aria-labelledby="met-meter-label">
+                    <button type="button" data-met-meter="2/4" role="radio" aria-checked="false">2/4</button>
+                    <button type="button" data-met-meter="3/4" role="radio" aria-checked="false">3/4</button>
+                    <button type="button" data-met-meter="4/4" role="radio" aria-checked="true">4/4</button>
+                    <button type="button" data-met-meter="5/4" role="radio" aria-checked="false">5/4</button>
+                    <button type="button" data-met-meter="6/8" role="radio" aria-checked="false">6/8</button>
+                    <button type="button" data-met-meter="7/8" role="radio" aria-checked="false">7/8</button>
+                    <button type="button" data-met-meter="12/8" role="radio" aria-checked="false">12/8</button>
+                </div>
+            </div>
 
-            <!-- Riservato per "Recenti" quando Penna/DNA salveranno record (spec 02 §4): niente per ora. -->
-            <div id="tb-slot" class="tb-slot" hidden></div>
+            <div class="met-row">
+                <span class="met-label" id="met-subdiv-label" data-i18n="met-subdiv">Suddivisione</span>
+                <div id="met-subs" class="met-choices" role="radiogroup" aria-labelledby="met-subdiv-label">
+                    <button type="button" data-met-sub="1" role="radio" aria-checked="true" data-i18n="met-sub-1">Quarti</button>
+                    <button type="button" data-met-sub="2" role="radio" aria-checked="false" data-i18n="met-sub-2">Ottavi</button>
+                    <button type="button" data-met-sub="3" role="radio" aria-checked="false" data-i18n="met-sub-3">Terzine</button>
+                    <button type="button" data-met-sub="4" role="radio" aria-checked="false" data-i18n="met-sub-4">Sedicesimi</button>
+                </div>
+            </div>
+
+            <div class="met-row">
+                <span class="met-label" id="met-sound-label" data-i18n="met-sound">Suono</span>
+                <div id="met-sounds" class="met-choices" role="radiogroup" aria-labelledby="met-sound-label">
+                    <button type="button" data-met-sound="legno" role="radio" aria-checked="true" data-i18n="met-sound-legno">Legno</button>
+                    <button type="button" data-met-sound="beep" role="radio" aria-checked="false" data-i18n="met-sound-beep">Beep</button>
+                    <button type="button" data-met-sound="rimshot" role="radio" aria-checked="false" data-i18n="met-sound-rimshot">Rimshot</button>
+                </div>
+            </div>
+
+            <div class="met-row met-row--volume">
+                <label class="met-label" for="met-volume" data-i18n="met-volume">Volume</label>
+                <input type="range" id="met-volume" min="0" max="100" value="70">
+            </div>
+
+            <button type="button" id="met-toggle" class="met-toggle" aria-pressed="false"
+                data-i18n-aria="met-toggle-aria" aria-label="Avvia o ferma (barra spaziatrice)">
+                <span id="met-toggle-label" data-i18n="met-start">Avvia</span>
+            </button>
+
+            <p id="met-status" class="tb-status" aria-live="polite"></p>
+            <p class="met-hint" data-i18n="met-hint">Barra spaziatrice per avviare</p>
         </main>
 
         <footer class="tb-footer">
@@ -173,17 +218,7 @@
         </footer>
     </div>
 
-    <dialog id="tb-picker" class="tb-picker" aria-labelledby="tb-picker-title">
-        <div class="tb-picker-head">
-            <h2 id="tb-picker-title" data-i18n="picker-title">Aggiungi alla dashboard</h2>
-            <button type="button" class="tb-picker-close" data-i18n-aria="picker-close-aria" aria-label="Chiudi">&times;</button>
-        </div>
-        <div class="tb-picker-groups" id="tb-picker-groups"></div>
-        <p class="tb-picker-empty" data-i18n="picker-empty" hidden>Sono gi&agrave; tutti qui.</p>
-        <button type="button" class="tb-picker-reset" data-i18n="picker-reset">Ripristina ordine</button>
-    </dialog>
-
-    <script type="module" src="/index.js"></script>
+    <script type="module" src="/metronomo/metronomo.js"></script>
 </body>
 
 </html>

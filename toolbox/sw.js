@@ -18,7 +18,7 @@
  * cambi di VERSION: i percorsi contengono gia' la versione della libreria.
  */
 
-const VERSION = 'tb-v4';
+const VERSION = 'tb-v6';
 const CACHE = 'toolbox-' + VERSION;
 const VENDOR_CACHE = 'toolbox-vendor';
 
@@ -45,6 +45,7 @@ const SHELL = [
     '/shared/tools.js',
     '/shared/dash.js',
     '/shared/intro.js',
+    '/shared/scheduler.js',
 
     '/assets/brand/logo-arancione.png',
     '/assets/brand/logo-arancione-96.png',
@@ -72,6 +73,10 @@ const SHELL = [
    '/<slug>/', '/<slug>/<slug>.js', '/<slug>/<slug>.css', '/<slug>/i18n.js'.
    Le librerie in /vendor/ NON vanno qui: hanno la loro cache runtime. */
 const TOOLS = [
+    '/metronomo/',
+    '/metronomo/metronomo.js',
+    '/metronomo/metronomo.css',
+    '/metronomo/i18n.js'
 ];
 
 const PRECACHE = SHELL.concat(TOOLS);

@@ -1,29 +1,34 @@
-// Tiny Temple Toolbox - barra superiore e menu compatto (spec 02 §1 e §3).
+// Tiny Temple Toolbox - logo, hamburger e menu compatto (spec 02 §1 e §3,
+// ritocco Genna: niente barra, logo e hamburger fissi come nella vetrina).
 // ES module puro: nessun effetto all'import. Uso: mountBar({...}) dopo init().
 //
-// CONTRATTO CON IL MARKUP (index.html, 404.html; nelle pagine strumento,
-// che non hanno markup statico, nav.js crea da se' barra e menu):
-//   <header class="tb-bar">              figlio diretto di <body>
-//     <a class="tb-logo" href="/" data-i18n-aria = bar-logo-aria>img + span.sr-only</a>
-//     <h1 class="tb-bar-title" data-i18n = <titleKey>>   solo pagine strumento (lo crea nav.js)
-//     <button type="button" class="tb-menu-toggle" aria-controls="tb-menu"
-//             aria-expanded="false" data-i18n-aria = bar-menu-open>2 x span.tb-menu-toggle-line
+// CONTRATTO CON IL MARKUP (index.html, 404.html; dove manca, lo crea nav.js):
+//   NIENTE contenitore barra: logo e hamburger sono due elementi `position: fixed`
+//   figli di <body> (un eventuale <header> che li contiene va bene lo stesso).
+//   <a class="tb-logo" href="/" data-i18n-aria = bar-logo-aria>img + span.sr-only</a>
+//       e' anche il logo dell'intro (vedi shared/intro.js): a riposo al centro,
+//       con .in-nav in alto a sinistra. Nelle pagine senza intro parte gia' .in-nav.
+//   <button type="button" class="tb-menu-toggle" aria-controls="tb-menu"
+//           aria-expanded="false" data-i18n-aria = bar-menu-open>2 x span.tb-menu-toggle-line
+//       compare con .is-visible (la mette intro.js; statica dove non c'e' intro).
+//   <h1 class="tb-bar-title" data-i18n = <titleKey>>  solo pagine strumento (lo crea nav.js)
 //   <div id="tb-menu" class="tb-menu" hidden>      figlio diretto di <body>
 //     <div class="tb-menu-scrim"></div>
 //     <div class="tb-menu-panel" role="dialog" aria-modal="true" aria-label="Menu">
 //       <a class="tb-menu-home tb-menu-item" href="/" data-i18n = menu-all>   (aria-current in home)
 //       <div class="tb-menu-groups"></div>          VUOTO: lo riempie nav.js da tools.js
-//       <div class="tb-menu-foot tb-menu-item">     lang-switch [data-lang], #tb-menu-install,
-//                                                   #tb-menu-ios, .tb-menu-manual, .tb-menu-ext
+//       <div class="tb-menu-foot tb-menu-item">     .tb-menu-install-group (#tb-menu-install,
+//                                                   #tb-menu-ios, .tb-menu-manual) e
+//                                                   .tb-menu-foot-row (lang-switch + .tb-menu-ext)
 // Generato in .tb-menu-groups, per ogni famiglia con strumenti:
 //   <section class="tb-menu-group">
 //     <span class="tb-menu-eyebrow" id="tb-menu-fam-<id>" data-i18n = fam-<id>></span>
 //     <ul class="tb-menu-list" aria-labelledby="tb-menu-fam-<id>">
-//       <li><a class="tb-menu-link" href="/<slug>" data-i18n = tool-<slug>>      -- status 'live'
+//       <li class="tb-menu-item"><a class="tb-menu-link" href="/<slug>">      -- status 'live'
 //             <svg class="tb-menu-link-icon" aria-hidden="true"><use href="#tb-icon-<slug>"></use></svg>
 //             <span class="tb-menu-link-name" data-i18n = tool-<slug>></span></a>
-//       <li><span class="tb-menu-link is-soon">icona + nome</span>               -- status 'soon'
-//           <span class="tb-pill tb-pill--sm" data-i18n = pill-soon></span>
+//       <li class="tb-menu-item"><span class="tb-menu-link is-soon">icona + nome</span>  -- 'soon'
+//           <span class="tb-pill" data-i18n = pill-soon></span>
 // La voce della pagina corrente: aria-current="page" + class .is-current.
 //
 // CONTRATTO CSS (base.css):
@@ -31,20 +36,19 @@
 //     l'animazione sta su `.tb-menu.is-open` (scrim + pannello); in chiusura nav.js
 //     aspetta transitionend su menu/scrim/pannello (ripiego 700ms, 200ms reduced motion).
 //   - Toggle aperto: `.tb-menu-toggle[aria-expanded="true"]` (anche .is-open).
-//   - <html> ha la classe `tb-menu-open` a menu aperto; la barra deve stare sopra il menu
-//     (z-index maggiore): a menu aperto nav.js la rende position:fixed perche' il body e' bloccato.
+//   - <html> ha la classe `tb-menu-open` a menu aperto. Logo e hamburger sono
+//     `position: fixed`, quindi restano al loro posto col body bloccato.
 //
 // CHIAVI i18n USATE QUI: bar-logo-aria, bar-menu-open, bar-menu-close, menu-all,
 //   fam-<id> e tool-<slug> (da tools.js), pill-soon.
 //
-// L'installazione NON e' piu' gestita qui: il blocco nel menu (#tb-menu-install,
+// L'installazione NON e' gestita qui: il blocco nel menu (#tb-menu-install,
 // #tb-menu-ios, .tb-menu-manual dentro .tb-menu-install-group) e' passato a
 // initPwa() da index.js / 404.js.
 //
 // mountBar({ page: 'home' | 'tool', titleKey, current })
 //   current = slug della pagina ('home' in dashboard); idempotente: chiamate
 //   successive non rimontano nulla e ritornano la stessa api { open, close, isOpen }.
-
 import { t, lang, setLang, apply, onChange } from './i18n.js';
 import { TOOLS, FAMILIES } from './tools.js';
 
@@ -86,46 +90,43 @@ export function toolIcon(slug, cls) {
 
 /* ---------- costruzione (solo cio' che manca nel markup) ---------- */
 
-function ensureBar(page, titleKey) {
-    let bar = document.querySelector('.tb-bar');
-    if (!bar) {
-        bar = el('header', 'tb-bar');
-        document.body.prepend(bar);
-    }
-    let toggle = bar.querySelector('.tb-menu-toggle');
+function ensureShell(page, titleKey) {
+    let toggle = document.querySelector('.tb-menu-toggle');
     if (!toggle) {
-        toggle = el('button', 'tb-menu-toggle', { type: 'button' });
+        toggle = el('button', 'tb-menu-toggle is-visible', { type: 'button' });
         toggle.append(el('span', 'tb-menu-toggle-line'), el('span', 'tb-menu-toggle-line'));
-        bar.appendChild(toggle);
+        document.body.appendChild(toggle);
     }
-    if (!bar.querySelector('.tb-logo')) {
-        const logo = el('a', 'tb-logo', { href: '/', 'data-i18n-aria': 'bar-logo-aria' });
+    let logo = document.querySelector('.tb-logo');
+    if (!logo) {
+        /* pagine senza markup statico: il logo parte gia' agganciato (niente intro) */
+        logo = el('a', 'tb-logo in-nav', { href: '/', 'data-i18n-aria': 'bar-logo-aria' });
         const img = el('img');
-        img.src = '/assets/brand/logo-arancione-96.png';
-        img.width = 36;
-        img.height = 36;
+        img.src = '/assets/brand/logo-arancione.png';
+        img.width = 100;
+        img.height = 100;
         img.alt = '';
         const name = el('span', 'sr-only');
         name.textContent = 'Tiny Temple Toolbox';
         logo.append(img, name);
-        bar.insertBefore(logo, bar.firstChild);
+        document.body.insertBefore(logo, document.body.firstChild);
     }
     if (page === 'tool') {
-        let title = bar.querySelector('.tb-bar-title');
+        let title = document.querySelector('.tb-bar-title');
         if (!title) {
             title = el('h1', 'tb-bar-title');
-            bar.insertBefore(title, toggle);
+            toggle.parentNode.insertBefore(title, toggle);
         }
         if (titleKey) title.setAttribute('data-i18n', titleKey);
     }
-    return { bar, toggle };
+    return { logo, toggle };
 }
 
-function ensureMenu(bar) {
+function ensureMenu(toggle) {
     let menu = document.getElementById(MENU_ID);
     if (!menu) {
         menu = el('div', 'tb-menu', { id: MENU_ID });
-        bar.after(menu);
+        document.body.appendChild(menu);
     }
     menu.hidden = true;
     let scrim = menu.querySelector('.tb-menu-scrim');
@@ -203,7 +204,6 @@ function fillGroups(groups, current) {
 /* ---------- blocco scroll (iOS compreso) ---------- */
 
 const BODY_PROPS = ['position', 'top', 'left', 'right', 'width', 'padding-right'];
-const BAR_PROPS = ['position', 'top', 'left', 'right'];
 
 function saveStyle(node, props) {
     const saved = {};
@@ -221,7 +221,8 @@ function restoreStyle(node, saved) {
     });
 }
 
-function createScrollLock(bar) {
+/* Logo e hamburger sono position:fixed: col body bloccato restano al loro posto. */
+function createScrollLock() {
     let state = null;
     return {
         lock() {
@@ -230,16 +231,7 @@ function createScrollLock(bar) {
             const root = document.documentElement;
             const y = window.scrollY || window.pageYOffset || 0;
             const scrollbar = Math.max(0, window.innerWidth - root.clientWidth);
-            const barPos = window.getComputedStyle(bar).position;
-            state = { y, body: saveStyle(body, BODY_PROPS), bar: null };
-            if (barPos !== 'fixed') {
-                /* col body fisso una barra sticky scorrerebbe via insieme alla pagina */
-                state.bar = saveStyle(bar, BAR_PROPS);
-                bar.style.setProperty('position', 'fixed');
-                bar.style.setProperty('top', '0');
-                bar.style.setProperty('left', '0');
-                bar.style.setProperty('right', '0');
-            }
+            state = { y, body: saveStyle(body, BODY_PROPS) };
             body.style.setProperty('position', 'fixed');
             body.style.setProperty('top', -y + 'px');
             body.style.setProperty('left', '0');
@@ -255,7 +247,6 @@ function createScrollLock(bar) {
             const { y } = state;
             const root = document.documentElement;
             restoreStyle(document.body, state.body);
-            if (state.bar) restoreStyle(bar, state.bar);
             state = null;
             const prev = root.style.getPropertyValue('scroll-behavior');
             root.style.setProperty('scroll-behavior', 'auto'); // niente scroll animato al ripristino
@@ -268,36 +259,32 @@ function createScrollLock(bar) {
 
 /* ---------- inert sul resto della pagina ---------- */
 
-function createInert(bar, menu, toggle) {
+function createInert(keep) {
     const supports = typeof HTMLElement !== 'undefined' && 'inert' in HTMLElement.prototype;
     let touched = [];
-    const targets = () => {
-        const list = [];
-        [...document.body.children].forEach((node) => {
-            if (SKIP_TAGS.has(node.tagName) || node === menu) return;
+    const mark = (node) => {
+        if (supports) {
+            if (node.inert) return;
+            node.inert = true;
+            touched.push(node);
+        } else if (!node.hasAttribute('aria-hidden')) {
+            node.setAttribute('aria-hidden', 'true');
+            touched.push(node);
+        }
+    };
+    const walk = (parent) => {
+        [...parent.children].forEach((node) => {
+            if (SKIP_TAGS.has(node.tagName)) return;
+            if (keep.includes(node)) return;
             if (node.classList.contains('tb-toast-region')) return; // i toast restano annunciati
-            if (node === bar || node.contains(bar) || node.contains(menu)) return;
-            list.push(node);
+            if (keep.some((k) => k && node.contains(k))) { walk(node); return; } // contenitore: si scende
+            mark(node);
         });
-        [...bar.children].forEach((node) => {
-            if (node === menu || node.contains(toggle) || node.contains(menu)) return;
-            list.push(node);
-        });
-        return list;
     };
     return {
         on() {
             touched = [];
-            targets().forEach((node) => {
-                if (supports) {
-                    if (node.inert) return;
-                    node.inert = true;
-                    touched.push(node);
-                } else if (!node.hasAttribute('aria-hidden')) {
-                    node.setAttribute('aria-hidden', 'true');
-                    touched.push(node);
-                }
-            });
+            walk(document.body);
         },
         off() {
             touched.forEach((node) => {
@@ -315,8 +302,8 @@ export function mountBar({ page = 'home', titleKey, current } = {}) {
     if (api) return api; // idempotente
     const cur = current !== undefined ? current : (page === 'home' ? 'home' : null);
 
-    const { bar, toggle } = ensureBar(page, titleKey);
-    const { menu, scrim, panel, groups, foot } = ensureMenu(bar);
+    const { logo, toggle } = ensureShell(page, titleKey);
+    const { menu, scrim, panel, groups, foot } = ensureMenu(toggle);
     fillGroups(groups, cur);
 
     const home = panel.querySelector('.tb-menu-home');
@@ -332,8 +319,8 @@ export function mountBar({ page = 'home', titleKey, current } = {}) {
     toggle.setAttribute('aria-expanded', 'false');
     toggle.setAttribute('data-i18n-aria', 'bar-menu-open');
 
-    const scroll = createScrollLock(bar);
-    const inert = createInert(bar, menu, toggle);
+    const scroll = createScrollLock();
+    const inert = createInert([logo, toggle, menu, document.getElementById('tb-intro')]);
     let isOpen = false;
     let closeTimer = null;
     let onEnd = null;
@@ -385,7 +372,7 @@ export function mountBar({ page = 'home', titleKey, current } = {}) {
     function onFocusIn(e) {
         if (!isOpen) return;
         const n = e.target;
-        if (n === toggle || menu.contains(n)) return;
+        if (n === toggle || n === logo || menu.contains(n)) return;
         const list = focusables();
         (list[1] || list[0]).focus({ preventScroll: true });
     }
@@ -474,8 +461,7 @@ export function mountBar({ page = 'home', titleKey, current } = {}) {
     onChange(renderLang);
     renderLang();
 
-    apply(bar);
-    apply(menu);
+    apply(document); // logo/hamburger sono radici a se': si traduce tutto il documento
     setToggle(false);
 
     api = { open, close, isOpen: () => isOpen };

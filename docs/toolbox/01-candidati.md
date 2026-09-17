@@ -92,6 +92,11 @@ Sforzo = stima relativa (S/M/L). ★ = proposto per la prima ondata.
 | | EPK builder (esporta pagina/PDF) | medio-alto | L | Senza account e senza hosting è raro; ma è un progetto a sé. Seconda ondata. |
 | | Bozza accordo featuring/collaborazione | medio | M | Testo legale: serve revisione umana. |
 
+### F. Aggiunto il 17 settembre (proposta di Genna)
+| | Strumento | Valore | Sforzo | Note |
+|---|---|---|---|---|
+| ★ | **Trasposizione** (cambio tonalità di una base senza cambiare il tempo, ± semitoni; anche variazione di tempo senza cambiare la tonalità) | alto | M | Pitch shifting in un Worker su AudioBuffer decodificato, esportazione WAV/MP3. Libreria candidata: SoundTouch JS (LGPL, WSOLA) o phase vocoder proprio; qualità buona entro ±3-4 semitoni su un mix intero, artefatti oltre. Si accoppia con DNA (tonalità rilevata → scegli quella di arrivo). Da collocare dopo DNA nella prima ondata. |
+
 ## 3. Proposta per la prima ondata (da confermare con Genna)
 
 Otto strumenti, ordinati per "impari qualcosa che serve al successivo":
@@ -103,7 +108,8 @@ Otto strumenti, ordinati per "impari qualcosa che serve al successivo":
 5. **Penna** (rimario + blocco testi) — il gap italiano; IndexedDB.
 6. **Pianificatore di uscita** — primo strumento "artist development".
 7. **Checklist consegna + naming stem** — contenuto dello studio.
-8. **Split sheet → PDF** — chiude la prima ondata.
+8. **Split sheet → PDF**.
+9. **Trasposizione** — riusa decodifica e Worker di DNA; chiude la prima ondata.
 
 Rimandati con motivo: Sentinel (affidabilità), riconoscimento brani (costo/legalità), stem separation e riconoscimento accordi (peso), SIAE/Soundreef e contratti (contenuto umano), EPK (progetto a sé).
 

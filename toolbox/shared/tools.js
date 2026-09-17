@@ -23,8 +23,8 @@ export const FAMILIES = [
 ];
 
 export const TOOLS = [
-    { slug: 'metronomo', family: 'live', key: 'tool-metronomo', status: 'soon', next: true },
-    { slug: 'accordatore', family: 'live', key: 'tool-accordatore', status: 'soon' },
+    { slug: 'metronomo', family: 'live', key: 'tool-metronomo', status: 'live' },
+    { slug: 'accordatore', family: 'live', key: 'tool-accordatore', status: 'soon', next: true },
     { slug: 'dna', family: 'analysis', key: 'tool-dna', status: 'soon' },
     { slug: 'penna', family: 'writing', key: 'tool-penna', status: 'soon' },
     { slug: 'calcolatore-tempo', family: 'calc', key: 'tool-calcolatore-tempo', status: 'soon' },
