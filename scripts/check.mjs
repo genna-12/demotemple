@@ -201,31 +201,42 @@ else ok('ogni pagina html ha una regola Cache-Control');
 // 5. HTML DI BASE
 section('5. HTML di base (script, manifest, CSP)');
 const htmlAll = allFiles.filter((f) => rel(f).endsWith('.html'));
-const htmlOrderBad = [], htmlManifestBad = [], htmlInlineBad = [], htmlGoogleBad = [];
+const htmlOrderBad = [], htmlManifestBad = [], htmlInlineBad = [], htmlGoogleBad = [], htmlStyleBad = [], htmlStyleWarn = [];
 const SCRIPT_RE = /<script\b([^>]*)>([\s\S]*?)<\/script>/gi;
+let siteHtmlCount = 0;
 for (const f of htmlAll) {
-  const r = rel(f);
+  const r = rel(f), isTb = r.startsWith('toolbox/');
   const content = fs.readFileSync(f, 'utf8');
   const scripts = [...content.matchAll(SCRIPT_RE)].map((m) => {
     const attrs = m[1], srcM = attrs.match(/\bsrc="([^"]+)"/), typeM = attrs.match(/\btype="([^"]+)"/);
     return { src: srcM ? srcM[1] : null, type: typeM ? typeM[1] : null, body: m[2], idx: m.index };
   });
-  const named = (name) => scripts.find((s) => s.src === '/' + name);
-  const consent = named('consent.js'), main = named('main.js'), pwa = named('pwa.js');
-  const others = scripts.filter((s) => s.src && !['/consent.js', '/main.js', '/pwa.js', '/preload.js'].includes(s.src));
-  let orderOk = !(consent && main && consent.idx > main.idx) && !(main && pwa && main.idx > pwa.idx);
-  for (const o of others) orderOk = orderOk && !(main && o.idx < main.idx) && !(pwa && o.idx > pwa.idx);
-  if (!orderOk) htmlOrderBad.push(r);
-  if (!/<link[^>]*rel="manifest"/.test(content)) htmlManifestBad.push(r);
+  if (isTb) {
+    // niente ordine consent->main->pwa ne' manifest vetrina: la toolbox ha il proprio manifest
+    if (!/<link[^>]*rel="manifest"\s+href="\/manifest\.webmanifest"/.test(content)) htmlManifestBad.push(r);
+  } else {
+    siteHtmlCount++;
+    const named = (name) => scripts.find((s) => s.src === '/' + name);
+    const consent = named('consent.js'), main = named('main.js'), pwa = named('pwa.js');
+    const others = scripts.filter((s) => s.src && !['/consent.js', '/main.js', '/pwa.js', '/preload.js'].includes(s.src));
+    let orderOk = !(consent && main && consent.idx > main.idx) && !(main && pwa && main.idx > pwa.idx);
+    for (const o of others) orderOk = orderOk && !(main && o.idx < main.idx) && !(pwa && o.idx > pwa.idx);
+    if (!orderOk) htmlOrderBad.push(r);
+    if (!/<link[^>]*rel="manifest"/.test(content)) htmlManifestBad.push(r);
+  }
   for (const s of scripts) { if (s.src || s.type === 'application/ld+json') continue; if (s.body.trim()) htmlInlineBad.push(`${r}: script inline senza src (type=${s.type || 'default'})`); }
+  if (/\sstyle\s*=\s*["']/.test(content)) (isTb ? htmlStyleBad : htmlStyleWarn).push(r); // CSP toolbox: style-src 'self' senza unsafe-inline
   if (/googleapis|gstatic/i.test(content)) htmlGoogleBad.push(r);
 }
-if (htmlOrderBad.length === 0) ok(`${htmlAll.length} pagine, ordine script conforme (consent -> main -> altri -> pwa)`);
+if (htmlOrderBad.length === 0) ok(`${siteHtmlCount} pagine vetrina, ordine script conforme (consent -> main -> altri -> pwa)`);
 else bad('ordine script non conforme', htmlOrderBad);
-if (htmlManifestBad.length === 0) ok('link rel="manifest" presente in tutte le pagine');
-else bad('link rel="manifest" mancante', htmlManifestBad);
+if (htmlManifestBad.length === 0) ok('link rel="manifest" corretto in tutte le pagine (vetrina e toolbox)');
+else bad('link rel="manifest" mancante o con href sbagliato', htmlManifestBad);
 if (htmlInlineBad.length === 0) ok('nessuno script inline vietato dalla CSP');
 else bad('script inline vietati dalla CSP', htmlInlineBad);
+if (htmlStyleBad.length) bad("style= inline vietato dalla CSP Toolbox (style-src senza unsafe-inline)", htmlStyleBad);
+else ok('nessun attributo style= inline nelle pagine Toolbox');
+if (htmlStyleWarn.length) warn('style= inline nella vetrina (CSP con unsafe-inline: tollerato ma da evitare)', htmlStyleWarn);
 if (htmlGoogleBad.length === 0) ok('nessun riferimento a googleapis/gstatic');
 else bad('riferimenti a googleapis/gstatic trovati', htmlGoogleBad);
 // 6. TOOLBOX (sottodominio, Root directory "toolbox")

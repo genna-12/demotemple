@@ -2,8 +2,9 @@
 // ES module puro: nessun effetto all'import, nessun globale.
 import { t } from './i18n.js';
 
-const PRESS_SELECTOR = '.tb-btn, .tb-bar-back, a.tb-tool, a.tb-menu-link, .tb-menu-install, '
-    + '.tb-menu-site, .tb-footer-links a, .tb-toast-action, .tb-consent button, .tb-consent a';
+const PRESS_SELECTOR = '.tb-btn, .tb-logo, .tb-menu-toggle, .tb-edit, a.tb-tile, .tb-tile-add, '
+    + '.tb-tile-remove, a.tb-menu-link, .tb-menu-install, .tb-menu-ext, .tb-picker-item, '
+    + '.tb-picker-reset, .tb-picker-close, .tb-footer-links a, .tb-toast-action, .tb-consent button, .tb-consent a';
 const PRESS_MIN_VISIBLE_MS = 120;
 
 const STATUS_KINDS = ['idle', 'busy', 'ok', 'error', 'denied'];

@@ -119,7 +119,8 @@ export function apply(root = document) {
     });
     root.querySelectorAll('[data-i18n-aria]').forEach((el) => {
         const key = el.getAttribute('data-i18n-aria');
-        el.setAttribute('aria-label', t(key));
+        const toolKey = el.getAttribute('data-i18n-tool');
+        el.setAttribute('aria-label', toolKey ? t(key, { tool: t(toolKey) }) : t(key));
     });
     root.querySelectorAll('[data-i18n-html]').forEach((el) => {
         const key = el.getAttribute('data-i18n-html');

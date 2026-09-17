@@ -18,7 +18,7 @@
  * cambi di VERSION: i percorsi contengono gia' la versione della libreria.
  */
 
-const VERSION = 'tb-v3';
+const VERSION = 'tb-v4';
 const CACHE = 'toolbox-' + VERSION;
 const VENDOR_CACHE = 'toolbox-vendor';
 
@@ -43,6 +43,11 @@ const SHELL = [
     '/shared/pwa.js',
     '/shared/nav.js',
     '/shared/tools.js',
+    '/shared/dash.js',
+    '/shared/intro.js',
+
+    '/assets/brand/logo-arancione.png',
+    '/assets/brand/logo-arancione-96.png',
 
     '/assets/fonts/archivo-400-latin.woff2',
     '/assets/fonts/archivo-400-latin-ext.woff2',

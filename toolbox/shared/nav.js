@@ -1,57 +1,60 @@
-// Tiny Temple Toolbox - barra superiore e menu fullscreen (spec 01).
+// Tiny Temple Toolbox - barra superiore e menu compatto (spec 02 §1 e §3).
 // ES module puro: nessun effetto all'import. Uso: mountBar({...}) dopo init().
 //
-// CONTRATTO CON IL MARKUP (index.html, 404.html; se manca, nav.js lo crea):
-//   <header class="tb-bar">                       figlio diretto di <body>
-//     home:      <a class="tb-bar-brand" href="/">TINY TEMPLE <span class="tb-bar-brand-accent">TOOLBOX</span></a>
-//     strumento: <a class="tb-bar-back" href="/" data-i18n-aria="bar-back-aria">svg + <span>Toolbox</span></a>
-//                <h1 class="tb-bar-title"> (data-i18n = titleKey)
-//     <button type="button" class="tb-menu-toggle" aria-controls="tb-menu" aria-expanded="false"
-//             data-i18n-aria="bar-menu-open"><span class="tb-menu-toggle-line"></span>x2</button>
-//   </header>
-//   <div id="tb-menu" class="tb-menu" role="dialog" aria-modal="true" aria-label="Menu" hidden>
-//                                                  figlio diretto di <body>, dopo la barra
-//     <div class="tb-menu-inner">
-//       <a class="tb-menu-home tb-menu-item" href="/" data-i18n="menu-all"></a>
-//       <div class="tb-menu-groups"></div>         VUOTO: lo riempie nav.js da tools.js
-//       <div class="tb-menu-foot tb-menu-item">
-//         <div class="tb-lang-switch" role="group" aria-label="Lingua / Language">
-//           <button type="button" data-lang="it" aria-pressed="true">IT</button>
-//           <button type="button" data-lang="en" aria-pressed="false">EN</button></div>
-//         <button type="button" class="tb-menu-install" data-i18n="menu-install"></button>
-//         <a class="tb-menu-site" href="https://tinytemplestudio.it/" data-i18n="menu-site"></a>
-//   Generato in .tb-menu-groups, per famiglia:
-//     section.tb-menu-group > span.tb-menu-eyebrow#tb-menu-fam-<id> + ul.tb-menu-list
-//       > li.tb-menu-item > a.tb-menu-link[href="/<slug>"]  (live; la corrente: aria-current="page" + .is-current)
-//                         | span.tb-menu-link.is-soon + span.tb-pill (.is-next se e' il prossimo)
+// CONTRATTO CON IL MARKUP (index.html, 404.html; nelle pagine strumento,
+// che non hanno markup statico, nav.js crea da se' barra e menu):
+//   <header class="tb-bar">              figlio diretto di <body>
+//     <a class="tb-logo" href="/" data-i18n-aria = bar-logo-aria>img + span.sr-only</a>
+//     <h1 class="tb-bar-title" data-i18n = <titleKey>>   solo pagine strumento (lo crea nav.js)
+//     <button type="button" class="tb-menu-toggle" aria-controls="tb-menu"
+//             aria-expanded="false" data-i18n-aria = bar-menu-open>2 x span.tb-menu-toggle-line
+//   <div id="tb-menu" class="tb-menu" hidden>      figlio diretto di <body>
+//     <div class="tb-menu-scrim"></div>
+//     <div class="tb-menu-panel" role="dialog" aria-modal="true" aria-label="Menu">
+//       <a class="tb-menu-home tb-menu-item" href="/" data-i18n = menu-all>   (aria-current in home)
+//       <div class="tb-menu-groups"></div>          VUOTO: lo riempie nav.js da tools.js
+//       <div class="tb-menu-foot tb-menu-item">     lang-switch [data-lang], #tb-menu-install,
+//                                                   #tb-menu-ios, .tb-menu-manual, .tb-menu-ext
+// Generato in .tb-menu-groups, per ogni famiglia con strumenti:
+//   <section class="tb-menu-group">
+//     <span class="tb-menu-eyebrow" id="tb-menu-fam-<id>" data-i18n = fam-<id>></span>
+//     <ul class="tb-menu-list" aria-labelledby="tb-menu-fam-<id>">
+//       <li><a class="tb-menu-link" href="/<slug>" data-i18n = tool-<slug>>      -- status 'live'
+//             <svg class="tb-menu-link-icon" aria-hidden="true"><use href="#tb-icon-<slug>"></use></svg>
+//             <span class="tb-menu-link-name" data-i18n = tool-<slug>></span></a>
+//       <li><span class="tb-menu-link is-soon">icona + nome</span>               -- status 'soon'
+//           <span class="tb-pill tb-pill--sm" data-i18n = pill-soon></span>
+// La voce della pagina corrente: aria-current="page" + class .is-current.
 //
-// CONTRATTO CSS (components.css):
-//   - #tb-menu si mostra/nasconde con l'attributo `hidden` (non sovrascrivere [hidden] con display);
-//     l'animazione e' solo su `.tb-menu.is-open` (transform/opacity, 0.6s); in chiusura nav.js
-//     aspetta `transitionend` sul menu (ripiego 900ms, 250ms con reduced motion) e poi rimette hidden.
-//   - `.tb-menu-item` ha la variabile --i (0,1,2...) per la cascata: transition-delay: calc(var(--i) * 40ms).
-//   - Toggle aperto: `.tb-menu-toggle[aria-expanded="true"]` (anche classe .is-open) -> X.
-//   - <html> ha la classe `tb-menu-open` a menu aperto. z-index della barra > menu: il toggle resta
-//     visibile sopra il menu; a menu aperto nav.js rende la barra position:fixed (il body e' bloccato).
+// CONTRATTO CSS (base.css):
+//   - #tb-menu si mostra/nasconde con [hidden] (non sovrascrivere [hidden] con display);
+//     l'animazione sta su `.tb-menu.is-open` (scrim + pannello); in chiusura nav.js
+//     aspetta transitionend su menu/scrim/pannello (ripiego 700ms, 200ms reduced motion).
+//   - Toggle aperto: `.tb-menu-toggle[aria-expanded="true"]` (anche .is-open).
+//   - <html> ha la classe `tb-menu-open` a menu aperto; la barra deve stare sopra il menu
+//     (z-index maggiore): a menu aperto nav.js la rende position:fixed perche' il body e' bloccato.
 //
-// CONTRATTO DATI (shared/tools.js):
-//   export const FAMILIES = [{ id: 'live', key: 'fam-live' }, ...]            (ordine = ordine nel menu)
-//   export const TOOLS = [{ slug: 'metronomo', family: 'live', key: '<chiave i18n del nome>',
-//                           status: 'live' | 'soon', next: true /* solo il prossimo */ }, ...]
+// CHIAVI i18n USATE QUI: bar-logo-aria, bar-menu-open, bar-menu-close, menu-all,
+//   fam-<id> e tool-<slug> (da tools.js), pill-soon.
+//
+// L'installazione NON e' piu' gestita qui: il blocco nel menu (#tb-menu-install,
+// #tb-menu-ios, .tb-menu-manual dentro .tb-menu-install-group) e' passato a
+// initPwa() da index.js / 404.js.
 //
 // mountBar({ page: 'home' | 'tool', titleKey, current })
-//   current = slug della pagina (default 'home' se page === 'home'); ritorna { open, close, isOpen }.
+//   current = slug della pagina ('home' in dashboard); idempotente: chiamate
+//   successive non rimontano nulla e ritornano la stessa api { open, close, isOpen }.
 
 import { t, lang, setLang, apply, onChange } from './i18n.js';
 import { TOOLS, FAMILIES } from './tools.js';
-import { trackInstall, installState, promptInstall, onInstallChange } from './pwa.js';
 
 const MENU_ID = 'tb-menu';
 const SVG_NS = 'http://www.w3.org/2000/svg';
+const XLINK_NS = 'http://www.w3.org/1999/xlink';
 const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), '
-    + 'textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
-const CLOSE_FALLBACK_MS = 900;
-const CLOSE_FALLBACK_REDUCED_MS = 250;
+    + 'textarea:not([disabled]), summary, [tabindex]:not([tabindex="-1"])';
+const CLOSE_FALLBACK_MS = 700;
+const CLOSE_FALLBACK_REDUCED_MS = 200;
 const SKIP_TAGS = new Set(['SCRIPT', 'STYLE', 'TEMPLATE', 'LINK', 'NOSCRIPT']);
 
 let api = null;
@@ -68,19 +71,16 @@ function reducedMotion() {
         && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 }
 
-function backArrow() {
+/** Icona dallo sprite di pagina (<symbol id="tb-icon-<slug>">). */
+export function toolIcon(slug, cls) {
     const svg = document.createElementNS(SVG_NS, 'svg');
-    svg.setAttribute('viewBox', '0 0 24 24');
-    svg.setAttribute('fill', 'none');
-    svg.setAttribute('stroke', 'currentColor');
-    svg.setAttribute('stroke-width', '2');
-    svg.setAttribute('stroke-linecap', 'round');
-    svg.setAttribute('stroke-linejoin', 'round');
+    if (cls) svg.setAttribute('class', cls);
     svg.setAttribute('aria-hidden', 'true');
     svg.setAttribute('focusable', 'false');
-    const path = document.createElementNS(SVG_NS, 'path');
-    path.setAttribute('d', 'M15 18l-6-6 6-6');
-    svg.appendChild(path);
+    const use = document.createElementNS(SVG_NS, 'use');
+    use.setAttribute('href', '#tb-icon-' + slug);
+    use.setAttributeNS(XLINK_NS, 'xlink:href', '#tb-icon-' + slug); // Safari vecchi
+    svg.appendChild(use);
     return svg;
 }
 
@@ -98,26 +98,25 @@ function ensureBar(page, titleKey) {
         toggle.append(el('span', 'tb-menu-toggle-line'), el('span', 'tb-menu-toggle-line'));
         bar.appendChild(toggle);
     }
+    if (!bar.querySelector('.tb-logo')) {
+        const logo = el('a', 'tb-logo', { href: '/', 'data-i18n-aria': 'bar-logo-aria' });
+        const img = el('img');
+        img.src = '/assets/brand/logo-arancione-96.png';
+        img.width = 36;
+        img.height = 36;
+        img.alt = '';
+        const name = el('span', 'sr-only');
+        name.textContent = 'Tiny Temple Toolbox';
+        logo.append(img, name);
+        bar.insertBefore(logo, bar.firstChild);
+    }
     if (page === 'tool') {
-        if (!bar.querySelector('.tb-bar-back')) {
-            const back = el('a', 'tb-bar-back', { href: '/', 'data-i18n-aria': 'bar-back-aria' });
-            const label = el('span', 'tb-bar-back-label');
-            label.textContent = 'Toolbox';
-            back.append(backArrow(), label);
-            bar.insertBefore(back, toggle);
-        }
         let title = bar.querySelector('.tb-bar-title');
         if (!title) {
             title = el('h1', 'tb-bar-title');
             bar.insertBefore(title, toggle);
         }
         if (titleKey) title.setAttribute('data-i18n', titleKey);
-    } else if (!bar.querySelector('.tb-bar-brand')) {
-        const brand = el('a', 'tb-bar-brand', { href: '/' });
-        const accent = el('span', 'tb-bar-brand-accent');
-        accent.textContent = 'TOOLBOX';
-        brand.append('TINY TEMPLE ', accent);
-        bar.insertBefore(brand, toggle);
     }
     return { bar, toggle };
 }
@@ -128,24 +127,29 @@ function ensureMenu(bar) {
         menu = el('div', 'tb-menu', { id: MENU_ID });
         bar.after(menu);
     }
-    if (!menu.getAttribute('role')) menu.setAttribute('role', 'dialog');
-    menu.setAttribute('aria-modal', 'true');
-    if (!menu.hasAttribute('aria-label')) menu.setAttribute('aria-label', 'Menu');
     menu.hidden = true;
+    let scrim = menu.querySelector('.tb-menu-scrim');
+    if (!scrim) {
+        scrim = el('div', 'tb-menu-scrim');
+        menu.prepend(scrim);
+    }
+    let panel = menu.querySelector('.tb-menu-panel');
+    if (!panel) {
+        panel = el('div', 'tb-menu-panel');
+        while (menu.lastChild && menu.lastChild !== scrim) panel.prepend(menu.lastChild);
+        menu.appendChild(panel);
+    }
+    if (!panel.getAttribute('role')) panel.setAttribute('role', 'dialog');
+    panel.setAttribute('aria-modal', 'true');
+    if (!panel.hasAttribute('aria-label')) panel.setAttribute('aria-label', 'Menu');
 
-    let inner = menu.querySelector('.tb-menu-inner');
-    if (!inner) {
-        inner = el('div', 'tb-menu-inner');
-        while (menu.firstChild) inner.appendChild(menu.firstChild);
-        menu.appendChild(inner);
+    if (!panel.querySelector('.tb-menu-home')) {
+        panel.prepend(el('a', 'tb-menu-home tb-menu-item', { href: '/', 'data-i18n': 'menu-all' }));
     }
-    if (!inner.querySelector('.tb-menu-home')) {
-        inner.prepend(el('a', 'tb-menu-home tb-menu-item', { href: '/', 'data-i18n': 'menu-all' }));
-    }
-    let foot = inner.querySelector('.tb-menu-foot');
+    let foot = panel.querySelector('.tb-menu-foot');
     if (!foot) {
         foot = el('div', 'tb-menu-foot tb-menu-item');
-        inner.appendChild(foot);
+        panel.appendChild(foot);
     }
     if (!foot.querySelector('.tb-lang-switch')) {
         const sw = el('div', 'tb-lang-switch', { role: 'group', 'aria-label': 'Lingua / Language' });
@@ -154,50 +158,41 @@ function ensureMenu(bar) {
             b.textContent = l.toUpperCase();
             sw.appendChild(b);
         });
-        foot.appendChild(sw);
+        foot.prepend(sw);
     }
-    if (!foot.querySelector('.tb-menu-install')) {
-        foot.appendChild(el('button', 'tb-menu-install', { type: 'button', 'data-i18n': 'menu-install' }));
-    }
-    if (!foot.querySelector('.tb-menu-site')) {
-        foot.appendChild(el('a', 'tb-menu-site', { href: 'https://tinytemplestudio.it/', 'data-i18n': 'menu-site' }));
-    }
-    let groups = inner.querySelector('.tb-menu-groups');
+    let groups = panel.querySelector('.tb-menu-groups');
     if (!groups) {
         groups = el('div', 'tb-menu-groups');
-        inner.insertBefore(groups, foot);
+        panel.insertBefore(groups, foot);
     }
-    return { menu, inner, groups, foot };
+    return { menu, scrim, panel, groups, foot };
 }
 
 function fillGroups(groups, current) {
     groups.textContent = '';
     const tools = Array.isArray(TOOLS) ? TOOLS : [];
     (Array.isArray(FAMILIES) ? FAMILIES : []).forEach((fam) => {
-        const famId = typeof fam === 'string' ? fam : fam.id;
-        const famKey = typeof fam === 'string' ? 'fam-' + fam : fam.key;
-        const items = tools.filter((tool) => tool.family === famId);
+        const items = tools.filter((tool) => tool.family === fam.id);
         if (!items.length) return;
 
         const section = el('section', 'tb-menu-group');
-        const eyebrowId = 'tb-menu-fam-' + famId;
-        const eyebrow = el('span', 'tb-menu-eyebrow', { id: eyebrowId, 'data-i18n': famKey });
+        const eyebrowId = 'tb-menu-fam-' + fam.id;
+        const eyebrow = el('span', 'tb-menu-eyebrow', { id: eyebrowId, 'data-i18n': fam.key });
         const list = el('ul', 'tb-menu-list', { 'aria-labelledby': eyebrowId });
         items.forEach((tool) => {
-            const li = el('li', 'tb-menu-item');
-            if (tool.status === 'live') {
-                const a = el('a', 'tb-menu-link', { href: '/' + tool.slug, 'data-i18n': tool.key });
-                if (tool.slug === current) {
-                    a.setAttribute('aria-current', 'page');
-                    a.classList.add('is-current');
-                }
-                li.appendChild(a);
-            } else {
-                li.appendChild(el('span', 'tb-menu-link is-soon', { 'data-i18n': tool.key }));
-                const pill = el('span', tool.next ? 'tb-pill is-next' : 'tb-pill',
-                    { 'data-i18n': tool.next ? 'pill-next' : 'pill-soon' });
-                li.appendChild(pill);
+            const li = document.createElement('li');
+            const live = tool.status === 'live';
+            const link = live
+                ? el('a', 'tb-menu-link', { href: '/' + tool.slug })
+                : el('span', 'tb-menu-link is-soon');
+            const name = el('span', 'tb-menu-link-name', { 'data-i18n': tool.key });
+            link.append(toolIcon(tool.slug, 'tb-menu-link-icon'), name);
+            if (live && tool.slug === current) {
+                link.setAttribute('aria-current', 'page');
+                link.classList.add('is-current');
             }
+            li.appendChild(link);
+            if (!live) li.appendChild(el('span', 'tb-pill tb-pill--sm', { 'data-i18n': 'pill-soon' }));
             list.appendChild(li);
         });
         section.append(eyebrow, list);
@@ -317,22 +312,21 @@ function createInert(bar, menu, toggle) {
 /* ---------- montaggio ---------- */
 
 export function mountBar({ page = 'home', titleKey, current } = {}) {
-    if (api) return api;
+    if (api) return api; // idempotente
     const cur = current !== undefined ? current : (page === 'home' ? 'home' : null);
 
     const { bar, toggle } = ensureBar(page, titleKey);
-    const { menu, inner, groups, foot } = ensureMenu(bar);
+    const { menu, scrim, panel, groups, foot } = ensureMenu(bar);
     fillGroups(groups, cur);
 
-    const home = inner.querySelector('.tb-menu-home');
+    const home = panel.querySelector('.tb-menu-home');
     if (cur === 'home') {
         home.setAttribute('aria-current', 'page');
         home.classList.add('is-current');
+    } else {
+        home.removeAttribute('aria-current');
+        home.classList.remove('is-current');
     }
-    /* cascata: indice progressivo sulle voci */
-    [...inner.querySelectorAll('.tb-menu-item')].forEach((item, i) => {
-        item.style.setProperty('--i', String(i));
-    });
 
     toggle.setAttribute('aria-controls', MENU_ID);
     toggle.setAttribute('aria-expanded', 'false');
@@ -352,7 +346,7 @@ export function mountBar({ page = 'home', titleKey, current } = {}) {
         toggle.setAttribute('aria-label', t(key));
     };
 
-    const focusables = () => [toggle, ...menu.querySelectorAll(FOCUSABLE)]
+    const focusables = () => [toggle, ...panel.querySelectorAll(FOCUSABLE)]
         .filter((n) => !n.hidden && !n.closest('[hidden]:not(#' + MENU_ID + ')') && n.getClientRects().length > 0);
 
     const cancelPendingHide = () => {
@@ -409,7 +403,7 @@ export function mountBar({ page = 'home', titleKey, current } = {}) {
         menu.classList.add('is-open');
         document.addEventListener('keydown', onKeydown, true);
         document.addEventListener('focusin', onFocusIn, true);
-        const first = menu.querySelector(FOCUSABLE);
+        const first = panel.querySelector(FOCUSABLE);
         if (first) first.focus({ preventScroll: true });
     }
 
@@ -434,7 +428,9 @@ export function mountBar({ page = 'home', titleKey, current } = {}) {
             hide();
             return;
         }
-        onEnd = (e) => { if (e.target === menu) hide(); };
+        onEnd = (e) => {
+            if (e.target === menu || e.target === panel || e.target === scrim) hide();
+        };
         menu.addEventListener('transitionend', onEnd);
         closeTimer = setTimeout(hide, reducedMotion() ? CLOSE_FALLBACK_REDUCED_MS : CLOSE_FALLBACK_MS);
     }
@@ -444,10 +440,15 @@ export function mountBar({ page = 'home', titleKey, current } = {}) {
         else open();
     });
 
-    /* tocco su una voce: si chiude; la voce corrente non ricarica la pagina */
+    /* un tocco fuori dal pannello (scrim) chiude */
     menu.addEventListener('click', (e) => {
+        if (e.target === scrim || e.target === menu) close();
+    });
+
+    /* tocco su una voce: si chiude; la voce corrente non ricarica la pagina */
+    panel.addEventListener('click', (e) => {
         const a = e.target.closest ? e.target.closest('a[href]') : null;
-        if (!a || !menu.contains(a)) return;
+        if (!a || !panel.contains(a)) return;
         if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
         if (a.getAttribute('aria-current') === 'page') {
             e.preventDefault();
@@ -472,32 +473,6 @@ export function mountBar({ page = 'home', titleKey, current } = {}) {
     langBtns.forEach((b) => b.addEventListener('click', () => setLang(b.getAttribute('data-lang'))));
     onChange(renderLang);
     renderLang();
-
-    /* installazione: prompt nativo se c'e', altrimenti la sezione #installa della home */
-    const installBtn = foot.querySelector('.tb-menu-install');
-    trackInstall();
-    const renderInstall = (st) => { installBtn.hidden = st === 'installed'; };
-    onInstallChange(renderInstall);
-    renderInstall(installState());
-    installBtn.addEventListener('click', () => {
-        if (installState() === 'prompt') {
-            close();
-            promptInstall();
-            return;
-        }
-        const section = document.getElementById('installa') || document.getElementById('tb-install-section');
-        if (!section || section.hidden) {
-            window.location.assign('/#installa');
-            return;
-        }
-        close({ immediate: true, restoreFocus: false });
-        if (!section.hasAttribute('tabindex')) section.setAttribute('tabindex', '-1');
-        section.scrollIntoView({ behavior: reducedMotion() ? 'auto' : 'smooth', block: 'start' });
-        section.focus({ preventScroll: true });
-        try {
-            window.history.replaceState(null, '', '#' + section.id);
-        } catch (err) { /* replaceState non disponibile */ }
-    });
 
     apply(bar);
     apply(menu);

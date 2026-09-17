@@ -130,4 +130,15 @@
     --tb-safe-r: env(safe-area-inset-right, 0px);
     --tb-safe-b: env(safe-area-inset-bottom, 0px);
     --tb-safe-l: env(safe-area-inset-left, 0px);
+
+    /* Vetro (spec 02 §6): stessa ricetta di .floating-btn nello style.css
+       della vetrina (presa con grep, non reinventata). Riusata da tb-logo,
+       tb-menu-toggle, tb-menu-panel e tb-tile: nomi generici, senza
+       riferimenti a Toolbox, pronti per essere riusati da un altro
+       sottodominio senza modifiche. */
+    --glass-bg: linear-gradient(135deg, rgba(255, 255, 255, 0.12) 0%, rgba(18, 18, 18, 0.45) 100%);
+    --glass-border: rgba(255, 255, 255, 0.15);
+    --glass-border-top: rgba(255, 255, 255, 0.35);
+    --glass-blur: blur(25px) saturate(200%);
+    --glass-shadow: 0 12px 28px rgba(0, 0, 0, 0.6), inset 0 1px 2px rgba(255, 255, 255, 0.3), inset 0 -1px 2px rgba(0, 0, 0, 0.4);
 }

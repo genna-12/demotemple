@@ -28,7 +28,10 @@
 <body>
 
     <header class="tb-bar">
-        <a class="tb-bar-brand" href="/">TINY TEMPLE <span class="tb-bar-brand-accent">TOOLBOX</span></a>
+        <a class="tb-logo" href="/" data-i18n-aria="bar-logo-aria" aria-label="Tiny Temple Toolbox — vai alla dashboard">
+            <img src="/assets/brand/logo-arancione-96.png" width="36" height="36" alt="" loading="eager">
+            <span class="sr-only">Tiny Temple Toolbox</span>
+        </a>
         <button type="button" class="tb-menu-toggle" aria-controls="tb-menu" aria-expanded="false"
             data-i18n-aria="bar-menu-open" aria-label="Apri il menu">
             <span class="tb-menu-toggle-line"></span>
@@ -36,250 +39,115 @@
         </button>
     </header>
 
-    <div id="tb-menu" class="tb-menu" role="dialog" aria-modal="true" aria-label="Menu" hidden>
-        <div class="tb-menu-inner">
-            <a class="tb-menu-home tb-menu-item" href="/" data-i18n="menu-all">Tutti gli strumenti</a>
+    <!--
+        CONTRATTO shared/nav.js (spec 02 §3): riempie .tb-menu-groups (per
+        famiglia, da shared/tools.js) e gestisce apertura/chiusura di
+        #tb-menu; vedi il commento sopra ".tb-menu[hidden]" in base.css per
+        la forma esatta attesa in ciascun gruppo/voce.
+        CONTRATTO shared/dash.js (spec 02 §4): riempie #tb-tiles (uguale,
+        icone dallo sprite qui sotto) e #tb-picker-groups dentro #tb-picker;
+        vedi il commento sopra ".tb-tiles" in components.css.
+        Entrambi leggono le icone da qui: <svg><use href="#tb-icon-<slug>">.
+    -->
+    <svg class="tb-sprite" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg">
+        <symbol id="tb-icon-metronomo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M8 20h8"></path>
+            <path d="M9 20 11 5h2l2 15"></path>
+            <path d="M12 9v7"></path>
+        </symbol>
+        <symbol id="tb-icon-accordatore" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M5 16a7 7 0 0 1 14 0"></path>
+            <path d="M12 16 15 9"></path>
+            <circle cx="12" cy="16" r="1" fill="currentColor" stroke="none"></circle>
+        </symbol>
+        <symbol id="tb-icon-dna" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 12h3l2-7 4 14 4-14 2 7h3"></path>
+        </symbol>
+        <symbol id="tb-icon-penna" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 20l4-1 11-11-3-3L5 16z"></path>
+            <path d="M14 6l3 3"></path>
+        </symbol>
+        <symbol id="tb-icon-calcolatore-tempo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="13" r="8"></circle>
+            <path d="M12 9v4l3 2"></path>
+            <path d="M9 2h6"></path>
+        </symbol>
+        <symbol id="tb-icon-pianificatore-uscita" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="4" y="5" width="16" height="16" rx="2"></rect>
+            <path d="M4 10h16"></path>
+            <path d="M8 3v4"></path>
+            <path d="M16 3v4"></path>
+        </symbol>
+        <symbol id="tb-icon-checklist-consegna" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="4" y="4" width="16" height="16" rx="2"></rect>
+            <path d="M8 12l3 3 6-7"></path>
+        </symbol>
+        <symbol id="tb-icon-split-sheet" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="9"></circle>
+            <path d="M12 12V3"></path>
+            <path d="M12 12l7.5 4.33"></path>
+        </symbol>
+    </svg>
+
+    <div id="tb-menu" class="tb-menu" hidden>
+        <div class="tb-menu-scrim"></div>
+        <div class="tb-menu-panel" role="dialog" aria-modal="true" aria-label="Menu">
+            <a class="tb-menu-home tb-menu-item" href="/" data-i18n="menu-all" aria-current="page">Dashboard</a>
             <div class="tb-menu-groups"></div>
             <div class="tb-menu-foot tb-menu-item">
-                <div class="tb-lang-switch" role="group" aria-label="Lingua / Language">
-                    <button type="button" data-lang="it" aria-pressed="true">IT</button>
-                    <button type="button" data-lang="en" aria-pressed="false">EN</button>
+                <div class="tb-menu-install-group">
+                    <button type="button" id="tb-menu-install" class="tb-menu-install" data-i18n="menu-install">Installa l’app</button>
+                    <details class="tb-menu-ios" id="tb-menu-ios" hidden>
+                        <summary data-i18n="idx-ios-title">Su iPhone</summary>
+                        <div data-pwa-when="safari">
+                            <ol>
+                                <li data-i18n="idx-ios-step1">Apri questa pagina in Safari.</li>
+                                <li data-i18n="idx-ios-step2">Tocca Condividi (il quadrato con la freccia in
+                                    alto).</li>
+                                <li data-i18n="idx-ios-step3">Scegli &ldquo;Aggiungi alla schermata
+                                    Home&rdquo;.</li>
+                            </ol>
+                        </div>
+                        <div data-pwa-when="inapp">
+                            <strong data-i18n="idx-ios-inapp-title">Apri in Safari</strong>
+                            <p data-i18n="idx-ios-inapp-text">Questo browser non permette di installare l’app.
+                                Tocca il menu e scegli &ldquo;Apri in Safari&rdquo;, poi segui i passaggi per
+                                aggiungerla alla schermata Home.</p>
+                        </div>
+                    </details>
+                    <p class="tb-menu-manual" data-pwa-when="manual" hidden data-i18n="pwa-manual">Usa il menu del
+                        browser: Installa app oppure Aggiungi alla schermata Home.</p>
                 </div>
-                <button type="button" class="tb-menu-install" data-i18n="menu-install">Installa l’app</button>
-                <a class="tb-menu-site" href="https://tinytemplestudio.it/" data-i18n="menu-site">Sito dello
-                    studio</a>
+                <div class="tb-menu-foot-row">
+                    <div class="tb-lang-switch" role="group" aria-label="Lingua / Language">
+                        <button type="button" data-lang="it" aria-pressed="true">IT</button>
+                        <button type="button" data-lang="en" aria-pressed="false">EN</button>
+                    </div>
+                    <a class="tb-menu-ext" href="https://tinytemplestudio.it/" data-i18n="menu-ext">Sito dello
+                        studio</a>
+                </div>
             </div>
         </div>
     </div>
 
+    <div id="tb-intro" class="tb-intro" hidden>
+        <img class="tb-intro-logo" src="/assets/brand/logo-arancione.png" alt="" width="100" height="100">
+    </div>
+
     <div class="tb-shell">
-        <main class="tb-home">
-            <header class="tb-hero">
-                <span class="tb-eyebrow" data-i18n="idx-eyebrow">Tiny Temple Studio</span>
-                <h1 data-i18n="idx-title">Toolbox</h1>
-                <p class="tb-page-intro" data-i18n="home-intro">Gli strumenti dello studio, in tasca. Gratis,
-                    senza account, uno nuovo alla volta.</p>
-                <p class="tb-next" data-i18n="home-next" data-i18n-tool="tool-metronomo">Il prossimo: Metronomo</p>
-            </header>
+        <main class="tb-dash">
+            <div class="tb-dash-top">
+                <h1 class="sr-only" data-i18n="idx-title">Toolbox</h1>
+                <button type="button" id="tb-edit" class="tb-edit" aria-pressed="false" data-i18n="dash-edit">Modifica</button>
+            </div>
 
-            <section class="tb-family" aria-labelledby="tb-fam-live-h">
-                <div class="tb-family-head">
-                    <span class="tb-family-num" aria-hidden="true">01</span>
-                    <h2 id="tb-fam-live-h" data-i18n="fam-live">Dal vivo</h2>
-                </div>
-                <ul class="tb-tools">
-                    <li>
-                        <div class="tb-tool is-soon">
-                            <span class="tb-tool-icon" aria-hidden="true">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                    stroke-linecap="round" stroke-linejoin="round" focusable="false">
-                                    <path d="M8 20h8"></path>
-                                    <path d="M9 20 11 5h2l2 15"></path>
-                                    <path d="M12 9v7"></path>
-                                </svg>
-                            </span>
-                            <span class="tb-tool-text">
-                                <span class="tb-tool-name" data-i18n="tool-metronomo">Metronomo</span>
-                                <span class="tb-tool-desc" data-i18n="tool-metronomo-desc">Tempo preciso per le
-                                    prove e le registrazioni.</span>
-                            </span>
-                            <span class="tb-pill is-next" data-i18n="pill-next">Prossimo</span>
-                        </div>
-                    </li>
-                    <li>
-                        <div class="tb-tool is-soon">
-                            <span class="tb-tool-icon" aria-hidden="true">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                    stroke-linecap="round" stroke-linejoin="round" focusable="false">
-                                    <path d="M5 16a7 7 0 0 1 14 0"></path>
-                                    <path d="M12 16 15 9"></path>
-                                    <circle cx="12" cy="16" r="1" fill="currentColor" stroke="none"></circle>
-                                </svg>
-                            </span>
-                            <span class="tb-tool-text">
-                                <span class="tb-tool-name" data-i18n="tool-accordatore">Accordatore</span>
-                                <span class="tb-tool-desc" data-i18n="tool-accordatore-desc">Accorda lo strumento
-                                    dal microfono del telefono.</span>
-                            </span>
-                            <span class="tb-pill" data-i18n="pill-soon">In arrivo</span>
-                        </div>
-                    </li>
-                </ul>
-            </section>
+            <ul class="tb-tiles" id="tb-tiles" aria-label="Toolbox"></ul>
+            <div id="tb-dash-live" class="sr-only" aria-live="polite"></div>
 
-            <section class="tb-family" aria-labelledby="tb-fam-analysis-h">
-                <div class="tb-family-head">
-                    <span class="tb-family-num" aria-hidden="true">02</span>
-                    <h2 id="tb-fam-analysis-h" data-i18n="fam-analysis">Analisi</h2>
-                </div>
-                <ul class="tb-tools">
-                    <li>
-                        <div class="tb-tool is-soon">
-                            <span class="tb-tool-icon" aria-hidden="true">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                    stroke-linecap="round" stroke-linejoin="round" focusable="false">
-                                    <path d="M3 12h3l2-7 4 14 4-14 2 7h3"></path>
-                                </svg>
-                            </span>
-                            <span class="tb-tool-text">
-                                <span class="tb-tool-name" data-i18n="tool-dna">DNA</span>
-                                <span class="tb-tool-desc" data-i18n="tool-dna-desc">Scopri tonalità e BPM di una
-                                    registrazione.</span>
-                            </span>
-                            <span class="tb-pill" data-i18n="pill-soon">In arrivo</span>
-                        </div>
-                    </li>
-                </ul>
-            </section>
+            <button type="button" id="tb-tile-add" class="tb-tile-add" hidden data-i18n-aria="dash-add" aria-label="Aggiungi strumento">+</button>
 
-            <section class="tb-family" aria-labelledby="tb-fam-writing-h">
-                <div class="tb-family-head">
-                    <span class="tb-family-num" aria-hidden="true">03</span>
-                    <h2 id="tb-fam-writing-h" data-i18n="fam-writing">Scrittura</h2>
-                </div>
-                <ul class="tb-tools">
-                    <li>
-                        <div class="tb-tool is-soon">
-                            <span class="tb-tool-icon" aria-hidden="true">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                    stroke-linecap="round" stroke-linejoin="round" focusable="false">
-                                    <path d="M4 20l4-1 11-11-3-3L5 16z"></path>
-                                    <path d="M14 6l3 3"></path>
-                                </svg>
-                            </span>
-                            <span class="tb-tool-text">
-                                <span class="tb-tool-name" data-i18n="tool-penna">Penna</span>
-                                <span class="tb-tool-desc" data-i18n="tool-penna-desc">Rimario e blocco
-                                    testi.</span>
-                            </span>
-                            <span class="tb-pill" data-i18n="pill-soon">In arrivo</span>
-                        </div>
-                    </li>
-                </ul>
-            </section>
-
-            <section class="tb-family" aria-labelledby="tb-fam-calc-h">
-                <div class="tb-family-head">
-                    <span class="tb-family-num" aria-hidden="true">04</span>
-                    <h2 id="tb-fam-calc-h" data-i18n="fam-calc">Calcolo</h2>
-                </div>
-                <ul class="tb-tools">
-                    <li>
-                        <div class="tb-tool is-soon">
-                            <span class="tb-tool-icon" aria-hidden="true">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                    stroke-linecap="round" stroke-linejoin="round" focusable="false">
-                                    <circle cx="12" cy="13" r="8"></circle>
-                                    <path d="M12 9v4l3 2"></path>
-                                    <path d="M9 2h6"></path>
-                                </svg>
-                            </span>
-                            <span class="tb-tool-text">
-                                <span class="tb-tool-name" data-i18n="tool-calcolatore-tempo">Calcolatore
-                                    Tempo</span>
-                                <span class="tb-tool-desc" data-i18n="tool-calcolatore-tempo-desc">Calcola delay e
-                                    riverbero a partire dal BPM.</span>
-                            </span>
-                            <span class="tb-pill" data-i18n="pill-soon">In arrivo</span>
-                        </div>
-                    </li>
-                </ul>
-            </section>
-
-            <section class="tb-family" aria-labelledby="tb-fam-release-h">
-                <div class="tb-family-head">
-                    <span class="tb-family-num" aria-hidden="true">05</span>
-                    <h2 id="tb-fam-release-h" data-i18n="fam-release">Lancio</h2>
-                </div>
-                <ul class="tb-tools">
-                    <li>
-                        <div class="tb-tool is-soon">
-                            <span class="tb-tool-icon" aria-hidden="true">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                    stroke-linecap="round" stroke-linejoin="round" focusable="false">
-                                    <rect x="4" y="5" width="16" height="16" rx="2"></rect>
-                                    <path d="M4 10h16"></path>
-                                    <path d="M8 3v4"></path>
-                                    <path d="M16 3v4"></path>
-                                </svg>
-                            </span>
-                            <span class="tb-tool-text">
-                                <span class="tb-tool-name" data-i18n="tool-pianificatore-uscita">Pianificatore
-                                    Uscita</span>
-                                <span class="tb-tool-desc" data-i18n="tool-pianificatore-uscita-desc">Organizza i
-                                    passi per pubblicare il tuo brano.</span>
-                            </span>
-                            <span class="tb-pill" data-i18n="pill-soon">In arrivo</span>
-                        </div>
-                    </li>
-                    <li>
-                        <div class="tb-tool is-soon">
-                            <span class="tb-tool-icon" aria-hidden="true">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                    stroke-linecap="round" stroke-linejoin="round" focusable="false">
-                                    <rect x="4" y="4" width="16" height="16" rx="2"></rect>
-                                    <path d="M8 12l3 3 6-7"></path>
-                                </svg>
-                            </span>
-                            <span class="tb-tool-text">
-                                <span class="tb-tool-name" data-i18n="tool-checklist-consegna">Checklist
-                                    Consegna</span>
-                                <span class="tb-tool-desc" data-i18n="tool-checklist-consegna-desc">Cosa
-                                    preparare e come chiamare le tracce.</span>
-                            </span>
-                            <span class="tb-pill" data-i18n="pill-soon">In arrivo</span>
-                        </div>
-                    </li>
-                    <li>
-                        <div class="tb-tool is-soon">
-                            <span class="tb-tool-icon" aria-hidden="true">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                    stroke-linecap="round" stroke-linejoin="round" focusable="false">
-                                    <circle cx="12" cy="12" r="9"></circle>
-                                    <path d="M12 12V3"></path>
-                                    <path d="M12 12l7.5 4.33"></path>
-                                </svg>
-                            </span>
-                            <span class="tb-tool-text">
-                                <span class="tb-tool-name" data-i18n="tool-split-sheet">Split Sheet</span>
-                                <span class="tb-tool-desc" data-i18n="tool-split-sheet-desc">Dividi le quote e
-                                    scarica il PDF da firmare.</span>
-                            </span>
-                            <span class="tb-pill" data-i18n="pill-soon">In arrivo</span>
-                        </div>
-                    </li>
-                </ul>
-            </section>
-
-            <section id="installa" class="tb-install-section">
-                <h2 data-i18n="idx-install-title">Installa la Toolbox</h2>
-                <p data-i18n="idx-install-text">Aggiungila alla schermata Home per aprirla come un’app, anche
-                    offline.</p>
-
-                <button type="button" id="tb-install" class="tb-btn tb-install" hidden
-                    data-i18n="idx-install-btn">Installa l’app</button>
-
-                <div id="tb-ios-help" class="tb-ios-help" hidden>
-                    <div data-pwa-when="safari">
-                        <strong data-i18n="idx-ios-title">Su iPhone</strong>
-                        <ol>
-                            <li data-i18n="idx-ios-step1">Apri questa pagina in Safari.</li>
-                            <li data-i18n="idx-ios-step2">Tocca Condividi (il quadrato con la freccia in
-                                alto).</li>
-                            <li data-i18n="idx-ios-step3">Scegli &ldquo;Aggiungi alla schermata Home&rdquo;.</li>
-                        </ol>
-                    </div>
-                    <div data-pwa-when="inapp">
-                        <strong data-i18n="idx-ios-inapp-title">Apri in Safari</strong>
-                        <p class="tb-ios-note" data-i18n="idx-ios-inapp-text">Questo browser non permette di
-                            installare l’app. Tocca il menu e scegli &ldquo;Apri in Safari&rdquo;, poi segui i
-                            passaggi per aggiungerla alla schermata Home.</p>
-                    </div>
-                </div>
-
-                <p data-pwa-when="manual" hidden data-i18n="pwa-manual">Usa il menu del browser: Installa app
-                    oppure Aggiungi alla schermata Home.</p>
-            </section>
+            <!-- Riservato per "Recenti" quando Penna/DNA salveranno record (spec 02 §4): niente per ora. -->
+            <div id="tb-slot" class="tb-slot" hidden></div>
         </main>
 
         <footer class="tb-footer">
@@ -299,6 +167,16 @@
             </div>
         </footer>
     </div>
+
+    <dialog id="tb-picker" class="tb-picker" aria-labelledby="tb-picker-title">
+        <div class="tb-picker-head">
+            <h2 id="tb-picker-title" data-i18n="picker-title">Aggiungi alla dashboard</h2>
+            <button type="button" class="tb-picker-close" data-i18n-aria="picker-close-aria" aria-label="Chiudi">&times;</button>
+        </div>
+        <div class="tb-picker-groups" id="tb-picker-groups"></div>
+        <p class="tb-picker-empty" data-i18n="picker-empty" hidden>Sono gi&agrave; tutti qui.</p>
+        <button type="button" class="tb-picker-reset" data-i18n="picker-reset">Ripristina ordine</button>
+    </dialog>
 
     <script type="module" src="/index.js"></script>
 </body>
