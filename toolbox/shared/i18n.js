@@ -67,6 +67,7 @@ export function init(...dicts) {
     currentLang = resolveInitialLang();
     document.documentElement.setAttribute('lang', currentLang);
     apply(document);
+    document.documentElement.classList.remove('tb-i18n-pending'); // vedi shared/lang-boot.js
 }
 
 /** Traduce una chiave nella lingua corrente; {vars} sostituisce segnaposto {chiave}. */
@@ -106,11 +107,15 @@ export function setLang(l) {
  * data-i18n -> textContent, data-i18n-aria -> aria-label,
  * data-i18n-html -> innerHTML (solo stringhe con markup fidato,
  * mai testo utente). Non tocca data-translate (quello e' della vetrina).
+ * data-i18n-tool (insieme a data-i18n): la chiave punta a una stringa con
+ * un segnaposto {tool} (es. "home-next": "Il prossimo: {tool}"), riempito
+ * traducendo a sua volta la chiave in data-i18n-tool (es. "tool-metronomo").
  */
 export function apply(root = document) {
     root.querySelectorAll('[data-i18n]').forEach((el) => {
         const key = el.getAttribute('data-i18n');
-        el.textContent = t(key);
+        const toolKey = el.getAttribute('data-i18n-tool');
+        el.textContent = toolKey ? t(key, { tool: t(toolKey) }) : t(key);
     });
     root.querySelectorAll('[data-i18n-aria]').forEach((el) => {
         const key = el.getAttribute('data-i18n-aria');

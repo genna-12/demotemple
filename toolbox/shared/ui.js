@@ -1,50 +1,10 @@
 // Tiny Temple Toolbox - componenti UI condivisi
 // ES module puro: nessun effetto all'import, nessun globale.
-import { t, lang, setLang } from './i18n.js';
+import { t } from './i18n.js';
 
-const LANG_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" '
-    + 'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">'
-    + '<path d="M5 8l6 6"></path><path d="M4 14l6-6 2-3"></path><path d="M2 5h12"></path>'
-    + '<path d="M7 2h1"></path><path d="M22 22l-5-10-5 10"></path><path d="M14 18h6"></path></svg>';
-
-const PRESS_SELECTOR = '.tb-btn, .tb-lang-btn, .tb-header-back, .tb-header-lang, '
-    + '.tb-footer-links a, .tb-toast-action, .tb-consent button, .tb-consent a';
+const PRESS_SELECTOR = '.tb-btn, .tb-bar-back, a.tb-tool, a.tb-menu-link, .tb-menu-install, '
+    + '.tb-menu-site, .tb-footer-links a, .tb-toast-action, .tb-consent button, .tb-consent a';
 const PRESS_MIN_VISIBLE_MS = 120;
-
-/**
- * Crea l'intestazione di uno strumento: "<- Toolbox", titolo, pulsante
- * lingua. Da inserire in cima a <main> (o dove serve) con .prepend()/.append().
- */
-export function mountHeader({ titleKey, back = '/' } = {}) {
-    const header = document.createElement('header');
-    header.className = 'tb-header';
-
-    const backLink = document.createElement('a');
-    backLink.className = 'tb-header-back';
-    backLink.href = back;
-    backLink.setAttribute('data-i18n', 'tb-back');
-    backLink.textContent = t('tb-back');
-
-    const title = document.createElement('h1');
-    title.className = 'tb-header-title';
-    if (titleKey) {
-        title.setAttribute('data-i18n', titleKey);
-        title.textContent = t(titleKey);
-    }
-
-    const langBtn = document.createElement('button');
-    langBtn.type = 'button';
-    langBtn.className = 'tb-header-lang';
-    langBtn.innerHTML = LANG_ICON;
-    langBtn.setAttribute('data-i18n-aria', 'tb-lang-aria');
-    langBtn.setAttribute('aria-label', t('tb-lang-aria'));
-    langBtn.addEventListener('click', () => {
-        setLang(lang() === 'it' ? 'en' : 'it');
-    });
-
-    header.append(backLink, title, langBtn);
-    return header;
-}
 
 const STATUS_KINDS = ['idle', 'busy', 'ok', 'error', 'denied'];
 

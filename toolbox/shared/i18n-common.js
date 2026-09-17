@@ -1,6 +1,9 @@
 // Tiny Temple Toolbox - dizionario comune (IT/EN)
 // Modulo dati puro: nessun effetto all'import. Usato da index.html/404.html
 // e, unito al dizionario dello strumento, da ogni pagina <slug>/.
+// Chiavi "bar-*"/"menu-*": barra e menu fullscreen (shared/nav.js, spec 01).
+// Chiavi "pill-*"/"fam-*"/"home-*": home (index.html), lette anche insieme
+// a shared/tools.js (nomi/stato) per comporre le righe degli strumenti.
 // Chiavi "mic-*": usate da shared/mic.js (renderConsent). Chiavi "pwa-*":
 // usate da shared/pwa.js (toast di aggiornamento; "pwa-manual" per il
 // ripiego "usa il menu del browser" quando non c'e' prompt nativo).
@@ -12,10 +15,24 @@ export default {
         'tb-back': '← Toolbox',
         'tb-lang-aria': 'Cambia lingua',
 
-        'idx-eyebrow': 'Toolbox',
-        'idx-title': 'Tiny Temple Toolbox',
-        'idx-intro': 'Strumenti gratuiti per artisti e producer, dentro il browser: niente account. Aggiungila alla schermata Home e la usi come un’app.',
-        'idx-waiting': 'Gli strumenti arrivano uno alla volta: quando sono pronti compaiono qui da soli, senza dover reinstallare nulla.',
+        'bar-menu-open': 'Apri il menu',
+        'bar-menu-close': 'Chiudi il menu',
+        'bar-back-aria': 'Torna alla Toolbox',
+        'menu-all': 'Tutti gli strumenti',
+        'menu-install': 'Installa l’app',
+        'menu-site': 'Sito dello studio',
+        'pill-soon': 'In arrivo',
+        'pill-next': 'Prossimo',
+        'fam-live': 'Dal vivo',
+        'fam-analysis': 'Analisi',
+        'fam-writing': 'Scrittura',
+        'fam-calc': 'Calcolo',
+        'fam-release': 'Lancio',
+
+        'idx-eyebrow': 'Tiny Temple Studio',
+        'idx-title': 'Toolbox',
+        'home-intro': 'Gli strumenti dello studio, in tasca. Gratis, senza account, uno nuovo alla volta.',
+        'home-next': 'Il prossimo: {tool}',
 
         'tool-metronomo': 'Metronomo',
         'tool-metronomo-desc': 'Tempo preciso per le prove e le registrazioni.',
@@ -26,15 +43,13 @@ export default {
         'tool-dna': 'DNA',
         'tool-dna-desc': 'Scopri tonalità e BPM di una registrazione.',
         'tool-penna': 'Penna',
-        'tool-penna-desc': 'Rimario e blocco testi',
+        'tool-penna-desc': 'Rimario e blocco testi.',
         'tool-pianificatore-uscita': 'Pianificatore Uscita',
         'tool-pianificatore-uscita-desc': 'Organizza i passi per pubblicare il tuo brano.',
         'tool-checklist-consegna': 'Checklist Consegna',
-        'tool-checklist-consegna-desc': 'Cosa preparare e come chiamare le tracce',
+        'tool-checklist-consegna-desc': 'Cosa preparare e come chiamare le tracce.',
         'tool-split-sheet': 'Split Sheet',
-        'tool-split-sheet-desc': 'Dividi le quote e scarica il PDF',
-        'tb-badge-soon': 'In arrivo',
-        'tb-badge-next': 'Primo in arrivo',
+        'tool-split-sheet-desc': 'Dividi le quote e scarica il PDF da firmare.',
 
         'idx-install-title': 'Installa la Toolbox',
         'idx-install-text': 'Aggiungila alla schermata Home per aprirla come un’app, anche offline.',
@@ -74,10 +89,24 @@ export default {
         'tb-back': '← Toolbox',
         'tb-lang-aria': 'Change language',
 
-        'idx-eyebrow': 'Toolbox',
-        'idx-title': 'Tiny Temple Toolbox',
-        'idx-intro': 'Free tools for artists and producers, right in your browser: no account needed. Add it to your home screen and use it like an app.',
-        'idx-waiting': 'Tools land one at a time: once each one is ready, it just shows up here, no reinstall needed.',
+        'bar-menu-open': 'Open menu',
+        'bar-menu-close': 'Close menu',
+        'bar-back-aria': 'Back to the Toolbox',
+        'menu-all': 'All tools',
+        'menu-install': 'Install the app',
+        'menu-site': 'Studio website',
+        'pill-soon': 'Coming soon',
+        'pill-next': 'Up next',
+        'fam-live': 'Live',
+        'fam-analysis': 'Analysis',
+        'fam-writing': 'Writing',
+        'fam-calc': 'Calculators',
+        'fam-release': 'Release',
+
+        'idx-eyebrow': 'Tiny Temple Studio',
+        'idx-title': 'Toolbox',
+        'home-intro': 'The studio’s tools in your pocket. Free, no account, one new tool at a time.',
+        'home-next': 'Up next: {tool}',
 
         'tool-metronomo': 'Metronome',
         'tool-metronomo-desc': 'Precise tempo for rehearsals and takes.',
@@ -88,15 +117,13 @@ export default {
         'tool-dna': 'DNA',
         'tool-dna-desc': 'Find the key and BPM of a recording.',
         'tool-penna': 'Lyric Pad',
-        'tool-penna-desc': 'A rhyme dictionary and space for your lyrics',
+        'tool-penna-desc': 'Rhymes and a notebook for lyrics.',
         'tool-pianificatore-uscita': 'Release Planner',
         'tool-pianificatore-uscita-desc': 'Plan every step to release your track.',
         'tool-checklist-consegna': 'Delivery Checklist',
-        'tool-checklist-consegna-desc': 'What to prepare and how to name your files',
+        'tool-checklist-consegna-desc': 'What to prepare and how to name your stems.',
         'tool-split-sheet': 'Split Sheet',
-        'tool-split-sheet-desc': 'Split the credits and download the PDF',
-        'tb-badge-soon': 'Coming soon',
-        'tb-badge-next': 'Up first',
+        'tool-split-sheet-desc': 'Split the shares, download a PDF to sign.',
 
         'idx-install-title': 'Install the Toolbox',
         'idx-install-text': 'Add it to your home screen to open it like an app, even offline.',

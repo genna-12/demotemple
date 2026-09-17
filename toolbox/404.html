@@ -19,10 +19,38 @@
     <meta name="robots" content="noindex, follow">
     <meta name="description" content="La pagina cercata non esiste o &egrave; stata spostata. Torna all'indice della Toolbox.">
 
-    <link rel="stylesheet" href="/shared/theme.css">
+    <script src="/shared/lang-boot.js"></script>
+    <link rel="stylesheet" href="/shared/tokens.css">
+    <link rel="stylesheet" href="/shared/base.css">
+    <link rel="stylesheet" href="/shared/components.css">
 </head>
 
 <body>
+
+    <header class="tb-bar">
+        <a class="tb-bar-brand" href="/">TINY TEMPLE <span class="tb-bar-brand-accent">TOOLBOX</span></a>
+        <button type="button" class="tb-menu-toggle" aria-controls="tb-menu" aria-expanded="false"
+            data-i18n-aria="bar-menu-open" aria-label="Apri il menu">
+            <span class="tb-menu-toggle-line"></span>
+            <span class="tb-menu-toggle-line"></span>
+        </button>
+    </header>
+
+    <div id="tb-menu" class="tb-menu" role="dialog" aria-modal="true" aria-label="Menu" hidden>
+        <div class="tb-menu-inner">
+            <a class="tb-menu-home tb-menu-item" href="/" data-i18n="menu-all">Tutti gli strumenti</a>
+            <div class="tb-menu-groups"></div>
+            <div class="tb-menu-foot tb-menu-item">
+                <div class="tb-lang-switch" role="group" aria-label="Lingua / Language">
+                    <button type="button" data-lang="it" aria-pressed="true">IT</button>
+                    <button type="button" data-lang="en" aria-pressed="false">EN</button>
+                </div>
+                <button type="button" class="tb-menu-install" data-i18n="menu-install">Installa l’app</button>
+                <a class="tb-menu-site" href="https://tinytemplestudio.it/" data-i18n="menu-site">Sito dello
+                    studio</a>
+            </div>
+        </div>
+    </div>
 
     <div class="tb-shell">
         <header class="tb-page-header">
@@ -55,18 +83,6 @@
             </div>
         </footer>
     </div>
-
-    <button type="button" id="tb-lang-btn" class="tb-lang-btn" data-i18n-aria="tb-lang-aria" aria-label="Cambia lingua">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-            stroke-linejoin="round" aria-hidden="true" focusable="false">
-            <path d="M5 8l6 6"></path>
-            <path d="M4 14l6-6 2-3"></path>
-            <path d="M2 5h12"></path>
-            <path d="M7 2h1"></path>
-            <path d="M22 22l-5-10-5 10"></path>
-            <path d="M14 18h6"></path>
-        </svg>
-    </button>
 
     <script type="module" src="/404.js"></script>
 </body>

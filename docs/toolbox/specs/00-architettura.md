@@ -8,7 +8,7 @@
 toolbox/
   index.html  index.js  404.html  robots.txt  sitemap.xml
   manifest.webmanifest  sw.js  _headers
-  shared/   theme.css  audio.js  mic.js  i18n.js  i18n-common.js  storage.js  ui.js  pwa.js
+  shared/   tokens.css  base.css  components.css  audio.js  mic.js  i18n.js  i18n-common.js  storage.js  ui.js  pwa.js
   vendor/<lib>@<versione>/   file ESM/WASM + LICENSE
   assets/fonts/   copia 1:1 di archivo-{400,600,700}-*, inter-{400,500}-*, tiny-ampersand.woff + licenze OFL
   assets/icons/   icon-192.png  icon-512.png  icon-maskable-512.png  apple-touch-icon.png  favicon.ico
@@ -86,7 +86,7 @@ isStandalone(): boolean                 // display-mode standalone || navigator.
 platform(): 'ios' | 'android' | 'desktop'
 ```
 
-**theme.css** — variabili `:root` della vetrina, `@font-face` locali, componenti `tb-shell`, `tb-header`, `tb-grid`, `tb-card`, `tb-badge` ("in arrivo"), `tb-btn`/`tb-btn--primary`, `tb-status`, `tb-toast`, `tb-consent`, `tb-install`. Safe-area, `100dvh`, `:focus-visible`, hover solo con puntatore fine, reduced-motion. Nessun `style=""` nell'HTML (CSP).
+**tokens.css / base.css / components.css** (ordine di caricamento: tokens -> base -> components) — variabili `:root` della vetrina e `@font-face` locali in `tokens.css`; reset, tipografia di pagina, layout condiviso `tb-shell`/`tb-header`/`tb-footer`, safe-area, `100dvh`, `:focus-visible`, reduced-motion in `base.css`; componenti `tb-grid`, `tb-card`, `tb-badge` ("in arrivo"), `tb-btn`/`tb-btn--primary`/`tb-install`, `tb-status`, `tb-toast`, `tb-consent` in `components.css`. Hover solo con puntatore fine. Nessun `style=""` nell'HTML (CSP).
 
 ## 4. PWA
 

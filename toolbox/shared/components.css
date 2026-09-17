@@ -1,0 +1,422 @@
+/* ========================================================
+   TINY TEMPLE TOOLBOX - COMPONENTS
+   Componenti tb-* riusabili nelle pagine della Toolbox: home
+   (famiglie/righe strumento, pill), bottoni, stato, toast,
+   consenso microfono, installazione PWA.
+   Richiede shared/tokens.css e shared/base.css caricati prima.
+   ======================================================== */
+
+/* --- HOME: FAMIGLIE E RIGHE STRUMENTO (spec 01 §3) --- */
+.tb-family {
+    margin-top: 48px;
+}
+
+.tb-family:first-of-type {
+    margin-top: 12px;
+}
+
+.tb-family-head {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.tb-family-num {
+    font-family: var(--font-title);
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    letter-spacing: 0.05em;
+}
+
+.tb-family-head h2 {
+    font-family: var(--font-title);
+    font-size: 1.05rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.01em;
+    color: var(--text-primary);
+}
+
+/* Righe, non tessere: min-height 76px, una colonna su mobile, due da 768px. */
+.tb-tools {
+    list-style: none;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 12px;
+}
+
+.tb-tool {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    min-height: 76px;
+    padding: 14px 18px;
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.035);
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    text-decoration: none;
+    color: inherit;
+    transition: border-color 0.3s ease, background 0.3s ease;
+}
+
+.tb-tool.is-soon {
+    border-style: dashed;
+}
+
+.tb-tool.is-pressed,
+a.tb-tool:active {
+    border-color: var(--accent-orange);
+}
+
+@media (hover: hover) and (pointer: fine) {
+    a.tb-tool:hover {
+        border-color: var(--accent-orange);
+        background: rgba(207, 92, 54, 0.08);
+    }
+}
+
+.tb-tool-icon {
+    flex-shrink: 0;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: var(--accent-orange);
+}
+
+.tb-tool.is-soon .tb-tool-icon {
+    color: var(--text-muted);
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.tb-tool-icon svg {
+    width: 24px;
+    height: 24px;
+}
+
+.tb-tool-text {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.tb-tool-name {
+    font-family: var(--font-title);
+    font-size: 0.95rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.01em;
+    color: var(--text-primary);
+}
+
+.tb-tool-desc {
+    font-size: 0.8rem;
+    line-height: 1.4;
+    color: var(--text-muted);
+    font-weight: 300;
+}
+
+/* Pill di stato: "In arrivo" / "Prossimo" (home e menu). */
+.tb-pill {
+    flex-shrink: 0;
+    display: inline-block;
+    padding: 6px 14px;
+    border-radius: 50px;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    background: rgba(255, 255, 255, 0.04);
+    font-size: 0.62rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    color: var(--text-muted);
+}
+
+.tb-pill.is-next {
+    border-color: var(--accent-orange);
+    background: rgba(207, 92, 54, 0.16);
+    color: var(--accent-orange);
+}
+
+/* --- BOTTONI --- */
+.tb-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    min-height: 44px;
+    padding: 14px 32px;
+    border-radius: 50px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.04);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    font-family: var(--font-text);
+    font-size: 0.82rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: var(--text-primary);
+    text-decoration: none;
+    transition: all 0.4s var(--ease-cinematic);
+}
+
+.tb-btn:active {
+    transform: scale(0.97);
+    border-color: var(--accent-orange);
+}
+
+/* .tb-install: alias dello stile del pulsante primario (spec §3), da usare
+   insieme a .tb-btn sul pulsante di installazione. */
+.tb-btn--primary,
+.tb-install {
+    background: var(--accent-orange);
+    border-color: var(--accent-orange);
+    color: #ffffff;
+}
+
+.tb-btn--primary:active,
+.tb-install:active {
+    background: #b64d2c;
+    border-color: #b64d2c;
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .tb-btn:hover {
+        border-color: var(--accent-orange);
+        background: rgba(207, 92, 54, 0.15);
+    }
+    .tb-btn--primary:hover,
+    .tb-install:hover {
+        background: #b64d2c;
+        border-color: #b64d2c;
+    }
+}
+
+.tb-btn[hidden] {
+    display: none !important;
+}
+
+/* --- STATO (idle/busy/ok/error/denied) --- */
+.tb-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.82rem;
+    font-weight: 500;
+    color: var(--text-muted);
+    min-height: 24px;
+}
+
+.tb-status::before {
+    content: '';
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: currentColor;
+    flex-shrink: 0;
+}
+
+.tb-status--idle { color: var(--text-muted); }
+.tb-status--busy { color: var(--text-primary); }
+.tb-status--ok { color: #4dd97a; }
+.tb-status--error { color: #e8604c; }
+.tb-status--denied { color: #e8604c; }
+
+@media (prefers-reduced-motion: no-preference) {
+    .tb-status--busy::before {
+        animation: tb-pulse 1.2s ease-in-out infinite;
+    }
+}
+
+@keyframes tb-pulse {
+    0%, 100% { opacity: 0.4; }
+    50% { opacity: 1; }
+}
+
+/* --- TOAST --- */
+.tb-toast-region {
+    position: fixed;
+    left: 50%;
+    bottom: calc(96px + var(--tb-safe-b));
+    transform: translateX(-50%);
+    z-index: 10020;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: min(92vw, 420px);
+    pointer-events: none;
+}
+
+.tb-toast {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    padding: 14px 18px;
+    border-radius: 16px;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(16, 15, 14, 0.85) 100%);
+    backdrop-filter: blur(25px) saturate(180%);
+    -webkit-backdrop-filter: blur(25px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6);
+    color: var(--text-primary);
+    font-size: 0.85rem;
+    opacity: 0;
+    transform: translateY(12px);
+    transition: opacity 0.3s ease, transform 0.3s ease;
+    pointer-events: auto;
+}
+
+.tb-toast.is-visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.tb-toast-action {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 6px 16px;
+    border-radius: 50px;
+    border: 1px solid var(--accent-orange);
+    color: var(--accent-orange);
+    font-size: 0.72rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+/* --- CONSENSO (microfono, mic.js) --- */
+.tb-consent {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 18px 20px;
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+}
+
+.tb-consent p {
+    font-size: 0.85rem;
+    line-height: 1.6;
+    color: var(--text-muted);
+}
+
+.tb-consent__title {
+    font-family: var(--font-title);
+    font-size: 1rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.01em;
+    color: var(--text-primary);
+}
+
+.tb-consent__text {
+    font-size: 0.85rem;
+    line-height: 1.6;
+    color: var(--text-muted);
+}
+
+.tb-consent--denied .tb-consent__text,
+.tb-consent--unavailable .tb-consent__text {
+    color: #e8604c;
+}
+
+.tb-consent--compact {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.tb-consent[hidden] {
+    display: none !important;
+}
+
+/* --- STATO VUOTO / ERRORE --- */
+.tb-empty {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+}
+
+/* --- INSTALLAZIONE PWA --- */
+.tb-install-section {
+    margin-top: 56px;
+    padding: 40px clamp(20px, 5vw, 48px);
+    border-radius: 24px;
+    background: linear-gradient(160deg, rgba(255, 255, 255, 0.05) 0%, rgba(18, 16, 14, 0.55) 100%);
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    text-align: center;
+}
+
+.tb-install-section h2 {
+    font-family: var(--font-title);
+    font-size: 1.3rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    color: var(--text-primary);
+    margin-bottom: 14px;
+}
+
+.tb-install-section p {
+    max-width: 520px;
+    margin: 0 auto 20px;
+    font-size: 0.9rem;
+    line-height: 1.7;
+    color: var(--text-muted);
+}
+
+.tb-ios-help {
+    max-width: 480px;
+    margin: 20px auto 0;
+    padding: 18px 20px;
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    text-align: left;
+}
+
+.tb-ios-help[hidden] {
+    display: none !important;
+}
+
+.tb-ios-help ol {
+    margin: 12px 0 0;
+    padding-left: 22px;
+    color: var(--text-primary);
+}
+
+.tb-ios-help li {
+    margin-bottom: 6px;
+    font-size: 0.88rem;
+}
+
+.tb-ios-help .tb-ios-note {
+    margin-top: 14px;
+    font-size: 0.78rem;
+    color: var(--text-muted);
+}
+
+/* --- BREAKPOINT MOBILE (componenti) --- */
+/* Mobile-first: .tb-tools e' 1 colonna di base, 2 da 768px (spec 01 §3). */
+@media (min-width: 768px) {
+    .tb-tools {
+        grid-template-columns: 1fr 1fr;
+        gap: 14px;
+    }
+}

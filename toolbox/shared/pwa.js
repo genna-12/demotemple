@@ -19,8 +19,16 @@
  * - App gia' installata (isStandalone()): nascosta l'INTERA sezione.
  *
  * initPwa({ installBtn, iosHelp, installSection }):
- *   installSection (facoltativo) = contenitore dell'installazione; se manca
- *   si usa il genitore di installBtn.
+ *   installSection (facoltativo) = contenitore dell'installazione (la
+ *   section#installa della home o un blocco nel menu); se manca si usa il
+ *   genitore di installBtn. Tutti facoltativi: initPwa({}) registra solo
+ *   il SW e ascolta il prompt (pagine senza sezione, es. 404).
+ *
+ * Per il pulsante "Installa l'app" del menu (shared/nav.js):
+ *   trackInstall()        cattura beforeinstallprompt/appinstalled (idempotente)
+ *   installState()        'installed' | 'prompt' | 'ios' | 'manual'
+ *   promptInstall()       apre il prompt nativo; true se e' stato mostrato
+ *   onInstallChange(cb)   avvisa a ogni cambio di stato; ritorna l'unsubscribe
  * Chiavi i18n: pwa-update, pwa-update-action, pwa-manual.
  */
 
@@ -104,7 +112,61 @@ function register() {
     else window.addEventListener('load', go, { once: true });
 }
 
+let tracking = false;
+let installedNow = false;
+const installListeners = new Set();
+
+function notifyInstall() {
+    const st = installState();
+    installListeners.forEach((cb) => {
+        try { cb(st); } catch (e) { /* un listener rotto non blocca gli altri */ }
+    });
+}
+
+/** Cattura prompt nativo e installazione; si puo' chiamare piu' volte. */
+export function trackInstall() {
+    if (tracking) return;
+    tracking = true;
+    window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredPrompt = e;
+        promptSeen = true;
+        notifyInstall();
+    });
+    window.addEventListener('appinstalled', () => {
+        deferredPrompt = null;
+        installedNow = true;
+        notifyInstall();
+    });
+}
+
+export function installState() {
+    if (installedNow || isStandalone()) return 'installed';
+    if (deferredPrompt) return 'prompt';
+    if (platform() === 'ios') return 'ios';
+    return 'manual';
+}
+
+export function onInstallChange(cb) {
+    installListeners.add(cb);
+    return () => installListeners.delete(cb);
+}
+
+/** Apre il prompt nativo se disponibile (una sola volta per evento). */
+export async function promptInstall() {
+    const p = deferredPrompt;
+    if (!p) return false;
+    deferredPrompt = null;
+    notifyInstall();
+    try {
+        await p.prompt();
+        await p.userChoice;
+    } catch (e) { /* prompt gia' usato o rifiutato */ }
+    return true;
+}
+
 function setupInstall(installBtn, iosHelp, section) {
+    trackInstall();
     const manualEls = section ? [...section.querySelectorAll('[data-pwa-when="manual"]')] : [];
     const showManual = (on) => manualEls.forEach((el) => { el.hidden = !on; });
     if (installBtn) installBtn.hidden = true;
@@ -123,35 +185,30 @@ function setupInstall(installBtn, iosHelp, section) {
         iosHelp.hidden = false;
     }
 
+    let manualAllowed = false;
+    const render = (st) => {
+        if (st === 'installed') {
+            if (section) section.hidden = true;
+            else if (installBtn) installBtn.hidden = true;
+            return;
+        }
+        if (installBtn) installBtn.hidden = st !== 'prompt';
+        if (st === 'prompt') showManual(false);
+        else if (st === 'manual' && manualAllowed && !promptSeen) showManual(true);
+    };
+
     if (platform() !== 'ios') {
         /* niente prompt nativo: subito il ripiego; Chromium: si aspetta un po' */
-        if (!('onbeforeinstallprompt' in window)) showManual(true);
-        else setTimeout(() => { if (!promptSeen) showManual(true); }, PROMPT_WAIT);
+        const allowManual = () => { manualAllowed = true; render(installState()); };
+        if (!('onbeforeinstallprompt' in window)) allowManual();
+        else setTimeout(() => { if (!promptSeen) allowManual(); }, PROMPT_WAIT);
     }
 
+    onInstallChange(render);
+    render(installState()); // il prompt puo' essere arrivato prima di initPwa
+
     if (!installBtn) return;
-    window.addEventListener('beforeinstallprompt', (e) => {
-        e.preventDefault();
-        deferredPrompt = e;
-        promptSeen = true;
-        showManual(false);
-        installBtn.hidden = false;
-    });
-    installBtn.addEventListener('click', async () => {
-        const p = deferredPrompt;
-        if (!p) return;
-        deferredPrompt = null;
-        installBtn.hidden = true;
-        try {
-            await p.prompt();
-            await p.userChoice;
-        } catch (e) { /* prompt gia' usato o rifiutato */ }
-    });
-    window.addEventListener('appinstalled', () => {
-        deferredPrompt = null;
-        if (section) section.hidden = true;
-        else installBtn.hidden = true;
-    });
+    installBtn.addEventListener('click', () => { promptInstall(); });
 }
 
 export function initPwa({ installBtn = null, iosHelp = null, installSection = null } = {}) {

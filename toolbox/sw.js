@@ -18,7 +18,7 @@
  * cambi di VERSION: i percorsi contengono gia' la versione della libreria.
  */
 
-const VERSION = 'tb-v1';
+const VERSION = 'tb-v3';
 const CACHE = 'toolbox-' + VERSION;
 const VENDOR_CACHE = 'toolbox-vendor';
 
@@ -30,14 +30,19 @@ const SHELL = [
     '/404.js',
     '/manifest.webmanifest',
 
-    '/shared/theme.css',
+    '/shared/tokens.css',
+    '/shared/base.css',
+    '/shared/components.css',
     '/shared/audio.js',
     '/shared/mic.js',
+    '/shared/lang-boot.js',
     '/shared/i18n.js',
     '/shared/i18n-common.js',
     '/shared/storage.js',
     '/shared/ui.js',
     '/shared/pwa.js',
+    '/shared/nav.js',
+    '/shared/tools.js',
 
     '/assets/fonts/archivo-400-latin.woff2',
     '/assets/fonts/archivo-400-latin-ext.woff2',

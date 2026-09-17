@@ -309,6 +309,26 @@ else {
 if (!fs.existsSync(path.join(ROOT, '_redirects'))) infos.push('_redirects assente in root: regola /toolbox/* non ancora presente');
 else if (/^\/toolbox\/\*\s+https:\/\/toolbox\.tinytemplestudio\.it\/:splat\s+301\s*$/m.test(fs.readFileSync(path.join(ROOT, '_redirects'), 'utf8'))) ok('_redirects: /toolbox/* -> https://toolbox.tinytemplestudio.it/:splat 301');
 else bad('_redirects: manca la regola "/toolbox/* https://toolbox.tinytemplestudio.it/:splat 301"');
+// 6f. Token del design system: :root di style.css vs toolbox/shared/tokens.css (theme.css come fallback)
+function rootVars(cssPath) {
+  const src = fs.readFileSync(path.join(ROOT, cssPath), 'utf8');
+  const at = src.indexOf(':root {'), open = at === -1 ? -1 : src.indexOf('{', at), close = open === -1 ? -1 : findMatchingBrace(src, open), vars = new Map();
+  if (close !== -1) for (const m of src.slice(open + 1, close).matchAll(/--([\w-]+)\s*:\s*([^;]+);/g)) vars.set(m[1], m[2].trim());
+  return vars;
+}
+const tbTokensPath = tbExists('shared/tokens.css') ? `${TB}/shared/tokens.css` : tbExists('shared/theme.css') ? `${TB}/shared/theme.css` : null;
+if (!tbTokensPath) infos.push('toolbox/shared/tokens.css (o theme.css) assente: controllo token saltato');
+else {
+  const norm = (v) => v.replace(/\s+/g, ' ').trim().toLowerCase();
+  const siteVars = rootVars('style.css'), tbVars = rootVars(tbTokensPath), diffs = [], tbOnly = [];
+  for (const [k, v] of tbVars) {
+    if (!siteVars.has(k)) tbOnly.push(`--${k}`);
+    else if (norm(siteVars.get(k)) !== norm(v)) diffs.push(`--${k}: vetrina="${siteVars.get(k)}" vs toolbox="${v}"`);
+  }
+  if (diffs.length === 0) ok(`design tokens: ${tbVars.size - tbOnly.length} variabili condivise identiche tra style.css e ${tbTokensPath}`);
+  else bad(`design tokens: valori diversi tra style.css e ${tbTokensPath}`, diffs);
+  if (tbOnly.length) infos.push(`${tbTokensPath}: ${tbOnly.length} variabili solo Toolbox (normale, prefisso --tb-): ${tbOnly.join(', ')}`);
+}
 // 7. RIEPILOGO
 section('7. Riepilogo');
 console.log(`Controlli eseguiti: ${checksRun}`);
