@@ -1,0 +1,62 @@
+// Tiny Temple Toolbox - Accordatore - dizionario (IT/EN)
+// Modulo dati puro: nessun effetto all'import. Unito a shared/i18n-common.js
+// da accordatore.js (init(commonDict, toolDict), spec 11 §1/§8). Le chiavi
+// mic-* e audio-resume-msg usate da questa pagina sono in i18n-common.js
+// (mic.js/audio.js sono condivisi da tutta la Toolbox).
+//
+// "gli altri identici" (spec 11 §8): Drop D, DADGAD e Ukulele sono lo
+// stesso nome/termine in entrambe le lingue (nomenclatura musicale
+// condivisa); Chitarra/Guitar e Violino/Violin sono comunque tradotti
+// normalmente (altrimenti l'utente inglese vedrebbe testo italiano).
+export default {
+    it: {
+        'acc-title': 'Accordatore',
+        'acc-mode-listen': 'Ascolto',
+        'acc-mode-reference': 'Riferimento',
+        'acc-instrument': 'Strumento',
+        'acc-inst-guitar': 'Chitarra',
+        'acc-inst-drop-d': 'Drop D',
+        'acc-inst-dadgad': 'DADGAD',
+        'acc-inst-half-step': 'Mezzo tono giù',
+        'acc-inst-bass4': 'Basso 4 corde',
+        'acc-inst-bass5': 'Basso 5 corde',
+        'acc-inst-ukulele': 'Ukulele',
+        'acc-inst-violin': 'Violino',
+        'acc-inst-chromatic': 'Cromatica',
+        'acc-a4': 'Riferimento A4',
+        'acc-loop': 'Ripeti',
+        'acc-in-tune': 'Giusta',
+        'acc-flat': 'Calante',
+        'acc-sharp': 'Crescente',
+        'acc-listening': 'In ascolto…',
+        'acc-no-signal': 'Suona una corda',
+        'acc-mic-lost': 'Microfono interrotto',
+        'acc-inapp': 'Apri in Safari per il microfono',
+        'acc-gauge-aria': 'Scostamento in cent'
+    },
+    en: {
+        'acc-title': 'Tuner',
+        'acc-mode-listen': 'Listen',
+        'acc-mode-reference': 'Reference',
+        'acc-instrument': 'Instrument',
+        'acc-inst-guitar': 'Guitar',
+        'acc-inst-drop-d': 'Drop D',
+        'acc-inst-dadgad': 'DADGAD',
+        'acc-inst-half-step': 'Half step down',
+        'acc-inst-bass4': '4-string bass',
+        'acc-inst-bass5': '5-string bass',
+        'acc-inst-ukulele': 'Ukulele',
+        'acc-inst-violin': 'Violin',
+        'acc-inst-chromatic': 'Chromatic',
+        'acc-a4': 'A4 reference',
+        'acc-loop': 'Loop',
+        'acc-in-tune': 'In tune',
+        'acc-flat': 'Flat',
+        'acc-sharp': 'Sharp',
+        'acc-listening': 'Listening…',
+        'acc-no-signal': 'Play a string',
+        'acc-mic-lost': 'Mic interrupted',
+        'acc-inapp': 'Open in Safari for the microphone',
+        'acc-gauge-aria': 'Deviation in cents'
+    }
+};

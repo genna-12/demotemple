@@ -28,7 +28,13 @@ const TOOL = 'metronomo';
 const BPM_MIN = 30;
 const BPM_MAX = 300;
 const BPM_DEFAULT = 120;
-const DRAG_PX = 6;        // px di trascinamento per 1 BPM
+const WHEEL_PX = 8;       // px di trascinamento per 1 BPM sulla rotella (spec 10 §11.1)
+const WHEEL_TICKS = 12;   // tacche visibili per lato
+const TICK_PX = 26;       // distanza fra due tacche
+const INERTIA_K = 5;      // decelerazione esponenziale: fermo entro 1 s
+const INERTIA_MIN = 0.6;  // BPM/s sotto cui ci si ferma e si aggancia all'intero
+const BUZZ_MS = 40;       // un impulso ogni tot durante l'inerzia
+const VOL_DEFAULT = 85;   // spec 10 §11.4
 const DOT_MIN_MS = 90;    // il pallino resta acceso almeno cosi'
 const SAVE_DELAY = 400;   // ms prima di scrivere le preferenze
 const TAP_RESET_MS = 2000;
@@ -84,41 +90,75 @@ export function createVoices(ctx, dest) {
         node.stop(time);
     }
 
+    /* Livelli (spec 10 §11.4, misurati in OfflineAudioContext a volume 0,85:
+       picco fra -6 e -3 dBFS, RMS entro 3 dB fra i tre suoni, misurati da
+       scripts di prova con node-web-audio-api). Il legno e' il piu' magro di
+       natura: quasi tutta l'energia sta nel corpo (udibile ~12 ms) piu' una
+       componente d'aria a 2,4 kHz; il rumore resta solo come transiente,
+       cosi' non sfonda il picco e il carattere "wood" rimane. */
+    const LEVEL = {
+        legno: { noise: 0.1, body: 0.49, air: 0.168 },
+        beep: { osc: 0.5 },
+        rimshot: { noise: 0.39, body: 0.305 }
+    };
+    const kindScale = (kind) => (kind === 'accent' ? 1 : kind === 'sub' ? SUB_GAIN : 0.72);
+
+    /* Legno: transiente cortissimo sul rumore, corpo di ~12 ms, aria a 2,4 kHz. */
     function legno(time, kind) {
+        const k = kindScale(kind);
         const src = ctx.createBufferSource();
         src.buffer = noiseBuffer();
         const band = ctx.createBiquadFilter();
         band.type = 'bandpass';
-        band.frequency.setValueAtTime(kind === 'accent' ? 2200 : kind === 'sub' ? 3200 : 1500, time);
-        band.Q.setValueAtTime(8, time);
-        const g = env(time, kind === 'accent' ? 1 : kind === 'sub' ? SUB_GAIN : 0.7, 0.02);
+        band.frequency.setValueAtTime(kind === 'accent' ? 2600 : kind === 'sub' ? 3000 : 1600, time);
+        band.Q.setValueAtTime(3, time);
+        const g = env(time, LEVEL.legno.noise * k, 0.03);
         src.connect(band).connect(g).connect(dest);
+
+        const body = ctx.createOscillator();
+        body.type = 'triangle';
+        body.frequency.setValueAtTime(kind === 'accent' ? 1400 : kind === 'sub' ? 2000 : 1000, time);
+        const bg = env(time, LEVEL.legno.body * k, 0.04); // corpo: e' qui l'energia (udibile ~12 ms)
+        body.connect(bg).connect(dest);
+
+        const air = ctx.createOscillator();
+        air.type = 'sine';
+        air.frequency.setValueAtTime(2400, time);
+        const ag = env(time, LEVEL.legno.air * k, 0.025);
+        air.connect(ag).connect(dest);
+
         src.start(time);
+        body.start(time);
+        air.start(time);
         stopAt(src, time + 0.05, () => { src.disconnect(); band.disconnect(); g.disconnect(); });
+        stopAt(body, time + 0.06, () => { body.disconnect(); bg.disconnect(); });
+        stopAt(air, time + 0.04, () => { air.disconnect(); ag.disconnect(); });
     }
 
     function beep(time, kind) {
+        const k = kindScale(kind);
         const osc = ctx.createOscillator();
         osc.type = 'sine';
         osc.frequency.setValueAtTime(kind === 'accent' ? 1000 : kind === 'sub' ? 1600 : 800, time);
-        const g = env(time, kind === 'accent' ? 0.9 : kind === 'sub' ? SUB_GAIN * 0.8 : 0.6, 0.05);
+        const g = env(time, LEVEL.beep.osc * k, 0.03);
         osc.connect(g).connect(dest);
         osc.start(time);
         stopAt(osc, time + 0.08, () => { osc.disconnect(); g.disconnect(); });
     }
 
     function rimshot(time, kind) {
+        const k = kindScale(kind);
         const src = ctx.createBufferSource();
         src.buffer = noiseBuffer();
         const hp = ctx.createBiquadFilter();
         hp.type = 'highpass';
         hp.frequency.setValueAtTime(kind === 'sub' ? 2500 : 1800, time);
-        const ng = env(time, kind === 'accent' ? 0.8 : kind === 'sub' ? SUB_GAIN * 0.7 : 0.5, 0.06);
+        const ng = env(time, LEVEL.rimshot.noise * k, 0.035);
         src.connect(hp).connect(ng).connect(dest);
         const osc = ctx.createOscillator();
         osc.type = 'triangle';
         osc.frequency.setValueAtTime(kind === 'accent' ? 420 : 320, time);
-        const og = env(time, kind === 'accent' ? 0.6 : kind === 'sub' ? SUB_GAIN * 0.5 : 0.35, 0.06);
+        const og = env(time, LEVEL.rimshot.body * k, 0.035);
         osc.connect(og).connect(dest);
         src.start(time);
         osc.start(time);
@@ -145,8 +185,21 @@ export function createVoices(ctx, dest) {
  */
 export function createEngine({ ctx, onBeat } = {}) {
     const master = ctx.createGain();
-    master.gain.value = 0.49; // 70% con curva quadratica
-    master.connect(ctx.destination);
+    master.gain.value = (VOL_DEFAULT / 100) * (VOL_DEFAULT / 100);
+    /* compressore leggero (spec 10 §11.4): tiene i picchi quando battono
+       insieme accento e suddivisioni, senza schiacciare il transiente */
+    if (typeof ctx.createDynamicsCompressor === 'function') {
+        const comp = ctx.createDynamicsCompressor();
+        comp.threshold.setValueAtTime(-12, ctx.currentTime);
+        comp.knee.setValueAtTime(6, ctx.currentTime);
+        comp.ratio.setValueAtTime(4, ctx.currentTime);
+        comp.attack.setValueAtTime(0.003, ctx.currentTime);
+        comp.release.setValueAtTime(0.1, ctx.currentTime);
+        master.connect(comp);
+        comp.connect(ctx.destination);
+    } else {
+        master.connect(ctx.destination);
+    }
     const voices = createVoices(ctx, master);
 
     const state = {
@@ -154,7 +207,7 @@ export function createEngine({ ctx, onBeat } = {}) {
         meter: '4/4',
         subdiv: 1,
         sound: 'legno',
-        volume: 70
+        volume: VOL_DEFAULT
     };
     let pulse = 0;
     let sub = 0;
@@ -260,6 +313,13 @@ export function createTapTempo({ max = 6, resetMs = TAP_RESET_MS } = {}) {
 
 /* ---------------- interfaccia ---------------- */
 
+const now = () => (typeof performance !== 'undefined' && performance.now ? performance.now() : Date.now());
+
+function reducedMotion() {
+    return typeof window.matchMedia === 'function'
+        && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+}
+
 function isTextField(node) {
     if (!node) return false;
     const tag = node.tagName;
@@ -271,8 +331,15 @@ export function mountMetronome() {
     if (!root) return null;
 
     const bpmOut = document.getElementById('met-bpm');
-    const bpmControl = document.getElementById('met-bpm-control');
+    const bpmInput = document.getElementById('met-bpm-input');
+    const wheel = document.getElementById('met-wheel');
+    const drum = wheel ? wheel.querySelector('.met-wheel-drum') : null;
     const tapBtn = document.getElementById('met-tap');
+    const countBtn = document.getElementById('met-count');
+    const counter = document.getElementById('met-counter');
+    const counterHint = document.getElementById('met-counter-hint');
+    const counterValue = document.getElementById('met-counter-value');
+    const counterClose = document.getElementById('met-counter-close');
     const metersBox = document.getElementById('met-meters');
     const subsBox = document.getElementById('met-subs');
     const soundsBox = document.getElementById('met-sounds');
@@ -287,7 +354,14 @@ export function mountMetronome() {
     let saveTimer = null;
     let resumeWanted = false; // era in funzione quando la pagina e' sparita
     const dots = [];
+    const ticks = [];
     const tapper = createTapTempo();
+    const counterTap = createTapTempo();
+    let counterCount = 0;
+    let counterBpm = null;
+    let wheelValue = 0;   // valore continuo della rotella (il BPM e' il suo intero)
+    let inertia = null;   // rAF dell'inerzia
+    let lastBuzz = 0;
 
     /* preferenze salvate */
     const saved = {
@@ -295,9 +369,20 @@ export function mountMetronome() {
         meter: METERS[prefs.get(TOOL, 'meter', '4/4')] ? prefs.get(TOOL, 'meter', '4/4') : '4/4',
         subdiv: SUBS.indexOf(Number(prefs.get(TOOL, 'subdiv', 1))) !== -1 ? Number(prefs.get(TOOL, 'subdiv', 1)) : 1,
         sound: SOUNDS.indexOf(prefs.get(TOOL, 'sound', 'legno')) !== -1 ? prefs.get(TOOL, 'sound', 'legno') : 'legno',
-        volume: Math.min(100, Math.max(0, Number(prefs.get(TOOL, 'volume', 70)) || 0))
+        volume: Math.min(100, Math.max(0, Number(prefs.get(TOOL, 'volume', VOL_DEFAULT))))
     };
     const ui = { ...saved };
+
+    /* vibrazione corta a ogni scatto: solo se il dispositivo la supporta e
+       c'e' gia' stata un'interazione (altrimenti il browser la rifiuta) */
+    function buzz() {
+        if (typeof navigator.vibrate !== 'function') return;
+        if (!(navigator.userActivation && navigator.userActivation.hasBeenActive)) return;
+        const t = now();
+        if (t - lastBuzz < BUZZ_MS) return;
+        lastBuzz = t;
+        try { navigator.vibrate(5); } catch (e) { /* vibrazione negata */ }
+    }
 
     function saveSoon() {
         if (saveTimer) clearTimeout(saveTimer);
@@ -369,18 +454,23 @@ export function mountMetronome() {
 
     function renderBpm() {
         if (bpmOut) bpmOut.textContent = String(ui.bpm);
-        if (bpmControl) {
-            bpmControl.setAttribute('aria-valuenow', String(ui.bpm));
-            bpmControl.setAttribute('aria-valuetext', ui.bpm + ' BPM');
+        if (wheel) {
+            wheel.setAttribute('aria-valuenow', String(ui.bpm));
+            wheel.setAttribute('aria-valuetext', ui.bpm + ' BPM');
         }
     }
 
-    function setBpm(v) {
+    function setBpm(v, { fromWheel = false } = {}) {
         const n = clampBpm(v);
         if (n === ui.bpm) return;
         ui.bpm = n;
         if (engine) engine.setBpm(n);
         renderBpm();
+        buzz();
+        if (!fromWheel) {
+            wheelValue = n;
+            renderWheel();
+        }
         saveSoon();
     }
 
@@ -514,35 +604,122 @@ export function mountMetronome() {
         volume.addEventListener('input', () => setVolume(volume.value));
     }
 
-    /* numero BPM: trascinamento verticale, rotella, tastiera */
-    if (bpmControl) {
-        let dragId = null;
-        let dragY = 0;
-        let dragBase = 0;
-        bpmControl.addEventListener('pointerdown', (e) => {
-            if (e.button !== 0) return;
-            dragId = e.pointerId;
-            dragY = e.clientY;
-            dragBase = ui.bpm;
-            e.preventDefault(); // niente selezione del testo
-            if (bpmControl.setPointerCapture) {
-                try { bpmControl.setPointerCapture(e.pointerId); } catch (err) { /* niente capture */ }
+    /* --- rotella BPM (spec 10 §11.1): tacche in prospettiva, trascinamento
+       con inerzia e aggancio all'intero, rotella del mouse, bordi, tastiera --- */
+    function buildTicks() {
+        if (!drum) return;
+        drum.textContent = '';
+        ticks.length = 0;
+        for (let i = -WHEEL_TICKS; i <= WHEEL_TICKS; i++) {
+            const el = document.createElement('span');
+            el.className = 'met-tick';
+            drum.appendChild(el);
+            ticks.push(el);
+        }
+    }
+
+    function renderWheel() {
+        if (!ticks.length) return;
+        const base = Math.round(wheelValue);
+        ticks.forEach((el, i) => {
+            const bpmAt = base + (i - WHEEL_TICKS);
+            const off = bpmAt - wheelValue;
+            const far = Math.abs(off);
+            const visible = bpmAt >= BPM_MIN && bpmAt <= BPM_MAX && far <= WHEEL_TICKS;
+            el.classList.toggle('is-major', bpmAt % 10 === 0);
+            /* stessa posa di .carousel-item nella vetrina: sposta, allontana e ruota */
+            el.style.setProperty('transform', 'translateX(' + (off * TICK_PX).toFixed(2) + 'px) '
+                + 'translateZ(' + (-far * 26).toFixed(2) + 'px) '
+                + 'rotateY(' + Math.max(-45, Math.min(45, -off * 7)).toFixed(2) + 'deg)');
+            el.style.setProperty('opacity', visible ? String(Math.max(0, 1 - far / 9).toFixed(3)) : '0');
+        });
+    }
+
+    /* la rotella lavora su un valore continuo; il BPM e' il suo intero */
+    function applyWheel() {
+        wheelValue = Math.min(BPM_MAX, Math.max(BPM_MIN, wheelValue));
+        renderWheel();
+        setBpm(Math.round(wheelValue), { fromWheel: true });
+    }
+
+    function snapWheel() {
+        wheelValue = clampBpm(wheelValue);
+        applyWheel();
+    }
+
+    function stopInertia() {
+        if (inertia !== null) window.cancelAnimationFrame(inertia);
+        inertia = null;
+    }
+
+    function startInertia(v0) {
+        stopInertia();
+        if (reducedMotion() || Math.abs(v0) < INERTIA_MIN) { snapWheel(); return; }
+        let vel = Math.max(-600, Math.min(600, v0));
+        let last = now();
+        const begin = last;
+        const step = () => {
+            const t = now();
+            const dt = Math.min(0.05, (t - last) / 1000);
+            last = t;
+            wheelValue += vel * dt;
+            vel *= Math.exp(-INERTIA_K * dt);
+            applyWheel();
+            if (Math.abs(vel) < INERTIA_MIN || t - begin > 1000
+                || wheelValue <= BPM_MIN || wheelValue >= BPM_MAX) {
+                inertia = null;
+                snapWheel();
+                return;
+            }
+            inertia = window.requestAnimationFrame(step);
+        };
+        inertia = window.requestAnimationFrame(step);
+    }
+
+    if (wheel) {
+        buildTicks();
+        renderWheel();
+        let drag = null;
+        wheel.addEventListener('pointerdown', (e) => {
+            if (e.button !== undefined && e.button !== 0) return;
+            const onEdge = e.target.closest && e.target.closest('.met-wheel-edge');
+            const onReadout = e.target === bpmOut || e.target === bpmInput;
+            if (onEdge || onReadout) return;
+            stopInertia();
+            drag = { id: e.pointerId, x0: e.clientX, v0: wheelValue, x: e.clientX, t: now(), vel: 0 };
+            wheel.classList.add('is-dragging');
+            e.preventDefault(); // niente selezione ne' scroll della pagina
+            if (wheel.setPointerCapture) {
+                try { wheel.setPointerCapture(e.pointerId); } catch (err) { /* niente capture */ }
             }
         });
-        bpmControl.addEventListener('pointermove', (e) => {
-            if (dragId === null || e.pointerId !== dragId) return;
+        wheel.addEventListener('pointermove', (e) => {
+            if (!drag || e.pointerId !== drag.id) return;
             e.preventDefault();
-            setBpm(dragBase + Math.round((dragY - e.clientY) / DRAG_PX));
+            const t = now();
+            const dt = t - drag.t;
+            if (dt > 0) drag.vel = ((e.clientX - drag.x) / WHEEL_PX) / (dt / 1000);
+            drag.x = e.clientX;
+            drag.t = t;
+            wheelValue = drag.v0 + (e.clientX - drag.x0) / WHEEL_PX;
+            applyWheel();
         });
         ['pointerup', 'pointercancel'].forEach((ev) => {
-            bpmControl.addEventListener(ev, () => { dragId = null; });
+            wheel.addEventListener(ev, (e) => {
+                if (!drag || (e.pointerId !== undefined && e.pointerId !== drag.id)) return;
+                const vel = ev === 'pointerup' ? drag.vel : 0;
+                drag = null;
+                wheel.classList.remove('is-dragging');
+                startInertia(vel);
+            });
         });
-        bpmControl.addEventListener('wheel', (e) => {
+        wheel.addEventListener('wheel', (e) => {
             if (!e.deltaY) return;
             e.preventDefault();
-            setBpm(ui.bpm + (e.deltaY < 0 ? 1 : -1));
+            stopInertia();
+            setBpm(ui.bpm + (e.deltaY < 0 ? 1 : -1)); // 1 BPM per tacca
         }, { passive: false });
-        bpmControl.addEventListener('keydown', (e) => {
+        wheel.addEventListener('keydown', (e) => {
             let v = null;
             if (e.key === 'ArrowUp' || e.key === 'ArrowRight') v = ui.bpm + 1;
             else if (e.key === 'ArrowDown' || e.key === 'ArrowLeft') v = ui.bpm - 1;
@@ -552,7 +729,121 @@ export function mountMetronome() {
             else if (e.key === 'End') v = BPM_MAX;
             if (v === null) return;
             e.preventDefault();
+            stopInertia();
             setBpm(v);
+        });
+    }
+
+    /* --- BPM scrivibile (spec 10 §11.2): tap sul numero -> campo numerico --- */
+    let editCancelled = false;
+
+    function openEditor() {
+        if (!bpmInput || !bpmOut || !bpmInput.hidden) return; // gia' aperto
+        editCancelled = false;
+        bpmInput.value = String(ui.bpm);
+        bpmOut.hidden = true;
+        bpmInput.hidden = false;
+        bpmInput.focus();
+        if (bpmInput.select) bpmInput.select();
+    }
+
+    function closeEditor(commit) {
+        if (!bpmInput || bpmInput.hidden) return;
+        if (commit) {
+            const n = parseInt(bpmInput.value, 10);
+            if (isFinite(n)) setBpm(n); // clamp 30-300; testo non valido: invariato
+        }
+        bpmInput.hidden = true;
+        if (bpmOut) bpmOut.hidden = false;
+    }
+
+    if (bpmOut) bpmOut.addEventListener('click', openEditor);
+    if (bpmInput) {
+        bpmInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                closeEditor(true);
+                if (wheel && wheel.focus) wheel.focus();
+            } else if (e.key === 'Escape' || e.key === 'Esc') {
+                e.preventDefault();
+                editCancelled = true;
+                closeEditor(false);
+            }
+            e.stopPropagation(); // con il campo aperto lo spazio non avvia
+        });
+        bpmInput.addEventListener('blur', () => {
+            if (editCancelled) { editCancelled = false; return; }
+            closeEditor(true);
+        });
+    }
+
+    /* --- modalita' Counter (spec 10 §11.3) --- */
+    function onCounterKey(e) {
+        if (e.key === 'Escape' || e.key === 'Esc') {
+            e.preventDefault();
+            closeCounter(true);
+            return;
+        }
+        if (e.key === 'Tab') {
+            e.preventDefault(); // un solo comando: il fuoco resta sulla X
+            if (counterClose) counterClose.focus();
+        }
+        if (e.key === ' ' || e.code === 'Space') e.stopPropagation();
+    }
+
+    /* Numero grande = BPM stimato (dal secondo tap in poi); sotto, piccolo,
+       quanti tap sono stati contati. "tap" e' uguale in IT e in EN. */
+    function renderCounter() {
+        if (!counterValue) return;
+        counterValue.hidden = false;
+        counterValue.textContent = counterBpm === null ? '\u2013' : String(counterBpm);
+        let small = counterValue.querySelector('.met-counter-count');
+        if (!small) {
+            small = document.createElement('span');
+            small.className = 'met-counter-count';
+            counterValue.appendChild(small);
+        }
+        small.textContent = counterCount + ' tap';
+    }
+
+    function openCounter() {
+        if (!counter) return;
+        counterTap.reset();
+        counterCount = 0;
+        counterBpm = null;
+        if (counterValue) {
+            counterValue.textContent = '';
+            counterValue.hidden = true;
+        }
+        if (counterHint) counterHint.hidden = false;
+        counter.hidden = false;
+        if (counterClose) counterClose.focus();
+        document.addEventListener('keydown', onCounterKey, true);
+    }
+
+    function closeCounter(apply) {
+        if (!counter || counter.hidden) return;
+        document.removeEventListener('keydown', onCounterKey, true);
+        counter.hidden = true;
+        if (apply && counterBpm !== null) setBpm(counterBpm);
+        if (countBtn && countBtn.focus) countBtn.focus();
+    }
+
+    if (countBtn) countBtn.addEventListener('click', openCounter);
+    if (counter) {
+        /* si conta il pointerdown, mai il click: su touch il browser manda
+           anche eventi mouse sintetici e il tap verrebbe contato due volte */
+        counter.addEventListener('pointerdown', (e) => {
+            if (e.target.closest && e.target.closest('#met-counter-close')) return;
+            e.preventDefault();
+            counterCount += 1;
+            const bpm = counterTap.tap(now());
+            if (bpm !== null) counterBpm = bpm;
+            if (counterHint) counterHint.hidden = true;
+            renderCounter();
+        });
+        counter.addEventListener('click', (e) => {
+            if (e.target.closest && e.target.closest('#met-counter-close')) closeCounter(true);
         });
     }
 
@@ -590,7 +881,9 @@ export function mountMetronome() {
     });
 
     /* ---- stato iniziale ---- */
+    wheelValue = ui.bpm;
     renderBpm();
+    renderWheel();
     markGroup(metersBox, 'data-met-meter', ui.meter);
     markGroup(subsBox, 'data-met-sub', ui.subdiv);
     markGroup(soundsBox, 'data-met-sound', ui.sound);
@@ -614,7 +907,10 @@ export function mountMetronome() {
             return bpm;
         },
         engine: () => engine,
-        dots: () => dots
+        dots: () => dots,
+        ticks: () => ticks,
+        openCounter,
+        closeCounter
     };
 }
 
@@ -622,7 +918,7 @@ export function mountMetronome() {
 if (typeof document !== 'undefined' && document.getElementById('met')) {
     init(commonDict, toolDict);
     pressFeedback(document);
-    mountBar({ page: 'tool', titleKey: 'met-title', current: TOOL });
+    mountBar({ page: 'tool', current: TOOL }); // niente titolo in barra (spec 10 §11.6)
     initPwa({
         installBtn: document.getElementById('tb-menu-install'),
         iosHelp: document.getElementById('tb-menu-ios'),

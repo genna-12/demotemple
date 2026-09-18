@@ -16,9 +16,13 @@
  * Cosa NON passa di qui: richieste verso altri domini e richieste non GET.
  * `/vendor/*` ha una cache a parte (`toolbox-vendor`) che sopravvive ai
  * cambi di VERSION: i percorsi contengono gia' la versione della libreria.
+ * Eccezione: pitchy.js/fft.js (spec 11) sono ANCHE in SHELL, cosi'
+ * l'installazione tutto-o-niente li scarica subito e l'accordatore
+ * funziona offline dal primo uso, prima ancora che `toolbox-vendor` si
+ * popoli da solo (vedi vendor() sotto, che li trova li' come ripiego).
  */
 
-const VERSION = 'tb-v6';
+const VERSION = 'tb-v8';
 const CACHE = 'toolbox-' + VERSION;
 const VENDOR_CACHE = 'toolbox-vendor';
 
@@ -35,6 +39,10 @@ const SHELL = [
     '/shared/components.css',
     '/shared/audio.js',
     '/shared/mic.js',
+    '/shared/pitch.js',
+    '/shared/pitch-worklet.js',
+    '/vendor/pitchy@4.1.0/pitchy.js',
+    '/vendor/pitchy@4.1.0/fft.js',
     '/shared/lang-boot.js',
     '/shared/i18n.js',
     '/shared/i18n-common.js',
@@ -76,7 +84,12 @@ const TOOLS = [
     '/metronomo/',
     '/metronomo/metronomo.js',
     '/metronomo/metronomo.css',
-    '/metronomo/i18n.js'
+    '/metronomo/i18n.js',
+
+    '/accordatore/',
+    '/accordatore/accordatore.js',
+    '/accordatore/accordatore.css',
+    '/accordatore/i18n.js'
 ];
 
 const PRECACHE = SHELL.concat(TOOLS);
@@ -116,11 +129,17 @@ self.addEventListener('activate', (event) => {
     })());
 });
 
-/* Librerie: prima la copia locale, altrimenti rete e si mette da parte. */
+/* Librerie: prima la copia in toolbox-vendor; se manca (mai popolata) ma il
+   file e' anche in SHELL (vedi sopra), si prende da li' senza rete, cosi'
+   nessuno strumento resta scoperto tra l'installazione e il primo uso;
+   altrimenti rete, e si mette da parte in toolbox-vendor per la prossima. */
 async function vendor(req) {
     const cache = await caches.open(VENDOR_CACHE);
     const hit = await cache.match(req);
     if (hit) return hit;
+    const shell = await caches.open(CACHE);
+    const shellHit = await shell.match(req);
+    if (shellHit) return shellHit;
     const res = await fetch(req);
     if (res.ok && res.type === 'basic') await cache.put(req, res.clone());
     return res;

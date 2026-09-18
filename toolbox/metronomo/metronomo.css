@@ -11,11 +11,14 @@
 
 /* --- Intestazione pagina: compatta (niente eyebrow/intro, spec 10 §1) --- */
 .tb-page-header {
-    padding: 6px 0 10px;
+    padding: 0;
+    margin: 8px 0;
 }
 
 .tb-page-header h1 {
-    font-size: clamp(1.2rem, 6vw, 1.6rem);
+    font-size: 1.1rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
 }
 
 /* --- `main#met` --- */
@@ -27,7 +30,35 @@
     margin: 0 auto;
 }
 
-/* --- BPM: numero grande trascinabile + passi + tap --- */
+/* Scorciatoie di misura per stare sotto i 900px di scrollHeight a 390x844
+   (feedback Genna): il resto della Toolbox non e' toccato. */
+.tb-shell {
+    padding-bottom: 20px;
+}
+
+.tb-footer {
+    margin-top: 16px;
+    padding-top: 12px;
+    padding-bottom: calc(12px + var(--tb-safe-b));
+}
+
+.tb-footer-legal {
+    margin: 6px auto;
+    font-size: 0.68rem;
+    line-height: 1.4;
+}
+
+.tb-footer-links {
+    gap: 4px 12px;
+    margin-top: 6px;
+}
+
+.tb-footer-links a {
+    min-height: 32px;
+    font-size: 0.72rem;
+}
+
+/* --- BPM: rotella 3D + numero/input + passi + tap/conta (spec 10 §11.1/2) --- */
 .met-bpm-wrap {
     display: flex;
     flex-direction: column;
@@ -35,27 +66,155 @@
     gap: 8px;
 }
 
-.met-bpm-control {
+/* CONTRATTO metronomo.js: #met-wheel e' il controllo (role=slider, stessi
+   attributi/tasti di prima). Dentro: .met-wheel-drum (vuoto: qui dentro
+   metronomo.js crea/posiziona le tacche <span class="met-tick"> [.is-major
+   ogni 10 BPM], una "finestra" intorno al valore corrente) e .met-wheel-face
+   (vetro + sfumatura ai bordi, decorativa). Posa delle tacche con
+   element.style.transform (translateX/translateZ/rotateY, come
+   .carousel-item in style.css/portfolio.js): mai un attributo style="" nel
+   markup. .met-wheel-edge.is-left/.is-right: bordi 44px per il tap ±1
+   (data-met-step, stesso attributo dei bottoni sotto). .met-bpm-readout
+   sta sopra a tutto (pointer-events:none, tranne su #met-bpm/#met-bpm-input
+   stessi, cosi' il drag in mezzo raggiunge comunque .met-wheel). */
+.met-wheel {
+    position: relative;
+    width: 100%;
+    height: 96px;
+    overflow: hidden;
+    perspective: 1000px;
+    transform-style: preserve-3d;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: grab;
+    touch-action: none; /* il gesto lo cattura metronomo.js: niente scroll/pan nativo */
+    -webkit-user-select: none;
+    user-select: none;
+}
+
+.met-wheel:active,
+.met-wheel.is-dragging {
+    cursor: grabbing;
+}
+
+.met-wheel.is-dragging .met-tick {
+    transition: none;
+}
+
+.met-wheel-drum {
+    position: absolute;
+    inset: 0;
+    transform-style: preserve-3d;
+    pointer-events: none;
+}
+
+.met-tick {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 2px;
+    height: 20px;
+    margin: -10px 0 0 -1px;
+    border-radius: 1px;
+    background: var(--text-muted);
+    opacity: 0.5;
+    transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.4s ease;
+    backface-visibility: hidden;
+}
+
+.met-tick.is-major {
+    width: 3px;
+    height: 32px;
+    margin-left: -1.5px;
+    background: var(--text-primary);
+    opacity: 0.85;
+}
+
+/* Vetro + sfumatura ai bordi (spec 10 §11.1: token --glass-*). Sopra le
+   tacche, sotto la lettura: non intercetta il puntatore. */
+.met-wheel-face {
+    position: absolute;
+    inset: 0;
+    border-radius: 24px;
+    background: var(--glass-bg);
+    border-top: 1px solid var(--glass-border-top);
+    -webkit-backdrop-filter: var(--glass-blur);
+    backdrop-filter: var(--glass-blur);
+    box-shadow: var(--glass-shadow);
+    -webkit-mask-image: linear-gradient(90deg, transparent 0%, #000 18%, #000 82%, transparent 100%);
+    mask-image: linear-gradient(90deg, transparent 0%, #000 18%, #000 82%, transparent 100%);
+    pointer-events: none;
+}
+
+.met-wheel-edge {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 44px;
+    background: transparent;
+    z-index: 1;
+}
+
+.met-wheel-edge.is-left {
+    left: 0;
+}
+
+.met-wheel-edge.is-right {
+    right: 0;
+}
+
+.met-bpm-readout {
+    position: relative;
+    z-index: 2;
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
-    gap: 2px;
-    padding: 8px 24px;
-    border-radius: 20px;
-    cursor: ns-resize;
-    -webkit-user-select: none;
-    user-select: none;
-    touch-action: none; /* il trascinamento verticale lo gestisce metronomo.js */
+    pointer-events: none;
+}
+
+.met-bpm,
+.met-bpm-input {
+    pointer-events: auto;
 }
 
 .met-bpm {
     font-family: var(--font-title);
-    font-size: clamp(2.8rem, 17vw, 4rem);
+    font-size: 3.2rem;
     font-weight: 700;
     line-height: 1.1;
     color: var(--text-primary);
     font-variant-numeric: tabular-nums;
+    cursor: text;
+}
+
+/* Alternato a #met-bpm (spec 10 §11.2): metronomo.js scambia gli [hidden]
+   al tap; Invio/blur confermano (clamp 30-300), Esc annulla. */
+.met-bpm-input {
+    display: block;
+    width: 7ch;
+    margin: 0;
+    padding: 0;
+    border: none;
+    border-bottom: 2px solid var(--accent-orange);
+    background: transparent;
+    color: var(--text-primary);
+    font-family: var(--font-title);
+    font-size: 3.2rem;
+    font-weight: 700;
+    line-height: 1.1;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+}
+
+.met-bpm-input[hidden] {
+    display: none !important;
+}
+
+.met-bpm-input::-webkit-inner-spin-button,
+.met-bpm-input::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
 }
 
 .met-bpm-unit {
@@ -114,6 +273,33 @@
 .met-tap:active {
     background: var(--accent-orange);
     color: #ffffff;
+}
+
+.met-taps {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+/* #met-count (spec 10 §11.3): stesso stile del Tap, piu' discreto (azione
+   secondaria: apre l'overlay Counter, non avvia il suono). */
+.met-tap--count {
+    border-color: rgba(255, 255, 255, 0.2);
+    color: var(--text-muted);
+}
+
+.met-tap--count.is-pressed,
+.met-tap--count:active {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text-primary);
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .met-tap--count:hover {
+        border-color: rgba(255, 255, 255, 0.4);
+        color: var(--text-primary);
+    }
 }
 
 /* --- Indicatore: un pallino per impulso (spec 10 §3/§6) --- */
@@ -201,26 +387,58 @@
     }
 }
 
-/* --- Volume --- */
-.met-row--volume {
-    flex-direction: row;
-    align-items: center;
-    gap: 12px;
+/* Striscia a scorrimento orizzontale per battuta/suddivisione (feedback
+   Genna): una sola riga, snap sui chip, scrollbar nascosta. Solo su
+   #met-meters/#met-subs (i piu' numerosi): #met-sounds resta a capo,
+   condivide la riga col volume qui sotto. */
+.met-choices--scroll {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x proximity;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding-bottom: 2px;
 }
 
-.met-row--volume .met-label {
+.met-choices--scroll::-webkit-scrollbar {
+    display: none;
+}
+
+.met-choices--scroll button {
     flex-shrink: 0;
+    scroll-snap-align: center;
+}
+
+/* --- Suono + Volume sulla stessa riga (feedback Genna) --- */
+.met-row--sound {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 8px 16px;
+}
+
+.met-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.met-field--volume {
+    flex: 1;
+    min-width: 120px;
 }
 
 #met-volume {
-    flex: 1;
-    min-height: 44px;
+    display: block;
+    width: 100%;
+    min-height: 32px;
     accent-color: var(--accent-orange);
 }
 
 /* --- Avvio/stop --- */
 .met-toggle {
-    min-height: 72px;
+    min-height: 64px;
     margin-top: 4px;
     border-radius: 20px;
     background: var(--accent-orange);
@@ -253,9 +471,119 @@
     }
 }
 
+/* Solo su schermi con puntatore fine e hover (spec 10 §11.5): su telefono
+   non c'e' una barra spaziatrice da suggerire. Nascosto di default,
+   mostrato solo nel media qui sotto (non il contrario: niente flash su
+   schermi touch che comunque non hanno match(hover:hover)). */
 .met-hint {
+    display: none;
     text-align: center;
     font-size: 0.72rem;
+    color: var(--text-muted);
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .met-hint {
+        display: block;
+    }
+}
+
+/* --- Modalita' Counter (spec 10 §11.3) --- */
+/* CONTRATTO metronomo.js: apre togliendo [hidden] da #met-counter (fuoco
+   intrappolato dentro, come il resto della UI usa nav.js per #tb-menu);
+   ogni pointerdown sull'overlay conta (mai click); al primo tap nasconde
+   #met-counter-hint e toglie [hidden] da #met-counter-value. #met-counter-
+   close (o Esc) chiude e applica il BPM contato. */
+.met-counter {
+    position: fixed;
+    inset: 0;
+    z-index: 10050;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    background: var(--bg-color);
+    touch-action: none;
+    overscroll-behavior: contain;
+    padding: max(24px, var(--tb-safe-t)) max(24px, var(--tb-safe-r)) max(24px, var(--tb-safe-b)) max(24px, var(--tb-safe-l));
+}
+
+.met-counter[hidden] {
+    display: none !important;
+}
+
+.met-counter-close {
+    position: absolute;
+    top: calc(16px + var(--tb-safe-t));
+    right: calc(16px + var(--tb-safe-r));
+    width: 44px;
+    height: 44px;
+    min-height: 0;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: var(--text-primary);
+    font-size: 1.4rem;
+    line-height: 1;
+}
+
+.met-counter-hint {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    color: var(--text-muted);
+    pointer-events: none;
+}
+
+.met-counter-hint[hidden] {
+    display: none !important;
+}
+
+.met-counter-hand {
+    width: 56px;
+    height: 56px;
+    color: var(--accent-orange);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    .met-counter-hand {
+        animation: met-tap-pulse 1.4s ease-in-out infinite;
+    }
+}
+
+@keyframes met-tap-pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.12); }
+}
+
+.met-counter-hint span {
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+}
+
+.met-counter-value {
+    font-family: var(--font-title);
+    font-size: clamp(4rem, 30vw, 7rem);
+    font-weight: 700;
+    color: var(--text-primary);
+    font-variant-numeric: tabular-nums;
+    pointer-events: none;
+}
+
+.met-counter-value[hidden] {
+    display: none !important;
+}
+
+.met-counter-count { display: block; 
+    margin-top: 8px;
+    font-size: 0.8rem;
     color: var(--text-muted);
 }
 
@@ -265,8 +593,13 @@
         gap: 16px;
     }
 
-    .met-bpm {
-        font-size: 4.6rem;
+    .met-wheel {
+        height: 140px;
+    }
+
+    .met-bpm,
+    .met-bpm-input {
+        font-size: 4rem;
     }
 
     .met-row {

@@ -11,7 +11,6 @@
 //   <button type="button" class="tb-menu-toggle" aria-controls="tb-menu"
 //           aria-expanded="false" data-i18n-aria = bar-menu-open>2 x span.tb-menu-toggle-line
 //       compare con .is-visible (la mette intro.js; statica dove non c'e' intro).
-//   <h1 class="tb-bar-title" data-i18n = <titleKey>>  solo pagine strumento (lo crea nav.js)
 //   <div id="tb-menu" class="tb-menu" hidden>      figlio diretto di <body>
 //     <div class="tb-menu-scrim"></div>
 //     <div class="tb-menu-panel" role="dialog" aria-modal="true" aria-label="Menu">
@@ -46,7 +45,8 @@
 // #tb-menu-ios, .tb-menu-manual dentro .tb-menu-install-group) e' passato a
 // initPwa() da index.js / 404.js.
 //
-// mountBar({ page: 'home' | 'tool', titleKey, current })
+// mountBar({ page: 'home' | 'tool', current })
+//   La barra non ha titolo (spec 10 §11.6): `titleKey`, se passato, e' ignorato.
 //   current = slug della pagina ('home' in dashboard); idempotente: chiamate
 //   successive non rimontano nulla e ritornano la stessa api { open, close, isOpen }.
 import { t, lang, setLang, apply, onChange } from './i18n.js';
@@ -90,7 +90,7 @@ export function toolIcon(slug, cls) {
 
 /* ---------- costruzione (solo cio' che manca nel markup) ---------- */
 
-function ensureShell(page, titleKey) {
+function ensureShell() {
     let toggle = document.querySelector('.tb-menu-toggle');
     if (!toggle) {
         toggle = el('button', 'tb-menu-toggle is-visible', { type: 'button' });
@@ -111,14 +111,9 @@ function ensureShell(page, titleKey) {
         logo.append(img, name);
         document.body.insertBefore(logo, document.body.firstChild);
     }
-    if (page === 'tool') {
-        let title = document.querySelector('.tb-bar-title');
-        if (!title) {
-            title = el('h1', 'tb-bar-title');
-            toggle.parentNode.insertBefore(title, toggle);
-        }
-        if (titleKey) title.setAttribute('data-i18n', titleKey);
-    }
+    /* Nessun titolo in barra (spec 10 §1/§11.6): il nome dello strumento e'
+       l'h1 della pagina. Un eventuale titleKey passato da un chiamante
+       vecchio viene ignorato. */
     return { logo, toggle };
 }
 
@@ -302,7 +297,7 @@ export function mountBar({ page = 'home', titleKey, current } = {}) {
     if (api) return api; // idempotente
     const cur = current !== undefined ? current : (page === 'home' ? 'home' : null);
 
-    const { logo, toggle } = ensureShell(page, titleKey);
+    const { logo, toggle } = ensureShell();
     const { menu, scrim, panel, groups, foot } = ensureMenu(toggle);
     fillGroups(groups, cur);
 

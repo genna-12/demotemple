@@ -163,57 +163,6 @@ button {
     transform: scale(0.9);
 }
 
-/* --- TITOLO IN BARRA `tb-bar-title` (pagine strumento, contratto shared/nav.js) --- */
-/* Centrato fra logo (sx) e hamburger (dx), stesso centro verticale
-   (58px/45px come .tb-logo.in-nav e .tb-menu-toggle), `position: fixed`
-   come loro. Condivisa da tutte le pagine strumento. */
-.tb-bar-title {
-    position: fixed;
-    top: calc(58px + var(--tb-safe-t));
-    left: 50%;
-    transform: translate(-50%, -50%);
-    z-index: 10012;
-    max-width: min(46vw, 220px);
-    margin: 0;
-    font-family: var(--font-title);
-    font-size: 0.95rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.02em;
-    color: var(--text-primary);
-    text-align: center;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    pointer-events: none;
-}
-
-@media (max-width: 768px) {
-    .tb-bar-title {
-        top: calc(45px + var(--tb-safe-t));
-        max-width: min(54vw, 200px);
-    }
-}
-
-/* Il titolo sta nella barra: l'h1 della pagina resta solo per i lettori di
-   schermo, cosi' non compare due volte (pagine senza barra-titolo, come
-   404.html, non sono toccate). */
-body:has(.tb-bar-title) .tb-page-header h1 {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    padding: 0;
-    margin: -1px;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-    white-space: nowrap;
-    border: 0;
-}
-
-body:has(.tb-bar-title) .tb-page-header {
-    padding: 0;
-}
-
 /* --- HAMBURGER `tb-menu-toggle`: cerchio "vetro", fisso, in alto a dx --- */
 /* Stessa ricetta di .floating-btn nello style.css della vetrina (grep):
    vetro/blur/ombra sui token --glass-*. Nascosto di default (come i

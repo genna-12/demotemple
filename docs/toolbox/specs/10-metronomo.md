@@ -17,10 +17,15 @@ e il `canonical`; titolo e descrizione indicizzabili, in italiano. Corpo:
 `h1[data-i18n="met-title"]` (niente eyebrow né intro testuale), `main#met.met`,
 `footer.tb-footer` identico a `404.html`.
 
+**Nessun titolo nella barra** (vale per tutti gli strumenti, §11.6): la barra ha
+solo logo e hamburger, `.tb-bar-title` non si usa più e `mountBar` è chiamata
+senza `titleKey`; il nome dello strumento è l'`h1` visibile, che scorre con il
+contenuto.
+
 Unico script in fondo, `<script type="module" src="/metronomo/metronomo.js">`:
 `init(commonDict, toolDict)`, `pressFeedback(document)`,
-`mountBar({ page: 'tool', titleKey: 'met-title', current: 'metronomo' })`,
-`initPwa({...})`, poi il montaggio dello strumento.
+`mountBar({ page: 'tool', current: 'metronomo' })`, `initPwa({...})`, poi il
+montaggio dello strumento.
 
 ## 2. Contratto del markup (id fissati qui)
 
@@ -168,3 +173,66 @@ se manca un aggancio lo segnala invece di aggiungerlo.
 12. Nessuna violazione CSP né richiesta esterna; offline `/metronomo/` si apre e
     suona; `node scripts/check.mjs` passa (LF, IT/EN, `VERSION` tb-v6, precache);
     la dashboard mostra metronomo attivo, accordatore prossimo.
+
+## 11. UX v2 (feedback Genna dopo la prova)
+
+Sostituisce il trascinamento verticale del §3 e il titolo in barra.
+
+**1. Rotella BPM.** `#met-wheel.met-wheel` al posto di `#met-bpm-control`, stessi
+ruoli ARIA e tasti del §6. Dentro: `.met-wheel-drum` (tamburo) con le tacche
+`span.met-tick` (`.is-major` ogni 10), `.met-wheel-face` (riflesso e sfumature ai
+bordi), `.met-wheel-edge.is-left|.is-right` (tap ±1, 44 px). Regole da riusare:
+da `.mp-carousel` (style.css 1378-1394) `perspective: 1000px`,
+`transform-style: preserve-3d`, `cursor: grab/grabbing`, `.is-dragging` con
+`user-select: none` e transizioni sospese sui figli; da `.carousel-item`
+(1396-1410) `box-shadow: 0 15px 40px rgba(0,0,0,.8)`,
+`transition: transform .4s cubic-bezier(.25,1,.5,1)`, `-webkit-user-drag: none`;
+da `portfolio.js:214-221` la posa per tacca (`translateX`, `translateZ` negativo
+con la distanza, `rotateY` fino a ±45°, opacità calante).
+Vetro dai token `--glass-bg`, `--glass-border-top`, `--glass-blur`,
+`--glass-shadow`; `touch-action: none`. Comportamento: pointer events con pointer
+capture, 1 BPM ogni 8 px; al rilascio inerzia a decelerazione esponenziale (stop
+entro 1 s) e snap sull'intero; rotella del mouse ±1 per notch; tap sui bordi ±1.
+`navigator.vibrate(5)` a ogni cambio di valore se disponibile (max un impulso ogni
+40 ms nell'inerzia). Con `prefers-reduced-motion` niente inerzia.
+
+**2. BPM editabile.** Tap su `#met-bpm` mostra `#met-bpm-input`
+(`type="number" inputmode="numeric"`, `hidden` a riposo) col testo selezionato;
+Invio o blur confermano con clamp 30-300, Esc annulla.
+
+**3. Modalità Counter.** `#met-count` ("Conta") apre `#met-counter.met-counter`
+`[hidden]`: overlay pieno, `position: fixed`, `touch-action: none`,
+`overscroll-behavior: contain`. Al centro `#met-counter-hint` (icona mano + "Tap")
+fino al primo tap, poi `#met-counter-value` col numero grande. Conta ogni
+`pointerdown` sull'overlay (mai `click`, `preventDefault` contro i click
+sintetici: niente doppio conteggio touch+mouse), algoritmo e reset del tap tempo.
+Unico altro comando `#met-counter-close` (✕, 44 px, fuoco intrappolato): chiude e
+applica il BPM contato; anche Esc chiude.
+
+**4. Suoni più forti.** Master → `DynamicsCompressor` leggero (soglia −12 dB,
+ratio 4, attacco 3 ms, rilascio 100 ms) → `destination`. I tre suoni normalizzati
+a loudness percepita simile; *legno* ridisegnato: transiente < 8 ms ma più
+intenso, bandpass 1,5-3 kHz. Default di `volume` **0,85**.
+
+**5. Suggerimento tastiera.** `#met-hint` nascosto in
+`@media (hover: none) and (pointer: coarse)`.
+
+**6. Titolo.** Vedi §1: barra senza titolo, `h1` sopra il BPM.
+
+**Divisione.** builder: markup e CSS di rotella, overlay, input, media query;
+implementer: fisica della rotella, editing, counter, catena audio.
+
+13. 80 px di trascinamento = 10 BPM; l'inerzia si ferma entro 1 s su un intero.
+14. Rotella del mouse ±1 per notch, tap sui bordi ±1, frecce invariate; con
+    reduced-motion nessuna inerzia.
+15. La rotella ha prospettiva, riflesso e ombra dei token vetro; nel drag nessuna
+    selezione di testo e nessuno scroll di pagina.
+16. Tap sul numero → input selezionato: `250` + Invio → 250, `999` → 300, Esc
+    ripristina; con l'input aperto la barra spaziatrice non avvia.
+17. "Conta": 10 tap a 300 ms contati tutti, nessun doppio conteggio; ✕ chiude e
+    applica, Esc chiude, sotto non si scorre.
+18. A volume 0,85 i tre suoni sono udibili dagli altoparlanti di un portatile,
+    picco ≤ −3 dBFS e nessun clip in 12/8 a sedicesimi.
+19. Su telefono il suggerimento della barra spaziatrice non compare; su desktop sì.
+20. La barra mostra solo logo e hamburger (nessun `.tb-bar-title`); "Metronomo" è
+    un `h1` che scorre col contenuto.

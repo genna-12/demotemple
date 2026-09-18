@@ -1,0 +1,371 @@
+/* ========================================================
+   TINY TEMPLE TOOLBOX - ACCORDATORE
+   Solo questa pagina (spec 11). Richiede shared/tokens.css e
+   shared/base.css/components.css caricati prima (per .tb-consent,
+   .tb-btn, .tb-status: qui non si ridefiniscono). Mobile-first: a
+   390x844 tutto sta senza scroll (Riferimento, stato iniziale, ha
+   pochi elementi visibili; Ascolto ne aggiunge - vedi .acc[data-acc-mode]
+   sotto); a 360px nessuno scroll orizzontale; desktop centrato, max 560px.
+   Zero JS qui: stati (.is-target/.is-near sulle corde, is-in-tune sul
+   quadrante, [data-acc-mode] su #acc, [aria-checked]/[aria-pressed] sui
+   bottoni) li applica accordatore.js. Contratto .acc-needle: posizionata
+   con element.style.transform (mai style="" nel markup, vedi il
+   commento su .met-wheel in metronomo.css per lo stesso principio). */
+
+.tb-page-header {
+    padding: 0;
+    margin: 8px 0;
+}
+
+.tb-page-header h1 {
+    font-size: 1.1rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+
+/* Stessa scorciatoia di misura del metronomo (spec 10 §11, feedback
+   Genna): footer compatto, scoped qui, il resto della Toolbox non cambia. */
+.tb-shell {
+    padding-bottom: 20px;
+}
+
+.tb-footer {
+    margin-top: 16px;
+    padding-top: 12px;
+    padding-bottom: calc(12px + var(--tb-safe-b));
+}
+
+.tb-footer-legal {
+    margin: 6px auto;
+    font-size: 0.68rem;
+    line-height: 1.4;
+}
+
+.tb-footer-links {
+    gap: 4px 12px;
+    margin-top: 6px;
+}
+
+.tb-footer-links a {
+    min-height: 32px;
+    font-size: 0.72rem;
+}
+
+/* --- `main#acc` --- */
+.acc {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-width: 560px;
+    margin: 0 auto;
+}
+
+/* --- Ascolto / Riferimento (#acc-mode, spec 11 §6) --- */
+.acc-mode {
+    display: flex;
+    gap: 6px;
+    padding: 4px;
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.acc-mode-btn {
+    flex: 1;
+    min-height: 44px;
+    border-radius: 10px;
+    color: var(--text-muted);
+    font-weight: 600;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    transition: background 0.3s ease, color 0.3s ease;
+}
+
+.acc-mode-btn[aria-checked="true"] {
+    background: var(--accent-orange);
+    color: #ffffff;
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .acc-mode-btn:not([aria-checked="true"]):hover {
+        color: var(--text-primary);
+    }
+}
+
+/* --- Strumento/accordatura (select, spec 11 §5/§6) --- */
+.acc-field {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.acc-label {
+    flex-shrink: 0;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text-muted);
+}
+
+.acc-select {
+    flex: 1;
+    min-height: 44px;
+    padding: 0 12px;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--text-primary);
+    font-family: var(--font-text);
+    font-size: 0.9rem;
+}
+
+/* --- Consenso microfono (contenitore vuoto: mic.renderConsent ci scrive
+   dentro, spec 11 §3; .tb-consent e' gia' stilato in components.css) --- */
+.acc-consent {
+    width: 100%;
+}
+
+/* --- Quadrante nota+cent (#acc-gauge, spec 11 §4/§6) --- */
+/* Riga lineare -50..+50 cent (non un ago rotante): piu' leggibile e piu'
+   semplice da posare via transform, stesso principio CSP di .met-wheel. */
+.acc-gauge {
+    position: relative;
+    width: 100%;
+    max-width: 300px;
+    height: 100px;
+    margin: 0 auto;
+    padding-top: 44px;
+}
+
+.acc-gauge-scale {
+    position: relative;
+    height: 6px;
+    border-radius: 3px;
+    background: rgba(255, 255, 255, 0.08);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+/* Zona "in accordo" (+-5 cent su un totale di 100): 10% centrato. */
+.acc-gauge-zone {
+    position: absolute;
+    left: 45%;
+    width: 10%;
+    top: -6px;
+    bottom: -6px;
+    border-radius: 6px;
+    background: rgba(77, 217, 122, 0.22);
+}
+
+.acc-gauge-tick {
+    position: relative;
+    width: 2px;
+    height: 6px;
+    border-radius: 1px;
+    background: var(--text-muted);
+    flex-shrink: 0;
+}
+
+.acc-gauge-tick.is-center {
+    width: 3px;
+    height: 14px;
+    margin-top: -4px;
+    background: var(--text-primary);
+}
+
+/* CONTRATTO accordatore.js: nessun style="" (vietato dalla CSP), la
+   posizione (cent -> px lungo la scala) si posa con
+   needle.style.transform = 'translateX(Npx)', mai left/right. Da fermo
+   (0 cent, nessun segnale) resta centrata: nessuna trasformazione. */
+.acc-needle {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    width: 4px;
+    height: 40px;
+    margin-left: -2px;
+    border-radius: 2px;
+    background: var(--accent-orange);
+    transition: transform 0.06s linear, background-color 0.2s ease, width 0.2s ease, margin-left 0.2s ease;
+    will-change: transform;
+}
+
+/* Entro +-5 cent (spec 11 §4): verde ma anche piu' spessa (cambio di
+   forma, non solo colore, per chi non distingue i colori). */
+.acc-gauge.is-in-tune .acc-needle {
+    background: #4dd97a;
+    width: 8px;
+    margin-left: -4px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .acc-needle {
+        transition: none;
+    }
+}
+
+/* --- Nota + ottava + cent (spec 11 §4/§6) --- */
+.acc-reading {
+    display: flex;
+    align-items: baseline;
+    justify-content: center;
+    gap: 6px;
+    min-height: 44px;
+}
+
+.acc-note {
+    font-family: var(--font-title);
+    font-size: 2.6rem;
+    font-weight: 700;
+    line-height: 1;
+    color: var(--text-primary);
+    font-variant-numeric: tabular-nums;
+}
+
+.acc-octave {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-muted);
+}
+
+.acc-cents {
+    min-width: 40px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    font-variant-numeric: tabular-nums;
+}
+
+/* --- Corde (#acc-strings, spec 11 §6: vuoto, l'JS crea .acc-string) --- */
+.acc-strings {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+}
+
+.acc-string {
+    min-width: 44px;
+    min-height: 44px;
+    padding: 0 14px;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--text-primary);
+    font-weight: 600;
+    font-size: 0.95rem;
+    transition: border-color 0.3s ease, background 0.3s ease, color 0.3s ease, transform 0.15s ease;
+}
+
+.acc-string:active {
+    transform: scale(0.96);
+}
+
+/* Piu' vicina entro +-150 cent (spec 11 §4): un richiamo leggero. */
+.acc-string.is-near {
+    border-color: rgba(207, 92, 54, 0.5);
+}
+
+/* La corda scelta (target). */
+.acc-string.is-target {
+    border-color: var(--accent-orange);
+    background: rgba(207, 92, 54, 0.18);
+    color: var(--accent-orange);
+    font-weight: 700;
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .acc-string:hover {
+        border-color: var(--accent-orange);
+    }
+}
+
+/* --- Riferimento A4 (spec 11 §5) --- */
+.acc-row--a4 {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.acc-row--a4 .acc-label {
+    flex-shrink: 0;
+}
+
+/* Area di tocco 44px (spec 10 §6: >= 44px ovunque); la traccia nativa resta
+   sottile (solo accent-color, niente pseudo-elementi custom su track/thumb,
+   come #met-volume in metronomo.css), l'altezza e' del solo hit-box. */
+#acc-a4 {
+    flex: 1;
+    height: 44px;
+    accent-color: var(--accent-orange);
+}
+
+.acc-a4-value {
+    flex-shrink: 0;
+    min-width: 56px;
+    text-align: right;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    font-variant-numeric: tabular-nums;
+}
+
+/* --- Ripeti (#acc-loop, solo modalita' Riferimento) --- */
+.acc-loop {
+    align-self: center;
+    min-width: 44px;
+    min-height: 44px;
+    padding: 0 32px;
+    border-radius: 50px;
+    border: 1px solid var(--accent-orange);
+    color: var(--accent-orange);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-size: 0.85rem;
+    transition: background 0.15s ease, color 0.15s ease;
+}
+
+.acc-loop[aria-pressed="true"],
+.acc-loop:active {
+    background: var(--accent-orange);
+    color: #ffffff;
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .acc-loop:not([aria-pressed="true"]):hover {
+        background: rgba(207, 92, 54, 0.15);
+    }
+}
+
+/* --- Riferimento vs Ascolto (spec 11 §1/§3/§4): stato iniziale sempre
+   Riferimento (niente flash, [data-acc-mode] gia' nel markup statico).
+   Corde e A4 restano visibili in entrambe le modalita' (spec 11 §5: "A4
+   ... per entrambe le modalita'"). --- */
+.acc[data-acc-mode="reference"] .acc-consent,
+.acc[data-acc-mode="reference"] .acc-gauge,
+.acc[data-acc-mode="reference"] .acc-reading {
+    display: none;
+}
+
+.acc[data-acc-mode="listen"] .acc-loop {
+    display: none;
+}
+
+/* --- Desktop: piu' respiro --- */
+@media (min-width: 768px) {
+    .acc {
+        gap: 16px;
+    }
+
+    .acc-gauge {
+        max-width: 360px;
+        height: 120px;
+    }
+
+    .acc-note {
+        font-size: 3.2rem;
+    }
+}
