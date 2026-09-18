@@ -46,11 +46,12 @@ export function mountSelect(el) {
     if (!native || !trigger || !panel) return null;
     mounted.add(el);
 
-    const options = optionsOf(panel);
-    options.forEach((o, i) => {
+    let options = optionsOf(panel);
+    const numberOptions = () => options.forEach((o, i) => {
         if (!o.id) o.id = (panel.id || 'tb-select') + '-opt-' + i;
         o.setAttribute('tabindex', '-1');
     });
+    numberOptions();
 
     let open = false;
     let activeIndex = Math.max(0, options.findIndex((o) => o.getAttribute('data-value') === native.value));
@@ -217,6 +218,12 @@ export function mountSelect(el) {
 
     return {
         el,
+        /** Rilegge le voci: serve a chi le aggiunge o toglie a runtime. */
+        refresh() {
+            options = optionsOf(panel);
+            numberOptions();
+            set(native.value, { silent: true });
+        },
         open: () => openPanel(),
         close: () => closePanel({ restoreFocus: false }),
         isOpen: () => open,

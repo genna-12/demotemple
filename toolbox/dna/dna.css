@@ -1,0 +1,472 @@
+/* ========================================================
+   TINY TEMPLE TOOLBOX - DNA DELLA TRACCIA
+   Solo questa pagina (spec 13). Richiede shared/tokens.css e
+   shared/base.css/components.css caricati prima (per .tb-btn, .tb-segment,
+   .tb-select, .tb-pill, .tb-status: qui non si ridefiniscono). Mobile-first:
+   una schermata per stato a 390x844 senza scroll (spec 13 §3/criterio 11);
+   a 360px nessuno scroll orizzontale; desktop centrato, .tb-shell max 640px
+   (come il calcolatore tempo: la card risultato ha piu' righe delle altre
+   pagine). Zero JS qui: gli stati ([data-dna-state] su #dna, [hidden] sui
+   cinque blocchi, --dna-pct/--dna-level/--dna-lufs) li applica dna.js. */
+
+.tb-page-header {
+    padding: 0;
+    margin: 8px 0;
+}
+
+.tb-page-header h1 {
+    font-size: 1.1rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+
+.tb-shell {
+    max-width: 640px;
+    padding-bottom: 20px;
+}
+
+.tb-footer {
+    margin-top: 16px;
+    padding-top: 12px;
+    padding-bottom: calc(12px + var(--tb-safe-b));
+}
+
+.tb-footer-line {
+    font-size: 0.72rem;
+}
+
+.tb-footer-line a {
+    min-height: 32px;
+}
+
+/* --- `main#dna` --- */
+.dna {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-width: 560px;
+    margin: 0 auto;
+}
+
+/* CONTRATTO dna.js: gli stati si mostrano/nascondono SOLO con la proprieta'
+   "hidden" (nessuna regola su [data-dna-state] qui: tocca a dna.js).
+   .dna-drop/-recording/-progress/-result impostano pero' "display:flex" di
+   loro, che vince sul solo "[hidden]" dello UA stylesheet perche' una
+   classe e un attributo hanno la stessa specificita' e qui l'ordine e'
+   invertito (stessa insidia della nota su .tb-select-panel.tb-sheet in
+   shared/components.css): un selettore composto classe+attributo, piu'
+   specifico di entrambi, per essere sicuri che l'hidden nasconda davvero,
+   dal primo render (gia' nell'HTML) a ogni cambio di stato. */
+.dna-drop[hidden],
+.dna-recording[hidden],
+.dna-progress[hidden],
+.dna-result[hidden] {
+    display: none;
+}
+
+/* --- Stato 1: vuoto --- */
+.dna-drop {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+.dna-dropzone {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    padding: 20px 16px;
+    text-align: center;
+}
+
+/* Il trascinamento (e il suo invito visivo) contano solo dove c'e' un
+   puntatore fine (spec 13 §3): su schermo tattile restano solo i due
+   bottoni, senza una cornice che promette un gesto che non funziona. */
+.dna-dropzone-hint {
+    display: none;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .dna-dropzone {
+        padding: 28px 16px;
+        border: 2px dashed var(--glass-border);
+        border-radius: var(--r-lg);
+        transition: border-color var(--dur-fast) ease, background var(--dur-fast) ease;
+    }
+    .dna-dropzone-hint {
+        display: block;
+    }
+    /* .is-over la mette/toglie dna.js su #dna-drop nei dragenter/dragleave/drop. */
+    #dna-drop.is-over .dna-dropzone {
+        border-color: var(--accent-orange);
+        background: rgba(207, 92, 54, 0.08);
+    }
+}
+
+.dna-dropzone-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+    max-width: 280px;
+}
+
+.dna-dropzone-actions .tb-btn {
+    width: 100%;
+}
+
+.dna-formats {
+    font-size: 0.68rem;
+    color: var(--text-muted);
+    text-align: center;
+}
+
+.dna-history-title {
+    margin: 0 0 6px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text-muted);
+}
+
+.dna-history {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.dna-history-item {
+    display: block;
+    width: 100%;
+    min-height: var(--tap);
+    padding: 0 var(--sp-3);
+    border-radius: var(--r-sm);
+    border: 1px solid var(--glass-border);
+    background: var(--surface-1);
+    color: var(--text-primary);
+    font-size: 0.78rem;
+    text-align: left;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .dna-history-item:hover {
+        border-color: var(--accent-orange);
+    }
+}
+
+/* --- Stato 2: registrazione --- */
+.dna-recording {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+    padding: 16px 0;
+}
+
+.dna-consent {
+    width: 100%;
+}
+
+.dna-countdown-wrap {
+    display: flex;
+    align-items: baseline;
+    gap: 4px;
+}
+
+.dna-countdown {
+    font-family: var(--font-title);
+    font-size: 4rem;
+    font-weight: 700;
+    line-height: 1;
+    color: var(--text-primary);
+    font-variant-numeric: tabular-nums;
+}
+
+.dna-countdown-unit {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--text-muted);
+}
+
+.dna-level-track {
+    width: 100%;
+    max-width: 280px;
+    height: 10px;
+    border-radius: var(--r-pill);
+    background: var(--track);
+    overflow: hidden;
+}
+
+/* CONTRATTO dna.js: nessun style="" (vietato dalla CSP), il livello si posa
+   con level.style.setProperty('--dna-level', 'NN%'), stesso principio di
+   --tb-fill sui tb-range. Da fermo (silenzio) resta a 0. */
+.dna-level {
+    height: 100%;
+    width: var(--dna-level, 0%);
+    background: var(--grad-accent);
+    transition: width 0.08s linear;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .dna-level {
+        transition: none;
+    }
+}
+
+/* --- Stato 3: analisi --- */
+/* #dna-progress e' sia il contenitore di stato sia il progressbar
+   (CONTRATTO dna.js): dna.js scrive aria-valuenow e --dna-pct qui sopra. */
+.dna-progress {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 32px 0;
+    text-align: center;
+}
+
+.dna-progress-label {
+    margin: 0;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text-muted);
+}
+
+.dna-progress-phase {
+    margin: 0;
+    font-family: var(--font-title);
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.dna-progress-track {
+    width: 100%;
+    max-width: 280px;
+    height: 6px;
+    border-radius: var(--r-pill);
+    background: var(--track);
+    overflow: hidden;
+}
+
+.dna-progress-fill {
+    height: 100%;
+    width: var(--dna-pct, 0%);
+    background: var(--grad-accent);
+    transition: width 0.2s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .dna-progress-fill {
+        transition: none;
+    }
+}
+
+/* --- Stato 4: risultato --- */
+.dna-result {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.dna-badge {
+    align-self: center;
+    color: var(--accent-orange);
+    border-color: rgba(207, 92, 54, 0.4);
+}
+
+/* .tb-pill imposta display:inline-block: senza questa riga [hidden] non
+   basterebbe a nasconderla (stessa insidia della nota su .tb-select-panel
+   in shared/components.css). */
+.dna-badge[hidden] {
+    display: none;
+}
+
+.dna-card {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: var(--sp-3) var(--sp-4);
+    border-radius: var(--r-lg);
+    background: var(--surface-1);
+    border: 1px solid var(--glass-border);
+}
+
+.dna-card-label {
+    font-size: 0.68rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text-muted);
+}
+
+.dna-card-value {
+    font-family: var(--font-title);
+    font-size: 2rem;
+    font-weight: 700;
+    line-height: 1.15;
+    color: var(--text-primary);
+    font-variant-numeric: tabular-nums;
+}
+
+.dna-card-value--sm {
+    font-size: 1.5rem;
+}
+
+.dna-card-sub {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    font-variant-numeric: tabular-nums;
+}
+
+.dna-card-camelot {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--accent-orange);
+}
+
+.dna-key-compat-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 6px;
+    margin: 2px 0 0;
+}
+
+.dna-card-sub-label {
+    flex-shrink: 0;
+    font-size: 0.68rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-muted);
+}
+
+/* Solo con l'ottava ambigua (dna.js toglie/mette [hidden] secondo la
+   confidenza, spec 13 §3/§4): il tb-segment resta largo quanto il
+   contenuto, non tutta la card (.tb-segment di suo si allarga per via di
+   align-items:stretch nella colonna .dna-card). */
+#dna-bpm-alt {
+    align-self: flex-start;
+    margin-top: 4px;
+}
+
+/* .tb-segment imposta display:flex: stessa insidia di .dna-badge sopra. */
+#dna-bpm-alt[hidden] {
+    display: none;
+}
+
+.dna-target-row {
+    margin-bottom: 4px;
+}
+
+.dna-lufs-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.dna-lufs-track {
+    flex: 1;
+    height: 8px;
+    border-radius: var(--r-pill);
+    background: var(--track);
+    overflow: hidden;
+}
+
+/* CONTRATTO dna.js: --dna-lufs in % via style.setProperty, stesso principio
+   di --dna-level/--dna-pct qui sopra. */
+.dna-lufs-fill {
+    height: 100%;
+    width: var(--dna-lufs, 50%);
+    background: var(--grad-accent);
+    transition: width var(--dur-med) ease;
+}
+
+.dna-advice {
+    margin: 2px 0 0;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.dna-sub-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 2px;
+}
+
+.dna-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 16px;
+    list-style: none;
+    margin: 0;
+    padding: 0 4px;
+}
+
+.dna-meta li {
+    display: flex;
+    align-items: baseline;
+    gap: 4px;
+}
+
+.dna-meta li span:first-child {
+    font-size: 0.62rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-muted);
+}
+
+.dna-meta li span:last-child {
+    font-size: 0.78rem;
+    color: var(--text-primary);
+    font-variant-numeric: tabular-nums;
+}
+
+.dna-result-actions {
+    display: flex;
+    gap: var(--sp-2);
+    margin-top: 4px;
+}
+
+.dna-result-actions .tb-btn {
+    flex: 1;
+}
+
+/* --- Stato 5: errore --- */
+/* Segnaposto vuoto: il messaggio vero e proprio vive in #dna-status (fuori
+   dal ciclo degli stati, CONTRATTO dna.js), qui non c'e' altro da vestire. */
+.dna-error {
+    min-height: 0;
+}
+
+/* --- Desktop: piu' respiro --- */
+@media (min-width: 768px) {
+    .dna {
+        gap: 16px;
+    }
+
+    .dna-card-value {
+        font-size: 2.3rem;
+    }
+
+    .dna-countdown {
+        font-size: 4.6rem;
+    }
+}

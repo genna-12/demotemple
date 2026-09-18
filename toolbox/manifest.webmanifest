@@ -66,6 +66,18 @@
           "type": "image/png"
         }
       ]
+    },
+    {
+      "name": "DNA della traccia",
+      "short_name": "DNA",
+      "url": "/dna/",
+      "icons": [
+        {
+          "src": "/assets/icons/icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
     }
   ]
 }

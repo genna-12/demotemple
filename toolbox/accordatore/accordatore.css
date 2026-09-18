@@ -57,8 +57,21 @@
    (contratto in shared/components.css). */
 .acc-field {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
     gap: 10px;
+}
+
+/* Il tb-select resta a riga piena; Modifica/Elimina (visibili solo con
+   un'accordatura personalizzata scelta, CONTRATTO punto 2) vanno in una
+   seconda riga sotto, meta' larghezza ciascuno. */
+.acc-field .tb-select {
+    flex: 1 1 100%;
+}
+
+#acc-custom-edit,
+#acc-custom-remove {
+    flex: 1 1 auto;
 }
 
 .acc-label {
@@ -324,6 +337,88 @@
     text-align: center;
     font-size: 0.75rem;
     color: var(--text-muted);
+}
+
+/* --- Accordature personalizzate (CONTRATTO accordatore.js, feedback
+   Genna): bottoni Modifica/Elimina accanto al tb-select, conferma
+   eliminazione inline, foglio editor #acc-custom (stessa struttura di
+   #acc-a4-info: qui solo il layout interno del form). --- */
+.acc-custom-confirm {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--sp-2);
+    padding: var(--sp-3);
+    border-radius: var(--r-md);
+    background: var(--surface-1);
+    font-size: 0.85rem;
+    color: var(--text-primary);
+}
+
+.acc-custom-confirm[hidden] {
+    display: none;
+}
+
+.acc-custom-confirm span {
+    flex: 1;
+    min-width: 140px;
+}
+
+/* Form del foglio: .tb-sheet-body diventa una colonna con respiro fra
+   nome/corde/righe/errore/azioni (di base e' solo testo, spec 03 §2). */
+#acc-custom .tb-sheet-body {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-2);
+}
+
+#acc-custom-name {
+    text-align: left;
+    font-size: 1rem;
+}
+
+.acc-custom-strings {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 2px;
+}
+
+/* Una riga per corda (CONTRATTO punto 5): numero corda, nota, ottava. */
+.acc-custom-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.acc-custom-row-label {
+    flex-shrink: 0;
+    width: 18px;
+    text-align: center;
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--text-muted);
+    font-variant-numeric: tabular-nums;
+}
+
+.acc-custom-notes {
+    flex: 1;
+    min-width: 0;
+}
+
+.acc-custom-octs {
+    flex-shrink: 0;
+    width: 108px;
+}
+
+.acc-custom-actions {
+    display: flex;
+    gap: var(--sp-2);
+    margin-top: var(--sp-1);
+}
+
+.acc-custom-actions .tb-btn {
+    flex: 1;
 }
 
 /* --- Riferimento vs Ascolto (spec 11 §1/§3/§4): stato iniziale sempre

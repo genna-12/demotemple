@@ -40,7 +40,23 @@ export default {
         'acc-no-signal': 'Suona una corda',
         'acc-mic-lost': 'Microfono interrotto',
         'acc-inapp': 'Apri in Safari per il microfono',
-        'acc-gauge-aria': 'Scostamento in cent'
+        'acc-gauge-aria': 'Scostamento in cent',
+
+        'acc-custom-new': 'Personalizzata…',
+        'acc-custom-title': 'Accordatura personalizzata',
+        'acc-custom-name': 'Nome',
+        'acc-custom-count': 'Corde',
+        'acc-custom-note': 'Nota',
+        'acc-custom-oct': 'Ottava',
+        'acc-custom-save': 'Salva',
+        'acc-custom-cancel': 'Annulla',
+        'acc-custom-edit': 'Modifica',
+        'acc-custom-delete': 'Elimina',
+        'acc-custom-delete-ask': 'Elimino questa accordatura?',
+        'acc-custom-delete-yes': 'Elimina',
+        'acc-custom-delete-no': 'Annulla',
+        'acc-custom-name-empty': "Dai un nome all'accordatura",
+        'acc-custom-default': 'La mia accordatura'
     },
     en: {
         'acc-title': 'Tuner',
@@ -73,6 +89,22 @@ export default {
         'acc-no-signal': 'Play a string',
         'acc-mic-lost': 'Mic interrupted',
         'acc-inapp': 'Open in Safari for the microphone',
-        'acc-gauge-aria': 'Deviation in cents'
+        'acc-gauge-aria': 'Deviation in cents',
+
+        'acc-custom-new': 'Custom…',
+        'acc-custom-title': 'Custom tuning',
+        'acc-custom-name': 'Name',
+        'acc-custom-count': 'Strings',
+        'acc-custom-note': 'Note',
+        'acc-custom-oct': 'Octave',
+        'acc-custom-save': 'Save',
+        'acc-custom-cancel': 'Cancel',
+        'acc-custom-edit': 'Edit',
+        'acc-custom-delete': 'Delete',
+        'acc-custom-delete-ask': 'Delete this tuning?',
+        'acc-custom-delete-yes': 'Delete',
+        'acc-custom-delete-no': 'Cancel',
+        'acc-custom-name-empty': 'Give the tuning a name',
+        'acc-custom-default': 'My tuning'
     }
 };

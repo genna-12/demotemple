@@ -1,5 +1,5 @@
 /**
- * Tiny Temple Toolbox - Accordatore (spec 11).
+ * Tiny Temple Toolbox - Accordatore (spec 11 + accordature personalizzate).
  *
  * Due modalita': Riferimento (si suona la nota giusta) e Ascolto (si misura
  * quella che arriva dal microfono). L'analisi sta in shared/pitch.js, il
@@ -10,6 +10,87 @@
  * corde le crea questo file), #acc-note, #acc-octave, #acc-cents,
  * #acc-gauge (+ .acc-needle), #acc-a4, #acc-a4-value, #acc-loop,
  * #acc-status. Non tocca HTML ne' CSS.
+ *
+ * =====================================================================
+ * CONTRATTO per le ACCORDATURE PERSONALIZZATE (markup e CSS: builder)
+ * =====================================================================
+ * 1) Nel select strumento (#acc-instrument + .tb-select) serve, ULTIMA,
+ *    la voce che apre l'editor:
+ *      <option value="__custom__" data-i18n="acc-custom-new">Personalizzata…</option>
+ *    e la corrispondente .tb-select-option[data-value="__custom__"].
+ *    Le accordature salvate le inserisce accordatore.js PRIMA di quella
+ *    voce, sia nel <select> nativo sia nel pannello, con
+ *    value/data-value = "custom:<id>". Il builder non scrive quelle voci.
+ *
+ * 2) Accanto al select, due bottoni visibili solo con un'accordatura
+ *    personalizzata scelta (accordatore.js toglie/mette [hidden]):
+ *      <button id="acc-custom-edit" class="tb-btn tb-btn--ghost" hidden
+ *              data-i18n="acc-custom-edit">Modifica</button>
+ *      <button id="acc-custom-remove" class="tb-btn tb-btn--ghost" hidden
+ *              data-i18n="acc-custom-delete">Elimina</button>
+ *
+ * 3) Foglio dell'editor (stessa forma di #acc-a4-info, shared/sheet.js):
+ *      <div class="tb-sheet-scrim" id="acc-custom-scrim" hidden></div>
+ *      <div class="tb-sheet" id="acc-custom" role="dialog" aria-modal="true"
+ *           aria-labelledby="acc-custom-title" hidden>
+ *        <div class="tb-sheet-head">
+ *          <h2 id="acc-custom-title" data-i18n="acc-custom-title">Accordatura personalizzata</h2>
+ *          <button type="button" class="tb-sheet-close" data-i18n-aria="sheet-close" aria-label="Chiudi">&times;</button>
+ *        </div>
+ *        <div class="tb-sheet-body">
+ *          <label class="acc-label" for="acc-custom-name" data-i18n="acc-custom-name">Nome</label>
+ *          <input type="text" id="acc-custom-name" class="tb-number" maxlength="24" autocomplete="off">
+ *          <span class="acc-label" id="acc-custom-count-label" data-i18n="acc-custom-count">Corde</span>
+ *          <div id="acc-custom-count" class="tb-segment" role="radiogroup"
+ *               aria-labelledby="acc-custom-count-label">
+ *            <button type="button" class="tb-segment-btn" data-acc-count="3" role="radio" aria-checked="false">3</button>
+ *            ... fino a 8 ...
+ *          </div>
+ *          <div id="acc-custom-strings" class="acc-custom-strings"></div>   VUOTO: lo riempie questo file
+ *          <p id="acc-custom-error" class="tb-status" hidden></p>
+ *          <div class="acc-custom-actions">
+ *            <button type="button" id="acc-custom-save" class="tb-btn tb-btn--primary" data-i18n="acc-custom-save">Salva</button>
+ *            <button type="button" id="acc-custom-cancel" class="tb-btn tb-btn--ghost" data-i18n="acc-custom-cancel">Annulla</button>
+ *          </div>
+ *        </div>
+ *      </div>
+ *
+ * 4) Conferma di eliminazione INLINE (niente confirm() del browser), nel
+ *    foglio o accanto ai bottoni, nascosta di default:
+ *      <div id="acc-custom-confirm" class="acc-custom-confirm" hidden>
+ *        <span data-i18n="acc-custom-delete-ask">Elimino questa accordatura?</span>
+ *        <button type="button" id="acc-custom-confirm-yes" class="tb-btn" data-i18n="acc-custom-delete-yes">Elimina</button>
+ *        <button type="button" id="acc-custom-confirm-no" class="tb-btn tb-btn--ghost" data-i18n="acc-custom-delete-no">Annulla</button>
+ *      </div>
+ *
+ * 5) Righe delle corde, GENERATE QUI dentro #acc-custom-strings (una per
+ *    corda, dalla piu' grave): servono solo le classi, il CSS le veste.
+ *      <div class="acc-custom-row" data-acc-row="<i>">
+ *        <span class="acc-custom-row-label">1</span>
+ *        <div class="tb-segment tb-segment--scroll acc-custom-notes" role="radiogroup" aria-label="<nota>">
+ *          <button type="button" class="tb-segment-btn" data-acc-note="C" role="radio" aria-checked="false">C</button> ... 12
+ *        </div>
+ *        <div class="tb-segment tb-segment--scroll acc-custom-octs" role="radiogroup" aria-label="<ottava>">
+ *          <button type="button" class="tb-segment-btn" data-acc-oct="0" role="radio" aria-checked="false">0</button> ... 8
+ *        </div>
+ *      </div>
+ *
+ * 6) Chiavi i18n (IT / EN) da aggiungere in accordatore/i18n.js:
+ *    acc-custom-new        Personalizzata… / Custom…
+ *    acc-custom-title      Accordatura personalizzata / Custom tuning
+ *    acc-custom-name       Nome / Name
+ *    acc-custom-count      Corde / Strings
+ *    acc-custom-note       Nota / Note          acc-custom-oct  Ottava / Octave
+ *    acc-custom-save       Salva / Save         acc-custom-cancel Annulla / Cancel
+ *    acc-custom-edit       Modifica / Edit      acc-custom-delete Elimina / Delete
+ *    acc-custom-delete-ask Elimino questa accordatura? / Delete this tuning?
+ *    acc-custom-delete-yes Elimina / Delete     acc-custom-delete-no Annulla / Cancel
+ *    acc-custom-name-empty Dai un nome all'accordatura / Give the tuning a name
+ *    acc-custom-default    La mia accordatura / My tuning
+ *
+ * 7) Dati: prefs `tt.accordatore.custom` = [{ id, name, strings: [{ note, oct }] }].
+ *    Le accordature standard non si toccano; le personalizzate valgono in
+ *    entrambe le modalita' (corda piu' vicina in Ascolto, suono in Riferimento).
  */
 
 import commonDict from '/shared/i18n-common.js';
@@ -23,11 +104,17 @@ import * as mic from '/shared/mic.js';
 import { prefs } from '/shared/storage.js';
 import { createPitchTracker, noteInfo, noteToHz, nearestIndex } from '/shared/pitch.js';
 import { createStringVoices, voiceFor } from '/shared/strings.js';
-import { mountSelects } from '/shared/select.js';
-import { mountInfos } from '/shared/sheet.js';
+import { mountSelects, mountSelect } from '/shared/select.js';
+import { mountInfos, openSheet, closeSheet } from '/shared/sheet.js';
 import { mountRanges } from '/shared/range.js';
 
 const TOOL = 'accordatore';
+const NOTES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+const OCTAVES = [0, 1, 2, 3, 4, 5, 6, 7, 8];
+const CUSTOM_MIN = 3;
+const CUSTOM_MAX = 8;
+const CUSTOM_NEW = '__custom__';  // voce "Personalizzata..." in fondo al select
+const CUSTOM_PREFIX = 'custom:';
 const A4_MIN = 415;
 const A4_MAX = 466;
 const A4_DEFAULT = 440;
@@ -49,6 +136,42 @@ export const TUNINGS = {
     violin: { key: 'acc-inst-violin', strings: ['G3', 'D4', 'A4', 'E5'] },
     chromatic: { key: 'acc-inst-chromatic', strings: [] }
 };
+
+/* Accordature salvate: prefs `tt.accordatore.custom`. Forma tollerante:
+   quello che non torna si scarta invece di rompere la pagina. */
+export function readCustom() {
+    const raw = prefs.get(TOOL, 'custom', []);
+    if (!Array.isArray(raw)) return [];
+    return raw.filter((x) => x && x.id && Array.isArray(x.strings) && x.strings.length)
+        .map((x) => ({
+            id: String(x.id),
+            name: String(x.name || ''),
+            strings: x.strings
+                .filter((sg) => sg && NOTES.indexOf(sg.note) !== -1)
+                .map((sg) => ({ note: sg.note, oct: Math.min(8, Math.max(0, Number(sg.oct) || 0)) }))
+        }))
+        .filter((x) => x.strings.length >= CUSTOM_MIN);
+}
+
+export function writeCustom(list) {
+    prefs.set(TOOL, 'custom', list);
+}
+
+const customId = (list) => {
+    let n = 1;
+    while (list.some((x) => x.id === 'c' + n)) n += 1;
+    return 'c' + n;
+};
+
+/** Un'accordatura salvata nella stessa forma di TUNINGS. */
+function customTuning(entry) {
+    return {
+        id: CUSTOM_PREFIX + entry.id,
+        name: entry.name,
+        custom: true,
+        strings: entry.strings.map((sg) => sg.note + sg.oct)
+    };
+}
 
 const clampA4 = (v) => Math.min(A4_MAX, Math.max(A4_MIN, Math.round(Number(v) || A4_DEFAULT)));
 
@@ -77,7 +200,7 @@ export function mountTuner() {
 
     const ui = {
         mode: 'reference',
-        instrument: TUNINGS[prefs.get(TOOL, 'instrument', 'guitar')] ? prefs.get(TOOL, 'instrument', 'guitar') : 'guitar',
+        instrument: prefs.get(TOOL, 'instrument', 'guitar'),
         a4: clampA4(prefs.get(TOOL, 'a4', A4_DEFAULT)),
         loop: false
     };
@@ -97,7 +220,25 @@ export function mountTuner() {
     let keyNote = null;       // nota scelta sulla tastiera cromatica
     let keyOctave = 4;
 
-    const tuning = () => TUNINGS[ui.instrument] || TUNINGS.guitar;
+    let custom = readCustom();
+    let instrumentSelect = null;   // api di shared/select.js sulla pillola
+    let editing = null;            // bozza aperta nell'editor
+
+    const customById = (value) => {
+        const id = String(value || '').slice(CUSTOM_PREFIX.length);
+        return custom.find((x) => x.id === id) || null;
+    };
+    const isCustom = (value) => String(value || '').startsWith(CUSTOM_PREFIX);
+
+    function tuningOf(value) {
+        if (isCustom(value)) {
+            const entry = customById(value);
+            return entry ? customTuning(entry) : TUNINGS.guitar;
+        }
+        return TUNINGS[value] || TUNINGS.guitar;
+    }
+
+    const tuning = () => tuningOf(ui.instrument);
 
     /* ---------------- corde ---------------- */
 
@@ -428,17 +569,33 @@ export function mountTuner() {
         });
     }
 
+    function setInstrument(value) {
+        if (!TUNINGS[value] && !customById(value)) return false;
+        ui.instrument = value;
+        prefs.set(TOOL, 'instrument', value);
+        root.setAttribute('data-acc-instrument', isCustom(value) ? 'custom' : value);
+        if (instrument && instrument.value !== value) instrument.value = value;
+        if (instrumentSelect) instrumentSelect.set(value);
+        stopLoop();
+        keyNote = null;
+        buildStrings();
+        applyRange();
+        clearReading();
+        renderCustomButtons();
+        return true;
+    }
+
     if (instrument) {
         instrument.addEventListener('change', () => {
-            if (!TUNINGS[instrument.value]) return;
-            ui.instrument = instrument.value;
-            prefs.set(TOOL, 'instrument', ui.instrument);
-            root.setAttribute('data-acc-instrument', ui.instrument);
-            stopLoop();
-            keyNote = null;
-            buildStrings();
-            applyRange();
-            clearReading();
+            if (instrument.value === CUSTOM_NEW) {
+                /* la voce "Personalizzata..." non e' un'accordatura: apre
+                   l'editor e il select torna a quella di prima */
+                instrument.value = ui.instrument;
+                if (instrumentSelect) instrumentSelect.set(ui.instrument);
+                openEditor(null);
+                return;
+            }
+            setInstrument(instrument.value);
         });
     }
 
@@ -525,15 +682,261 @@ export function mountTuner() {
         if (strings) strings.stop();
     });
 
+    /* ---------------- accordature personalizzate ---------------- */
+
+    const editBtn = document.getElementById('acc-custom-edit');
+    const removeBtn = document.getElementById('acc-custom-remove');
+    const confirmBox = document.getElementById('acc-custom-confirm');
+    const sheet = document.getElementById('acc-custom');
+    const nameInput = document.getElementById('acc-custom-name');
+    const countBox = document.getElementById('acc-custom-count');
+    const rowsBox = document.getElementById('acc-custom-strings');
+    const errorOut = document.getElementById('acc-custom-error');
+    const saveBtn = document.getElementById('acc-custom-save');
+    const cancelBtn = document.getElementById('acc-custom-cancel');
+
+    /** Voci del select: le salvate stanno prima di "Personalizzata...". */
+    function syncCustomOptions() {
+        if (!instrument) return;
+        const panel = document.getElementById('acc-instrument-panel');
+        [...instrument.querySelectorAll('option')].forEach((o) => {
+            if (isCustom(o.value)) o.remove();
+        });
+        if (panel) {
+            [...panel.querySelectorAll('.tb-select-option')].forEach((o) => {
+                if (isCustom(o.getAttribute('data-value'))) o.remove();
+            });
+        }
+        const lastOption = instrument.querySelector('option[value="' + CUSTOM_NEW + '"]');
+        const lastPanel = panel ? panel.querySelector('.tb-select-option[data-value="' + CUSTOM_NEW + '"]') : null;
+        custom.forEach((entry) => {
+            const value = CUSTOM_PREFIX + entry.id;
+            const option = document.createElement('option');
+            option.value = value;
+            option.textContent = entry.name;
+            instrument.insertBefore(option, lastOption);
+            if (!panel) return;
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'tb-select-option';
+            btn.setAttribute('role', 'option');
+            btn.setAttribute('data-value', value);
+            btn.setAttribute('aria-selected', 'false');
+            const label = document.createElement('span');
+            label.textContent = entry.name;
+            btn.append(label, checkIcon());
+            panel.insertBefore(btn, lastPanel);
+        });
+        if (instrumentSelect) instrumentSelect.refresh();
+    }
+
+    /* la spunta del pannello: stesso sprite delle voci scritte a mano */
+    function checkIcon() {
+        const NS = 'http://www.w3.org/2000/svg';
+        const svg = document.createElementNS(NS, 'svg');
+        svg.setAttribute('class', 'tb-select-check');
+        svg.setAttribute('aria-hidden', 'true');
+        const use = document.createElementNS(NS, 'use');
+        use.setAttribute('href', '#tb-icon-check');
+        svg.appendChild(use);
+        return svg;
+    }
+
+    function renderCustomButtons() {
+        const on = isCustom(ui.instrument) && !!customById(ui.instrument);
+        if (editBtn) editBtn.hidden = !on;
+        if (removeBtn) removeBtn.hidden = !on;
+        if (confirmBox && !on) confirmBox.hidden = true;
+    }
+
+    /* ---- editor ---- */
+
+    function segment(cls, attr, values, aria) {
+        const box = document.createElement('div');
+        box.className = 'tb-segment tb-segment--scroll ' + cls;
+        box.setAttribute('role', 'radiogroup');
+        box.setAttribute('aria-label', aria);
+        values.forEach((v) => {
+            const b = document.createElement('button');
+            b.type = 'button';
+            b.className = 'tb-segment-btn';
+            b.setAttribute(attr, String(v));
+            b.setAttribute('role', 'radio');
+            b.setAttribute('aria-checked', 'false');
+            b.textContent = String(v);
+            box.appendChild(b);
+        });
+        return box;
+    }
+
+    function markRow(row) {
+        const i = Number(row.getAttribute('data-acc-row'));
+        const value = editing.strings[i];
+        [...row.querySelectorAll('[data-acc-note]')].forEach((b) => {
+            const on = b.getAttribute('data-acc-note') === value.note;
+            b.setAttribute('aria-checked', on ? 'true' : 'false');
+            b.classList.toggle('is-active', on);
+        });
+        [...row.querySelectorAll('[data-acc-oct]')].forEach((b) => {
+            const on = Number(b.getAttribute('data-acc-oct')) === value.oct;
+            b.setAttribute('aria-checked', on ? 'true' : 'false');
+            b.classList.toggle('is-active', on);
+        });
+    }
+
+    function buildRows() {
+        if (!rowsBox) return;
+        rowsBox.textContent = '';
+        editing.strings.forEach((sg, i) => {
+            const row = document.createElement('div');
+            row.className = 'acc-custom-row';
+            row.setAttribute('data-acc-row', String(i));
+            const label = document.createElement('span');
+            label.className = 'acc-custom-row-label';
+            label.textContent = String(i + 1);
+            row.append(
+                label,
+                segment('acc-custom-notes', 'data-acc-note', NOTES, t('acc-custom-note')),
+                segment('acc-custom-octs', 'data-acc-oct', OCTAVES, t('acc-custom-oct'))
+            );
+            rowsBox.appendChild(row);
+            markRow(row);
+        });
+        if (countBox) {
+            [...countBox.querySelectorAll('[data-acc-count]')].forEach((b) => {
+                const on = Number(b.getAttribute('data-acc-count')) === editing.strings.length;
+                b.setAttribute('aria-checked', on ? 'true' : 'false');
+                b.classList.toggle('is-active', on);
+            });
+        }
+    }
+
+    /* `entry` null = nuova accordatura (parte dalla chitarra, tagliata a 6) */
+    function openEditor(entry) {
+        const base = entry || {
+            id: null,
+            name: t('acc-custom-default'),
+            strings: TUNINGS.guitar.strings.map((n) => ({
+                note: n.replace(/-?\d+$/, ''),
+                oct: Number(n.match(/-?\d+$/)[0])
+            }))
+        };
+        editing = {
+            id: base.id,
+            name: base.name,
+            strings: base.strings.map((sg) => ({ note: sg.note, oct: sg.oct }))
+        };
+        if (nameInput) nameInput.value = editing.name;
+        if (errorOut) { errorOut.hidden = true; errorOut.textContent = ''; }
+        buildRows();
+        if (sheet) openSheet(sheet, { anchor: editBtn && !editBtn.hidden ? editBtn : null });
+    }
+
+    function closeEditor() {
+        editing = null;
+        if (sheet) closeSheet();
+    }
+
+    function saveEditor() {
+        if (!editing) return null;
+        const name = (nameInput ? nameInput.value : editing.name).trim();
+        if (!name) {
+            if (errorOut) {
+                errorOut.hidden = false;
+                errorOut.setAttribute('data-i18n', 'acc-custom-name-empty');
+                errorOut.textContent = t('acc-custom-name-empty');
+            }
+            if (nameInput && nameInput.focus) nameInput.focus();
+            return null;
+        }
+        const entry = {
+            id: editing.id || customId(custom),
+            name,
+            strings: editing.strings.map((sg) => ({ note: sg.note, oct: sg.oct }))
+        };
+        const at = custom.findIndex((x) => x.id === entry.id);
+        if (at === -1) custom.push(entry);
+        else custom[at] = entry;
+        writeCustom(custom);
+        syncCustomOptions();
+        closeEditor();
+        setInstrument(CUSTOM_PREFIX + entry.id); // si usa subito
+        return entry;
+    }
+
+    function removeCustom(id) {
+        custom = custom.filter((x) => x.id !== id);
+        writeCustom(custom);
+        syncCustomOptions();
+        if (confirmBox) confirmBox.hidden = true;
+        setInstrument('guitar');
+    }
+
+    if (countBox) {
+        countBox.addEventListener('click', (e) => {
+            const b = e.target.closest('[data-acc-count]');
+            if (!b || !editing) return;
+            const n = Math.min(CUSTOM_MAX, Math.max(CUSTOM_MIN, Number(b.getAttribute('data-acc-count'))));
+            while (editing.strings.length > n) editing.strings.pop();
+            while (editing.strings.length < n) {
+                const last = editing.strings[editing.strings.length - 1] || { note: 'E', oct: 2 };
+                editing.strings.push({ note: last.note, oct: last.oct });
+            }
+            buildRows();
+        });
+    }
+
+    if (rowsBox) {
+        rowsBox.addEventListener('click', (e) => {
+            const row = e.target.closest('.acc-custom-row');
+            if (!row || !editing) return;
+            const i = Number(row.getAttribute('data-acc-row'));
+            const note = e.target.closest('[data-acc-note]');
+            const oct = e.target.closest('[data-acc-oct]');
+            if (note) editing.strings[i].note = note.getAttribute('data-acc-note');
+            else if (oct) editing.strings[i].oct = Number(oct.getAttribute('data-acc-oct'));
+            else return;
+            markRow(row);
+        });
+    }
+
+    if (saveBtn) saveBtn.addEventListener('click', () => saveEditor());
+    if (cancelBtn) cancelBtn.addEventListener('click', closeEditor);
+    if (editBtn) {
+        editBtn.addEventListener('click', () => {
+            const entry = customById(ui.instrument);
+            if (entry) openEditor(entry);
+        });
+    }
+    /* eliminazione: conferma nella pagina, mai il confirm() del browser */
+    if (removeBtn && confirmBox) {
+        removeBtn.addEventListener('click', () => { confirmBox.hidden = false; });
+        const yes = document.getElementById('acc-custom-confirm-yes');
+        const no = document.getElementById('acc-custom-confirm-no');
+        if (yes) {
+            yes.addEventListener('click', () => {
+                const entry = customById(ui.instrument);
+                if (entry) removeCustom(entry.id);
+            });
+        }
+        if (no) no.addEventListener('click', () => { confirmBox.hidden = true; });
+    }
+
     /* ---------------- stato iniziale ---------------- */
 
     mountRanges(document);    // il cursore dell'A4 si colora fino al valore
-    mountSelects(document);   // il <select> nativo diventa la pillola glass
+    const selectBox = instrument ? instrument.closest('.tb-select') : null;
+    instrumentSelect = selectBox ? mountSelect(selectBox) : null;
+    mountSelects(document);   // gli altri <select> diventano pillole glass
     mountInfos(document);     // la "i" apre il foglio
+    syncCustomOptions();
+    if (!TUNINGS[ui.instrument] && !customById(ui.instrument)) ui.instrument = 'guitar';
     if (instrument) instrument.value = ui.instrument;
+    if (instrumentSelect) instrumentSelect.set(ui.instrument);
+    renderCustomButtons();
     if (a4Input) a4Input.value = String(ui.a4);
     setA4(ui.a4);
-    root.setAttribute('data-acc-instrument', ui.instrument);
+    root.setAttribute('data-acc-instrument', isCustom(ui.instrument) ? 'custom' : ui.instrument);
     buildStrings();
     markKeys();
     clearReading();
@@ -552,7 +955,13 @@ export function mountTuner() {
         playChosen,
         chosen,
         tracker: () => tracker,
-        target: () => target
+        target: () => target,
+        setInstrument,
+        openEditor,
+        closeEditor,
+        saveEditor,
+        removeCustom,
+        customList: () => custom
     };
 }
 

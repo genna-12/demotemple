@@ -22,7 +22,7 @@
  * popoli da solo (vedi vendor() sotto, che li trova li' come ripiego).
  */
 
-const VERSION = 'tb-v11';
+const VERSION = 'tb-v13';
 const CACHE = 'toolbox-' + VERSION;
 const VENDOR_CACHE = 'toolbox-vendor';
 
@@ -61,6 +61,10 @@ const SHELL = [
     '/shared/bpm-control.js',
     '/shared/intro.js',
     '/shared/scheduler.js',
+    '/shared/analysis/stft.js',
+    '/shared/analysis/bpm.js',
+    '/shared/analysis/key.js',
+    '/shared/analysis/loudness.js',
 
     '/assets/brand/logo-arancione.png',
     '/assets/brand/logo-arancione-96.png',
@@ -101,7 +105,13 @@ const TOOLS = [
     '/calcolatore-tempo/',
     '/calcolatore-tempo/calcolatore-tempo.js',
     '/calcolatore-tempo/calcolatore-tempo.css',
-    '/calcolatore-tempo/i18n.js'
+    '/calcolatore-tempo/i18n.js',
+
+    '/dna/',
+    '/dna/dna.js',
+    '/dna/dna.css',
+    '/dna/i18n.js',
+    '/dna/dna-worker.js'
 ];
 
 const PRECACHE = SHELL.concat(TOOLS);

@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="it">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="format-detection" content="telephone=no, address=no, email=no">
+    <title>DNA della traccia | Tiny Temple Toolbox</title>
+
+    <link rel="icon" href="/assets/icons/favicon.ico">
+    <link rel="apple-touch-icon" href="/assets/icons/apple-touch-icon.png">
+    <meta name="theme-color" content="#080808">
+    <meta name="apple-mobile-web-app-title" content="Toolbox">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <link rel="manifest" href="/manifest.webmanifest">
+
+    <meta name="description" content="Scopri BPM, tonalità con Camelot e loudness (LUFS/true peak) di un brano o di una registrazione dal microfono: analisi gratuita, offline, nel browser, senza upload.">
+    <link rel="canonical" href="https://toolbox.tinytemplestudio.it/dna/">
+
+    <script src="/shared/lang-boot.js"></script>
+    <link rel="stylesheet" href="/shared/tokens.css">
+    <link rel="stylesheet" href="/shared/base.css">
+    <link rel="stylesheet" href="/shared/components.css">
+    <link rel="stylesheet" href="/dna/dna.css">
+</head>
+
+<body>
+
+    <!-- tb-bar resta senza sfondo/posizione propri: e' solo il contenitore
+         atteso da shared/nav.js (mountBar). Niente titolo in barra (spec 10
+         §1/§11.6, vale per ogni strumento): "DNA della traccia" e' solo
+         l'h1 sotto, che scorre col contenuto; mountBar va chiamata senza
+         titleKey. -->
+    <header class="tb-bar">
+        <a class="tb-logo in-nav" href="/" data-i18n-aria="bar-logo-aria" aria-label="Toolbox, vai alla dashboard">
+            <img src="/assets/brand/logo-arancione.png" width="100" height="100" alt="" loading="eager">
+            <span class="sr-only">Tiny Temple Toolbox</span>
+        </a>
+        <button type="button" class="tb-menu-toggle is-visible" aria-controls="tb-menu" aria-expanded="false"
+            data-i18n-aria="bar-menu-open" aria-label="Apri il menu">
+            <span class="tb-menu-toggle-line"></span>
+            <span class="tb-menu-toggle-line"></span>
+        </button>
+    </header>
+
+    <!-- CONTRATTO shared/nav.js: vedi il commento in index.html vicino a #tb-menu. -->
+    <svg class="tb-sprite" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg">
+        <symbol id="tb-icon-metronomo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M8 20h8"></path>
+            <path d="M9 20 11 5h2l2 15"></path>
+            <path d="M12 9v7"></path>
+        </symbol>
+        <symbol id="tb-icon-accordatore" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M5 16a7 7 0 0 1 14 0"></path>
+            <path d="M12 16 15 9"></path>
+            <circle cx="12" cy="16" r="1" fill="currentColor" stroke="none"></circle>
+        </symbol>
+        <symbol id="tb-icon-dna" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 12h3l2-7 4 14 4-14 2 7h3"></path>
+        </symbol>
+        <symbol id="tb-icon-penna" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 20l4-1 11-11-3-3L5 16z"></path>
+            <path d="M14 6l3 3"></path>
+        </symbol>
+        <symbol id="tb-icon-calcolatore-tempo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="13" r="8"></circle>
+            <path d="M12 9v4l3 2"></path>
+            <path d="M9 2h6"></path>
+        </symbol>
+        <symbol id="tb-icon-pianificatore-uscita" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="4" y="5" width="16" height="16" rx="2"></rect>
+            <path d="M4 10h16"></path>
+            <path d="M8 3v4"></path>
+            <path d="M16 3v4"></path>
+        </symbol>
+        <symbol id="tb-icon-checklist-consegna" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="4" y="4" width="16" height="16" rx="2"></rect>
+            <path d="M8 12l3 3 6-7"></path>
+        </symbol>
+        <symbol id="tb-icon-split-sheet" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="9"></circle>
+            <path d="M12 12V3"></path>
+            <path d="M12 12l7.5 4.33"></path>
+        </symbol>
+        <!-- Icone di UI (spec 03 §3/§5/§9: niente piu' frecce/simboli scritti a
+             mano nel testo). -->
+        <symbol id="tb-icon-arrow-left" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 12H5"></path>
+            <path d="M11 18l-6-6 6-6"></path>
+        </symbol>
+        <symbol id="tb-icon-chevron-down" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M6 9l6 6 6-6"></path>
+        </symbol>
+        <symbol id="tb-icon-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M5 13l4 4L19 7"></path>
+        </symbol>
+        <symbol id="tb-icon-minus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M5 12h14"></path>
+        </symbol>
+        <symbol id="tb-icon-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 5v14"></path>
+            <path d="M5 12h14"></path>
+        </symbol>
+        <symbol id="tb-icon-grip" viewBox="0 0 24 24">
+            <circle cx="9" cy="6" r="1.6" fill="currentColor"></circle>
+            <circle cx="15" cy="6" r="1.6" fill="currentColor"></circle>
+            <circle cx="9" cy="12" r="1.6" fill="currentColor"></circle>
+            <circle cx="15" cy="12" r="1.6" fill="currentColor"></circle>
+            <circle cx="9" cy="18" r="1.6" fill="currentColor"></circle>
+            <circle cx="15" cy="18" r="1.6" fill="currentColor"></circle>
+        </symbol>
+    </svg>
+
+    <div id="tb-menu" class="tb-menu" hidden>
+        <div class="tb-menu-scrim"></div>
+        <div class="tb-menu-panel" role="dialog" aria-modal="true" aria-label="Menu">
+            <a class="tb-menu-home tb-menu-item" href="/" data-i18n="menu-all">Dashboard</a>
+            <div class="tb-menu-title" data-i18n="menu-tools">Strumenti</div>
+            <div class="tb-menu-groups"></div>
+            <div class="tb-menu-foot tb-menu-item">
+                <div class="tb-menu-install-group">
+                    <button type="button" id="tb-menu-install" class="tb-menu-install" data-i18n="menu-install">Installa l’app</button>
+                    <details class="tb-menu-ios" id="tb-menu-ios" hidden>
+                        <summary data-i18n="idx-ios-title">Su iPhone</summary>
+                        <div data-pwa-when="safari">
+                            <ol>
+                                <li data-i18n="idx-ios-step1">Apri questa pagina in Safari.</li>
+                                <li data-i18n="idx-ios-step2">Tocca Condividi (il quadrato con la freccia in
+                                    alto).</li>
+                                <li data-i18n="idx-ios-step3">Scegli &ldquo;Aggiungi alla schermata
+                                    Home&rdquo;.</li>
+                            </ol>
+                        </div>
+                        <div data-pwa-when="inapp">
+                            <strong data-i18n="idx-ios-inapp-title">Apri in Safari</strong>
+                            <p data-i18n="idx-ios-inapp-text">Questo browser non permette di installare l’app.
+                                Tocca il menu e scegli &ldquo;Apri in Safari&rdquo;, poi segui i passaggi per
+                                aggiungerla alla schermata Home.</p>
+                        </div>
+                    </details>
+                    <p class="tb-menu-manual" data-pwa-when="manual" hidden data-i18n="pwa-manual">Usa il menu del
+                        browser: Installa app oppure Aggiungi alla schermata Home.</p>
+                </div>
+                <div class="tb-menu-foot-row">
+                    <div class="tb-lang-switch" role="group" aria-label="Lingua / Language">
+                        <button type="button" data-lang="it" aria-pressed="true">IT</button>
+                        <button type="button" data-lang="en" aria-pressed="false">EN</button>
+                    </div>
+                    <a class="tb-menu-ext" href="https://tinytemplestudio.it/" data-i18n="menu-ext">Sito dello
+                        studio</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="tb-shell">
+        <header class="tb-page-header">
+            <h1 data-i18n="dna-title">DNA della traccia</h1>
+        </header>
+
+        <!-- CONTRATTO dna.js (spec 13 §5, contratto scritto in testa a
+             dna.js): data-dna-state su #dna rispecchia lo stato corrente
+             (utile per stile/debug), ma chi mostra/nasconde i cinque
+             blocchi e' solo l'attributo [hidden] che dna.js aggiunge/toglie
+             (vedi dna.css). "empty" e' lo stato iniziale: #dna-drop e'
+             l'unico dei cinque senza [hidden] nel markup, niente flash. -->
+        <main id="dna" class="dna" data-dna-state="empty">
+
+            <!-- ---------- Stato 1: vuoto ---------- -->
+            <div id="dna-drop" class="dna-drop">
+                <div class="dna-dropzone">
+                    <p class="dna-dropzone-hint" data-i18n="dna-drop-hint">Trascina qui un brano</p>
+
+                    <div class="dna-dropzone-actions">
+                        <!-- Fuori schermo ma focusabile (spec 13 §3): il vero
+                             ingresso file, l'input nativo, resta usabile da
+                             tastiera anche senza trascinamento. -->
+                        <input type="file" id="dna-file" accept="audio/*" class="sr-only">
+                        <label for="dna-file" class="tb-btn tb-btn--primary" data-i18n="dna-choose">Scegli file</label>
+                        <button type="button" id="dna-record" class="tb-btn" data-i18n="dna-record">Registra</button>
+                    </div>
+
+                    <p class="dna-formats" data-i18n="dna-formats">MP3, WAV, M4A, AAC, OGG, FLAC — fino a 15 minuti</p>
+                </div>
+
+                <!-- Vuoto: dna.js lo riempie con <li><button class="dna-history-item"
+                     data-dna-id="...">nome · BPM · key · LUFS</button></li> per
+                     record, spec 13 §4 "storico". -->
+                <div class="dna-history-wrap">
+                    <h2 class="dna-history-title" data-i18n="dna-recent">Recenti</h2>
+                    <ul id="dna-history" class="dna-history"></ul>
+                </div>
+            </div>
+
+            <!-- ---------- Stato 2: registrazione (solo microfono) ---------- -->
+            <div id="dna-recording" class="dna-recording" hidden>
+                <!-- Vuoto: mic.renderConsent(#dna-consent, { onAllow }) ci scrive
+                     dentro solo se il permesso non e' gia' concesso (spec 13 §3,
+                     stesso meccanismo dell'accordatore in ascolto). -->
+                <div id="dna-consent" class="dna-consent"></div>
+
+                <div class="dna-countdown-wrap">
+                    <span id="dna-countdown" class="dna-countdown">20</span>
+                    <span class="dna-countdown-unit" aria-hidden="true">s</span>
+                </div>
+
+                <div class="dna-level-track" role="img" data-i18n-aria="dna-level-aria" aria-label="Livello del microfono">
+                    <div id="dna-level" class="dna-level"></div>
+                </div>
+
+                <!-- Attivo dopo 10 s (spec 13 §3): disabled di default, dna.js lo
+                     abilita al passare della soglia. -->
+                <button type="button" id="dna-stop" class="tb-btn tb-btn--primary" disabled data-i18n="dna-stop">Ferma</button>
+            </div>
+
+            <!-- ---------- Stato 3: analisi ---------- -->
+            <!-- #dna-progress e' insieme il contenitore di stato E il
+                 progressbar (CONTRATTO dna.js): dna.js scrive
+                 aria-valuenow/--dna-pct direttamente su questo elemento. -->
+            <div id="dna-progress" class="dna-progress" role="progressbar" aria-valuemin="0" aria-valuemax="100"
+                aria-valuenow="0" hidden>
+                <p class="dna-progress-label" data-i18n="dna-analysing">Analisi in corso</p>
+                <p id="dna-phase" class="dna-progress-phase" data-i18n="dna-phase-decode">Decodifica…</p>
+
+                <div class="dna-progress-track" aria-hidden="true">
+                    <div class="dna-progress-fill"></div>
+                </div>
+
+                <button type="button" id="dna-cancel" class="tb-btn tb-btn--ghost" data-i18n="dna-cancel">Annulla</button>
+            </div>
+
+            <!-- ---------- Stato 4: risultato ---------- -->
+            <div id="dna-result" class="dna-result" hidden>
+                <span id="dna-estimate" class="tb-pill dna-badge" data-i18n="dna-estimate" hidden>Stima dal microfono</span>
+
+                <!-- BPM: tb-segment x2/:2 visibile solo con ottava ambigua
+                     (dna.js toglie/mette [hidden] su #dna-bpm-alt secondo la
+                     confidenza, spec 13 §3/§4). -->
+                <section class="dna-card">
+                    <span class="dna-card-label">BPM</span>
+                    <span id="dna-bpm" class="dna-card-value">—</span>
+                    <span id="dna-bpm-conf" class="dna-card-sub"></span>
+                    <div id="dna-bpm-alt" class="tb-segment" role="group" data-i18n-aria="dna-bpm-fold-aria"
+                        aria-label="Correggi l'ottava" hidden>
+                        <button type="button" class="tb-segment-btn" data-dna-fold="0.5" data-i18n-aria="dna-fold-half" aria-label="Dimezza">÷2</button>
+                        <button type="button" class="tb-segment-btn" data-dna-fold="2" data-i18n-aria="dna-fold-double" aria-label="Raddoppia">×2</button>
+                    </div>
+                </section>
+
+                <!-- Tonalita' + Camelot + compatibili. -->
+                <section class="dna-card">
+                    <span class="dna-card-label" data-i18n="dna-key">Tonalità</span>
+                    <span id="dna-key" class="dna-card-value">—</span>
+                    <span id="dna-camelot" class="dna-card-camelot"></span>
+                    <span id="dna-key-conf" class="dna-card-sub"></span>
+                    <p class="dna-key-compat-row">
+                        <span class="dna-card-sub-label" data-i18n="dna-compat">Compatibili</span>
+                        <span id="dna-key-compat" class="dna-card-sub"></span>
+                    </p>
+                </section>
+
+                <!-- LUFS/true peak verso il target della piattaforma. -->
+                <section class="dna-card">
+                    <div class="dna-target-row">
+                        <!-- .tb-select (spec 03 §2/§6, contratto in shared/components.css):
+                             il <select> nativo resta il valore vero e il ripiego senza
+                             JS; select.js aggiunge .is-enhanced e mostra pillola+pannello.
+                             dna.js ascolta "change" sul nativo (id invariato). Spotify/
+                             Apple Music/YouTube/Tidal sono marchi: niente data-i18n. -->
+                        <div class="tb-select" data-value="spotify">
+                            <select id="dna-target" class="tb-select-native">
+                                <option value="spotify" selected>Spotify</option>
+                                <option value="apple">Apple Music</option>
+                                <option value="youtube">YouTube</option>
+                                <option value="tidal">Tidal</option>
+                            </select>
+                            <button type="button" class="tb-select-trigger" aria-haspopup="listbox" aria-expanded="false"
+                                aria-controls="dna-target-panel" id="dna-target-trigger">
+                                <span class="tb-select-label" data-i18n="dna-platform">Piattaforma</span>
+                                <span class="tb-select-value">Spotify</span>
+                                <svg class="tb-select-chevron" aria-hidden="true"><use href="#tb-icon-chevron-down"></use></svg>
+                            </button>
+                            <div class="tb-select-panel" role="listbox" id="dna-target-panel" hidden
+                                aria-labelledby="dna-target-trigger" tabindex="-1">
+                                <button type="button" class="tb-select-option" role="option" data-value="spotify" aria-selected="true">
+                                    <span>Spotify</span>
+                                    <svg class="tb-select-check" aria-hidden="true"><use href="#tb-icon-check"></use></svg>
+                                </button>
+                                <button type="button" class="tb-select-option" role="option" data-value="apple" aria-selected="false">
+                                    <span>Apple Music</span>
+                                    <svg class="tb-select-check" aria-hidden="true"><use href="#tb-icon-check"></use></svg>
+                                </button>
+                                <button type="button" class="tb-select-option" role="option" data-value="youtube" aria-selected="false">
+                                    <span>YouTube</span>
+                                    <svg class="tb-select-check" aria-hidden="true"><use href="#tb-icon-check"></use></svg>
+                                </button>
+                                <button type="button" class="tb-select-option" role="option" data-value="tidal" aria-selected="false">
+                                    <span>Tidal</span>
+                                    <svg class="tb-select-check" aria-hidden="true"><use href="#tb-icon-check"></use></svg>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="dna-lufs-row">
+                        <span id="dna-lufs" class="dna-card-value dna-card-value--sm">—</span>
+                        <div class="dna-lufs-track" aria-hidden="true">
+                            <div id="dna-lufs-bar" class="dna-lufs-fill"></div>
+                        </div>
+                    </div>
+                    <p id="dna-advice" class="dna-advice" aria-live="polite"></p>
+
+                    <div class="dna-sub-row">
+                        <span class="dna-card-sub-label" data-i18n="dna-tp-label">Picco reale</span>
+                        <span id="dna-tp" class="dna-card-sub">—</span>
+                    </div>
+                    <div class="dna-sub-row">
+                        <span class="dna-card-sub-label" data-i18n="dna-lra-label">Escursione</span>
+                        <span id="dna-lra" class="dna-card-sub"></span>
+                    </div>
+                </section>
+
+                <!-- Durata, campionamento, canali. -->
+                <ul class="dna-meta">
+                    <li><span data-i18n="dna-duration-label">Durata</span><span id="dna-duration"></span></li>
+                    <li><span data-i18n="dna-rate-label">Campionamento</span><span id="dna-rate"></span></li>
+                    <li><span data-i18n="dna-channels-label">Canali</span><span id="dna-channels"></span></li>
+                </ul>
+
+                <div class="dna-result-actions">
+                    <button type="button" id="dna-copy" class="tb-btn" data-i18n="dna-copy">Copia</button>
+                    <button type="button" id="dna-again" class="tb-btn tb-btn--primary" data-i18n="dna-again">Analizza un altro</button>
+                </div>
+            </div>
+
+            <!-- ---------- Stato 5: errore ---------- -->
+            <!-- dna-status resta fuori dal "toggle" degli stati (CONTRATTO
+                 dna.js: "if (el.id !== 'dna-status')"): visibile ogni volta
+                 che c'e' un messaggio, in ogni stato, come .tb-status altrove
+                 nella Toolbox. #dna-error e' solo il segnaposto vuoto dello
+                 stato "errore" nel ciclo empty/recording/working/result/error:
+                 dna.js lo mostra e scrive il messaggio in #dna-status. -->
+            <div id="dna-error" class="dna-error" hidden></div>
+
+            <p id="dna-status" class="tb-status" aria-live="polite"></p>
+        </main>
+
+        <!-- Riga sola su ogni pagina (spec 03 §4): niente piu' cookie/note
+             legali (restano sulla vetrina), solo Privacy verso Iubenda. -->
+        <footer class="tb-footer">
+            <p class="tb-footer-line">
+                <span>Tiny Temple Studio</span>
+                <span class="tb-footer-sep" aria-hidden="true">&middot;</span>
+                <a href="https://www.iubenda.com/privacy-policy/35861019" target="_blank" rel="noopener"
+                    data-i18n="tb-footer-privacy">Privacy</a>
+                <span class="tb-footer-sep" aria-hidden="true">&middot;</span>
+                <span data-i18n="footer-designed">Designed by Genna</span>
+            </p>
+        </footer>
+    </div>
+
+    <script type="module" src="/dna/dna.js"></script>
+</body>
+
+</html>

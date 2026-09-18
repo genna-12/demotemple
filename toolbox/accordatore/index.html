@@ -193,6 +193,10 @@
                         <option value="ukulele" data-i18n="acc-inst-ukulele">Ukulele</option>
                         <option value="violin" data-i18n="acc-inst-violin">Violino</option>
                         <option value="chromatic" data-i18n="acc-inst-chromatic">Cromatica</option>
+                        <!-- CONTRATTO accordatore.js: le accordature personalizzate salvate
+                             vengono inserite QUI da accordatore.js (sia nel <select> nativo
+                             sia nel pannello sotto), PRIMA di questa voce fissa. -->
+                        <option value="__custom__" data-i18n="acc-custom-new">Personalizzata…</option>
                     </select>
                     <button type="button" class="tb-select-trigger" aria-haspopup="listbox" aria-expanded="false"
                         aria-controls="acc-instrument-panel" id="acc-instrument-trigger">
@@ -238,8 +242,25 @@
                             <span data-i18n="acc-inst-chromatic">Cromatica</span>
                             <svg class="tb-select-check" aria-hidden="true"><use href="#tb-icon-check"></use></svg>
                         </button>
+                        <!-- Vedi il commento sul <select> nativo qui sopra: stesso contratto. -->
+                        <button type="button" class="tb-select-option" role="option" data-value="__custom__" aria-selected="false">
+                            <span data-i18n="acc-custom-new">Personalizzata…</span>
+                            <svg class="tb-select-check" aria-hidden="true"><use href="#tb-icon-check"></use></svg>
+                        </button>
                     </div>
                 </div>
+                <!-- Visibili solo con un'accordatura personalizzata scelta
+                     (accordatore.js toglie/mette [hidden], CONTRATTO punto 2). -->
+                <button type="button" id="acc-custom-edit" class="tb-btn tb-btn--ghost" hidden data-i18n="acc-custom-edit">Modifica</button>
+                <button type="button" id="acc-custom-remove" class="tb-btn tb-btn--ghost" hidden data-i18n="acc-custom-delete">Elimina</button>
+            </div>
+
+            <!-- Conferma eliminazione inline (CONTRATTO punto 4): niente
+                 confirm() del browser, nascosta di default. -->
+            <div id="acc-custom-confirm" class="acc-custom-confirm" hidden>
+                <span data-i18n="acc-custom-delete-ask">Elimino questa accordatura?</span>
+                <button type="button" id="acc-custom-confirm-yes" class="tb-btn" data-i18n="acc-custom-delete-yes">Elimina</button>
+                <button type="button" id="acc-custom-confirm-no" class="tb-btn tb-btn--ghost" data-i18n="acc-custom-delete-no">Annulla</button>
             </div>
 
             <!-- Vuoto: mic.renderConsent(#acc-consent, { onAllow }) ci scrive
@@ -370,6 +391,43 @@
             <button type="button" class="tb-sheet-close" data-i18n-aria="sheet-close" aria-label="Chiudi">&times;</button>
         </div>
         <div class="tb-sheet-body" data-i18n="acc-a4-info-text">Gli strumenti si accordano su un La di riferimento: 440 Hz è lo standard. Cambialo solo se suoni con chi ne usa un altro.</div>
+    </div>
+
+    <!-- Foglio "Accordatura personalizzata" (CONTRATTO accordatore.js punto
+         3): stessa forma di #acc-a4-info sopra, fuori da .tb-shell.
+         #acc-custom-strings e' vuoto, lo riempie accordatore.js con una
+         .acc-custom-row per corda (punto 5). -->
+    <div class="tb-sheet-scrim" id="acc-custom-scrim" hidden></div>
+    <div class="tb-sheet" id="acc-custom" role="dialog" aria-modal="true" aria-labelledby="acc-custom-title" hidden>
+        <div class="tb-sheet-head">
+            <h2 id="acc-custom-title" data-i18n="acc-custom-title">Accordatura personalizzata</h2>
+            <button type="button" class="tb-sheet-close" data-i18n-aria="sheet-close" aria-label="Chiudi">&times;</button>
+        </div>
+        <div class="tb-sheet-body">
+            <label class="acc-label" for="acc-custom-name" data-i18n="acc-custom-name">Nome</label>
+            <input type="text" id="acc-custom-name" class="tb-number" maxlength="24" autocomplete="off">
+
+            <span class="acc-label" id="acc-custom-count-label" data-i18n="acc-custom-count">Corde</span>
+            <div id="acc-custom-count" class="tb-segment" role="radiogroup" aria-labelledby="acc-custom-count-label">
+                <button type="button" class="tb-segment-btn" data-acc-count="3" role="radio" aria-checked="false">3</button>
+                <button type="button" class="tb-segment-btn" data-acc-count="4" role="radio" aria-checked="false">4</button>
+                <button type="button" class="tb-segment-btn" data-acc-count="5" role="radio" aria-checked="false">5</button>
+                <button type="button" class="tb-segment-btn" data-acc-count="6" role="radio" aria-checked="true">6</button>
+                <button type="button" class="tb-segment-btn" data-acc-count="7" role="radio" aria-checked="false">7</button>
+                <button type="button" class="tb-segment-btn" data-acc-count="8" role="radio" aria-checked="false">8</button>
+            </div>
+
+            <!-- Vuoto: accordatore.js ci crea una .acc-custom-row per corda
+                 (CONTRATTO punto 5). -->
+            <div id="acc-custom-strings" class="acc-custom-strings"></div>
+
+            <p id="acc-custom-error" class="tb-status" hidden></p>
+
+            <div class="acc-custom-actions">
+                <button type="button" id="acc-custom-save" class="tb-btn tb-btn--primary" data-i18n="acc-custom-save">Salva</button>
+                <button type="button" id="acc-custom-cancel" class="tb-btn tb-btn--ghost" data-i18n="acc-custom-cancel">Annulla</button>
+            </div>
+        </div>
     </div>
 
     <script type="module" src="/accordatore/accordatore.js"></script>
