@@ -35,20 +35,12 @@
     padding-bottom: calc(12px + var(--tb-safe-b));
 }
 
-.tb-footer-legal {
-    margin: 6px auto;
-    font-size: 0.68rem;
-    line-height: 1.4;
-}
-
-.tb-footer-links {
-    gap: 4px 12px;
-    margin-top: 6px;
-}
-
-.tb-footer-links a {
-    min-height: 32px;
+.tb-footer-line {
     font-size: 0.72rem;
+}
+
+.tb-footer-line a {
+    min-height: 32px;
 }
 
 /* --- `main#acc` --- */
@@ -60,40 +52,9 @@
     margin: 0 auto;
 }
 
-/* --- Ascolto / Riferimento (#acc-mode, spec 11 §6) --- */
-.acc-mode {
-    display: flex;
-    gap: 6px;
-    padding: 4px;
-    border-radius: 14px;
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.acc-mode-btn {
-    flex: 1;
-    min-height: 44px;
-    border-radius: 10px;
-    color: var(--text-muted);
-    font-weight: 600;
-    font-size: 0.85rem;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    transition: background 0.3s ease, color 0.3s ease;
-}
-
-.acc-mode-btn[aria-checked="true"] {
-    background: var(--accent-orange);
-    color: #ffffff;
-}
-
-@media (hover: hover) and (pointer: fine) {
-    .acc-mode-btn:not([aria-checked="true"]):hover {
-        color: var(--text-primary);
-    }
-}
-
-/* --- Strumento/accordatura (select, spec 11 §5/§6) --- */
+/* .acc-mode/.acc-mode-btn e .acc-select sono superati (spec 03 §7): la
+   modalita' usa tb-segment/tb-segment-btn, lo strumento usa tb-select
+   (contratto in shared/components.css). */
 .acc-field {
     display: flex;
     align-items: center;
@@ -107,18 +68,6 @@
     text-transform: uppercase;
     letter-spacing: 1px;
     color: var(--text-muted);
-}
-
-.acc-select {
-    flex: 1;
-    min-height: 44px;
-    padding: 0 12px;
-    border-radius: 10px;
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    background: rgba(255, 255, 255, 0.04);
-    color: var(--text-primary);
-    font-family: var(--font-text);
-    font-size: 0.9rem;
 }
 
 /* --- Consenso microfono (contenitore vuoto: mic.renderConsent ci scrive
@@ -283,61 +232,98 @@
     }
 }
 
-/* --- Riferimento A4 (spec 11 §5) --- */
+/* --- Tastiera cromatica (#acc-keys-wrap, spec 03 §6): sostituisce le
+   corde per lo strumento "chromatic", solo in Riferimento (vedi la
+   regola [data-acc-instrument] in fondo). 12 tasti fissi, mai generati
+   da JS: stessa "grammatica" visiva di .acc-string. --- */
+.acc-keys-wrap {
+    flex-direction: column;
+    gap: 8px;
+}
+
+.acc-keys {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 6px;
+}
+
+.acc-key {
+    min-width: 44px;
+    min-height: 44px;
+    padding: 0 8px;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--text-primary);
+    font-weight: 600;
+    font-size: 0.9rem;
+    transition: border-color var(--dur-fast) ease, background var(--dur-fast) ease, color var(--dur-fast) ease, transform var(--dur-fast) ease;
+}
+
+.acc-key:active {
+    transform: scale(0.96);
+}
+
+.acc-key.is-near {
+    border-color: rgba(207, 92, 54, 0.5);
+}
+
+.acc-key.is-target {
+    border-color: var(--accent-orange);
+    background: rgba(207, 92, 54, 0.18);
+    color: var(--accent-orange);
+    font-weight: 700;
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .acc-key:hover {
+        border-color: var(--accent-orange);
+    }
+}
+
+.acc-octave-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+}
+
+/* --- Riferimento A4 (spec 03 §6): tb-range + valore + info + reset --- */
 .acc-row--a4 {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
     gap: 10px;
 }
 
 .acc-row--a4 .acc-label {
     flex-shrink: 0;
+    width: 100%;
 }
 
-/* Area di tocco 44px (spec 10 §6: >= 44px ovunque); la traccia nativa resta
-   sottile (solo accent-color, niente pseudo-elementi custom su track/thumb,
-   come #met-volume in metronomo.css), l'altezza e' del solo hit-box. */
 #acc-a4 {
     flex: 1;
-    height: 44px;
-    accent-color: var(--accent-orange);
+    min-width: 100px;
 }
 
 .acc-a4-value {
     flex-shrink: 0;
     min-width: 56px;
     text-align: right;
-    font-size: 0.85rem;
-    color: var(--text-muted);
-    font-variant-numeric: tabular-nums;
 }
 
-/* --- Ripeti (#acc-loop, solo modalita' Riferimento) --- */
-.acc-loop {
+/* --- Suona in loop (#acc-loop, tb-btn base): la riga di aiuto sotto
+   resta finche' il bottone e' disabilitato (spec 03 §6). --- */
+#acc-loop {
     align-self: center;
-    min-width: 44px;
-    min-height: 44px;
-    padding: 0 32px;
-    border-radius: 50px;
-    border: 1px solid var(--accent-orange);
-    color: var(--accent-orange);
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    font-size: 0.85rem;
-    transition: background 0.15s ease, color 0.15s ease;
 }
 
-.acc-loop[aria-pressed="true"],
-.acc-loop:active {
-    background: var(--accent-orange);
-    color: #ffffff;
-}
-
-@media (hover: hover) and (pointer: fine) {
-    .acc-loop:not([aria-pressed="true"]):hover {
-        background: rgba(207, 92, 54, 0.15);
-    }
+.acc-loop-hint {
+    margin: -4px 0 0;
+    text-align: center;
+    font-size: 0.75rem;
+    color: var(--text-muted);
 }
 
 /* --- Riferimento vs Ascolto (spec 11 §1/§3/§4): stato iniziale sempre
@@ -350,8 +336,24 @@
     display: none;
 }
 
-.acc[data-acc-mode="listen"] .acc-loop {
+.acc[data-acc-mode="listen"] #acc-loop,
+.acc[data-acc-mode="listen"] .acc-loop-hint {
     display: none;
+}
+
+/* --- Cromatica (spec 03 §6): niente corde per lo strumento "chromatic",
+   la tastiera compare al suo posto solo in Riferimento (in Ascolto la
+   cromatica mostra solo nota/ottava/cent, gia' coperti da .acc-reading). --- */
+.acc-keys-wrap {
+    display: none;
+}
+
+.acc[data-acc-instrument="chromatic"] #acc-strings {
+    display: none;
+}
+
+.acc[data-acc-mode="reference"][data-acc-instrument="chromatic"] .acc-keys-wrap {
+    display: flex;
 }
 
 /* --- Desktop: piu' respiro --- */

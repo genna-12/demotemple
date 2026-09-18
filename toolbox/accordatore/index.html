@@ -34,7 +34,7 @@
          sotto, che scorre col contenuto; mountBar va chiamata senza
          titleKey. -->
     <header class="tb-bar">
-        <a class="tb-logo in-nav" href="/" data-i18n-aria="bar-logo-aria" aria-label="Tiny Temple Toolbox — vai alla dashboard">
+        <a class="tb-logo in-nav" href="/" data-i18n-aria="bar-logo-aria" aria-label="Toolbox, vai alla dashboard">
             <img src="/assets/brand/logo-arancione.png" width="100" height="100" alt="" loading="eager">
             <span class="sr-only">Tiny Temple Toolbox</span>
         </a>
@@ -84,12 +84,40 @@
             <path d="M12 12V3"></path>
             <path d="M12 12l7.5 4.33"></path>
         </symbol>
+        <!-- Icone di UI (spec 03 §3/§5/§9: niente piu' frecce/simboli scritti a
+             mano nel testo). -->
+        <symbol id="tb-icon-arrow-left" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 12H5"></path>
+            <path d="M11 18l-6-6 6-6"></path>
+        </symbol>
+        <symbol id="tb-icon-chevron-down" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M6 9l6 6 6-6"></path>
+        </symbol>
+        <symbol id="tb-icon-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M5 13l4 4L19 7"></path>
+        </symbol>
+        <symbol id="tb-icon-minus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M5 12h14"></path>
+        </symbol>
+        <symbol id="tb-icon-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 5v14"></path>
+            <path d="M5 12h14"></path>
+        </symbol>
+        <symbol id="tb-icon-grip" viewBox="0 0 24 24">
+            <circle cx="9" cy="6" r="1.6" fill="currentColor"></circle>
+            <circle cx="15" cy="6" r="1.6" fill="currentColor"></circle>
+            <circle cx="9" cy="12" r="1.6" fill="currentColor"></circle>
+            <circle cx="15" cy="12" r="1.6" fill="currentColor"></circle>
+            <circle cx="9" cy="18" r="1.6" fill="currentColor"></circle>
+            <circle cx="15" cy="18" r="1.6" fill="currentColor"></circle>
+        </symbol>
     </svg>
 
     <div id="tb-menu" class="tb-menu" hidden>
         <div class="tb-menu-scrim"></div>
         <div class="tb-menu-panel" role="dialog" aria-modal="true" aria-label="Menu">
             <a class="tb-menu-home tb-menu-item" href="/" data-i18n="menu-all">Dashboard</a>
+            <div class="tb-menu-title" data-i18n="menu-tools">Strumenti</div>
             <div class="tb-menu-groups"></div>
             <div class="tb-menu-foot tb-menu-item">
                 <div class="tb-menu-install-group">
@@ -137,26 +165,81 @@
              quali blocchi sono visibili (vedi accordatore.css in fondo). Gli
              stessi due valori vanno sui bottoni di #acc-mode (aria-checked)
              e sono il contratto di data-acc-mode="listen|reference" per
-             entrambi. -->
-        <main id="acc" class="acc" data-acc-mode="reference">
-            <div id="acc-mode" class="acc-mode" role="radiogroup" aria-label="Ascolto o riferimento / Listen or reference">
-                <button type="button" class="acc-mode-btn" data-acc-mode="reference" role="radio" aria-checked="true" data-i18n="acc-mode-reference">Riferimento</button>
-                <button type="button" class="acc-mode-btn" data-acc-mode="listen" role="radio" aria-checked="false" data-i18n="acc-mode-listen">Ascolto</button>
+             entrambi. data-acc-instrument su #acc (spec 03 §6: "Cromatica"):
+             stesso meccanismo, rispecchia il <select> nativo #acc-instrument
+             ("guitar" di default qui, niente flash), pilota via CSS
+             #acc-strings vs #acc-keys-wrap (solo lo strumento "chromatic" ha
+             la tastiera invece delle corde). -->
+        <main id="acc" class="acc" data-acc-mode="reference" data-acc-instrument="guitar">
+            <div id="acc-mode" class="tb-segment" role="radiogroup" aria-label="Ascolto o riferimento / Listen or reference">
+                <button type="button" class="tb-segment-btn" data-acc-mode="reference" role="radio" aria-checked="true" data-i18n="acc-mode-reference">Riferimento</button>
+                <button type="button" class="tb-segment-btn" data-acc-mode="listen" role="radio" aria-checked="false" data-i18n="acc-mode-listen">Ascolto</button>
             </div>
 
+            <!-- .tb-select (spec 03 §2/§6, contratto in shared/components.css):
+                 il <select> nativo resta il valore vero e il ripiego senza JS;
+                 select.js aggiunge .is-enhanced e mostra pillola+pannello.
+                 accordatore.js ascolta "change" sul nativo (id invariato,
+                 come prima) per aggiornare data-acc-instrument su #acc. -->
             <div class="acc-field">
-                <label class="acc-label" for="acc-instrument" data-i18n="acc-instrument">Strumento</label>
-                <select id="acc-instrument" class="acc-select">
-                    <option value="guitar" selected data-i18n="acc-inst-guitar">Chitarra</option>
-                    <option value="drop-d" data-i18n="acc-inst-drop-d">Drop D</option>
-                    <option value="dadgad" data-i18n="acc-inst-dadgad">DADGAD</option>
-                    <option value="half-step" data-i18n="acc-inst-half-step">Mezzo tono giù</option>
-                    <option value="bass4" data-i18n="acc-inst-bass4">Basso 4 corde</option>
-                    <option value="bass5" data-i18n="acc-inst-bass5">Basso 5 corde</option>
-                    <option value="ukulele" data-i18n="acc-inst-ukulele">Ukulele</option>
-                    <option value="violin" data-i18n="acc-inst-violin">Violino</option>
-                    <option value="chromatic" data-i18n="acc-inst-chromatic">Cromatica</option>
-                </select>
+                <div class="tb-select" data-value="guitar">
+                    <select id="acc-instrument" class="tb-select-native">
+                        <option value="guitar" selected data-i18n="acc-inst-guitar">Chitarra</option>
+                        <option value="drop-d" data-i18n="acc-inst-drop-d">Drop D</option>
+                        <option value="dadgad" data-i18n="acc-inst-dadgad">DADGAD</option>
+                        <option value="half-step" data-i18n="acc-inst-half-step">Mezzo tono giù</option>
+                        <option value="bass4" data-i18n="acc-inst-bass4">Basso 4 corde</option>
+                        <option value="bass5" data-i18n="acc-inst-bass5">Basso 5 corde</option>
+                        <option value="ukulele" data-i18n="acc-inst-ukulele">Ukulele</option>
+                        <option value="violin" data-i18n="acc-inst-violin">Violino</option>
+                        <option value="chromatic" data-i18n="acc-inst-chromatic">Cromatica</option>
+                    </select>
+                    <button type="button" class="tb-select-trigger" aria-haspopup="listbox" aria-expanded="false"
+                        aria-controls="acc-instrument-panel" id="acc-instrument-trigger">
+                        <span class="tb-select-label" data-i18n="acc-instrument">Strumento</span>
+                        <span class="tb-select-value" data-i18n="acc-inst-guitar">Chitarra</span>
+                        <svg class="tb-select-chevron" aria-hidden="true"><use href="#tb-icon-chevron-down"></use></svg>
+                    </button>
+                    <div class="tb-select-panel" role="listbox" id="acc-instrument-panel" hidden
+                        aria-labelledby="acc-instrument-trigger" tabindex="-1">
+                        <button type="button" class="tb-select-option" role="option" data-value="guitar" aria-selected="true">
+                            <span data-i18n="acc-inst-guitar">Chitarra</span>
+                            <svg class="tb-select-check" aria-hidden="true"><use href="#tb-icon-check"></use></svg>
+                        </button>
+                        <button type="button" class="tb-select-option" role="option" data-value="drop-d" aria-selected="false">
+                            <span data-i18n="acc-inst-drop-d">Drop D</span>
+                            <svg class="tb-select-check" aria-hidden="true"><use href="#tb-icon-check"></use></svg>
+                        </button>
+                        <button type="button" class="tb-select-option" role="option" data-value="dadgad" aria-selected="false">
+                            <span data-i18n="acc-inst-dadgad">DADGAD</span>
+                            <svg class="tb-select-check" aria-hidden="true"><use href="#tb-icon-check"></use></svg>
+                        </button>
+                        <button type="button" class="tb-select-option" role="option" data-value="half-step" aria-selected="false">
+                            <span data-i18n="acc-inst-half-step">Mezzo tono giù</span>
+                            <svg class="tb-select-check" aria-hidden="true"><use href="#tb-icon-check"></use></svg>
+                        </button>
+                        <button type="button" class="tb-select-option" role="option" data-value="bass4" aria-selected="false">
+                            <span data-i18n="acc-inst-bass4">Basso 4 corde</span>
+                            <svg class="tb-select-check" aria-hidden="true"><use href="#tb-icon-check"></use></svg>
+                        </button>
+                        <button type="button" class="tb-select-option" role="option" data-value="bass5" aria-selected="false">
+                            <span data-i18n="acc-inst-bass5">Basso 5 corde</span>
+                            <svg class="tb-select-check" aria-hidden="true"><use href="#tb-icon-check"></use></svg>
+                        </button>
+                        <button type="button" class="tb-select-option" role="option" data-value="ukulele" aria-selected="false">
+                            <span data-i18n="acc-inst-ukulele">Ukulele</span>
+                            <svg class="tb-select-check" aria-hidden="true"><use href="#tb-icon-check"></use></svg>
+                        </button>
+                        <button type="button" class="tb-select-option" role="option" data-value="violin" aria-selected="false">
+                            <span data-i18n="acc-inst-violin">Violino</span>
+                            <svg class="tb-select-check" aria-hidden="true"><use href="#tb-icon-check"></use></svg>
+                        </button>
+                        <button type="button" class="tb-select-option" role="option" data-value="chromatic" aria-selected="false">
+                            <span data-i18n="acc-inst-chromatic">Cromatica</span>
+                            <svg class="tb-select-check" aria-hidden="true"><use href="#tb-icon-check"></use></svg>
+                        </button>
+                    </div>
+                </div>
             </div>
 
             <!-- Vuoto: mic.renderConsent(#acc-consent, { onAllow }) ci scrive
@@ -178,44 +261,115 @@
             </div>
 
             <div class="acc-reading">
-                <span id="acc-note" class="acc-note" aria-live="polite" aria-atomic="true">&mdash;</span>
+                <!-- Vuota all'avvio (spec 03 §3: niente segnaposto "-" a
+                     mano): aria-label "nessuna nota" finche' accordatore.js
+                     non scrive la nota rilevata in textContent, momento in
+                     cui sovrascrive anche aria-label con la nota stessa. -->
+                <span id="acc-note" class="acc-note" aria-live="polite" aria-atomic="true"
+                    data-i18n-aria="acc-note-empty" aria-label="nessuna nota"></span>
                 <span id="acc-octave" class="acc-octave"></span>
                 <span id="acc-cents" class="acc-cents"></span>
             </div>
 
             <!-- Vuoto: l'JS vi crea button.acc-string (una per corda
                  dell'accordatura scelta), con .is-target/.is-near (spec 11
-                 §6). Visibile in entrambe le modalita': tocco per suonare in
-                 Riferimento, evidenziata dalla nota rilevata in Ascolto. -->
+                 §6). Visibile in entrambe le modalita' per ogni strumento
+                 tranne "chromatic" (niente corde: vedi #acc-keys-wrap
+                 sotto), tocco per suonare in Riferimento, evidenziata dalla
+                 nota rilevata in Ascolto. -->
             <div id="acc-strings" class="acc-strings"></div>
 
-            <div class="acc-row acc-row--a4">
-                <label class="acc-label" for="acc-a4" data-i18n="acc-a4">Riferimento A4</label>
-                <input type="range" id="acc-a4" min="415" max="466" step="1" value="440">
-                <span id="acc-a4-value" class="acc-a4-value">440 Hz</span>
+            <!-- Solo strumento "chromatic" + modalita' Riferimento (spec 03
+                 §6): tastiera di 12 note fisse (markup statico, tasti
+                 >= 44px, mai generata da JS) + tb-segment per l'ottava 2-5
+                 (accordatore.js legge/scrive data-acc-octave, id diverso da
+                 #acc-octave qui sopra che e' la sola lettura dell'ottava
+                 rilevata in Ascolto). Tocco su un tasto: stessa logica di
+                 selezione di .acc-string (is-target), suona la nota
+                 nell'ottava scelta. -->
+            <div id="acc-keys-wrap" class="acc-keys-wrap">
+                <div id="acc-keys" class="acc-keys" role="group" data-i18n-aria="acc-keys-aria" aria-label="Tastiera cromatica">
+                    <button type="button" class="acc-key" data-acc-note="C">C</button>
+                    <button type="button" class="acc-key" data-acc-note="C#">C#</button>
+                    <button type="button" class="acc-key" data-acc-note="D">D</button>
+                    <button type="button" class="acc-key" data-acc-note="D#">D#</button>
+                    <button type="button" class="acc-key" data-acc-note="E">E</button>
+                    <button type="button" class="acc-key" data-acc-note="F">F</button>
+                    <button type="button" class="acc-key" data-acc-note="F#">F#</button>
+                    <button type="button" class="acc-key" data-acc-note="G">G</button>
+                    <button type="button" class="acc-key" data-acc-note="G#">G#</button>
+                    <button type="button" class="acc-key" data-acc-note="A">A</button>
+                    <button type="button" class="acc-key" data-acc-note="A#">A#</button>
+                    <button type="button" class="acc-key" data-acc-note="B">B</button>
+                </div>
+                <div class="acc-octave-row">
+                    <span class="acc-label" id="acc-key-octave-label" data-i18n="acc-octave">Ottava</span>
+                    <div id="acc-key-octave" class="tb-segment" role="radiogroup" aria-labelledby="acc-key-octave-label">
+                        <button type="button" class="tb-segment-btn" data-acc-octave="2" role="radio" aria-checked="false">2</button>
+                        <button type="button" class="tb-segment-btn" data-acc-octave="3" role="radio" aria-checked="false">3</button>
+                        <button type="button" class="tb-segment-btn" data-acc-octave="4" role="radio" aria-checked="true">4</button>
+                        <button type="button" class="tb-segment-btn" data-acc-octave="5" role="radio" aria-checked="false">5</button>
+                    </div>
+                </div>
             </div>
 
-            <button type="button" id="acc-loop" class="acc-loop" aria-pressed="false" data-i18n="acc-loop">Ripeti</button>
+            <!-- Riga A4 (spec 03 §6): tb-range + valore + "i" (apre il
+                 foglio #acc-a4-info sotto, fuori da .tb-shell) + reset,
+                 disabilitato di default perche' 440 e' gia' il valore
+                 iniziale (accordatore.js lo abilita/disabilita al cambiare
+                 di #acc-a4). -->
+            <div class="acc-row acc-row--a4">
+                <label class="acc-label" for="acc-a4" data-i18n="acc-a4">Riferimento A4</label>
+                <input type="range" id="acc-a4" class="tb-range" min="415" max="466" step="1" value="440">
+                <span id="acc-a4-value" class="acc-a4-value tb-range-value">440 Hz</span>
+                <button type="button" class="tb-info" aria-haspopup="dialog" aria-expanded="false"
+                    aria-controls="acc-a4-info" data-i18n-aria="info-aria" aria-label="Che cos'è">
+                    <span class="tb-info-glyph" aria-hidden="true">i</span>
+                </button>
+                <button type="button" id="acc-a4-reset" class="tb-btn tb-btn--ghost" disabled
+                    data-i18n="acc-a4-reset">Reimposta 440</button>
+            </div>
+
+            <!-- Solo in Ascolto, solo col permesso del microfono gia'
+                 concesso (spec 03 §6): accordatore.js toglie [hidden]. -->
+            <button type="button" id="acc-mic-off" class="tb-btn tb-btn--ghost" hidden
+                data-i18n="acc-mic-off">Disattiva microfono</button>
+
+            <!-- "Suona in loop" e' secondario (tb-btn base, spec 03 §6):
+                 spento finche' non si sceglie una corda o un tasto, con la
+                 riga di aiuto sotto (accordatore.js la nasconde quando
+                 abilita il bottone). -->
+            <button type="button" id="acc-loop" class="tb-btn" aria-pressed="false" disabled data-i18n="acc-loop">Suona in loop</button>
+            <p id="acc-loop-hint" class="acc-loop-hint" data-i18n="acc-loop-hint">Scegli prima una nota</p>
 
             <p id="acc-status" class="tb-status" aria-live="polite"></p>
         </main>
 
+        <!-- Riga sola su ogni pagina (spec 03 §4): niente piu' cookie/note
+             legali (restano sulla vetrina), solo Privacy verso Iubenda. -->
         <footer class="tb-footer">
-            <p class="tb-footer-legal" data-i18n="tb-footer-legal-note">
-                Tiny Temple Studio &egrave; il nome con cui Francesco Pontillo, libero professionista, esercita
-                la propria attivit&agrave;. I professionisti indicati sul sito collaborano in qualit&agrave; di
-                lavoratori autonomi indipendenti.
-            </p>
-            <div class="tb-footer-links">
+            <p class="tb-footer-line">
+                <span>Tiny Temple Studio</span>
+                <span class="tb-footer-sep" aria-hidden="true">&middot;</span>
                 <a href="https://www.iubenda.com/privacy-policy/35861019" target="_blank" rel="noopener"
-                    data-i18n="tb-footer-privacy">Privacy Policy</a>
-                <a href="https://www.iubenda.com/privacy-policy/35861019/cookie-policy" target="_blank"
-                    rel="noopener" data-i18n="tb-footer-cookie">Cookie Policy</a>
-                <a href="https://tinytemplestudio.it/note-legali" data-i18n="tb-footer-note-legali">Note
-                    legali</a>
-                <a href="https://tinytemplestudio.it/" data-i18n="tb-footer-site">Sito dello studio</a>
-            </div>
+                    data-i18n="tb-footer-privacy">Privacy</a>
+                <span class="tb-footer-sep" aria-hidden="true">&middot;</span>
+                <span data-i18n="footer-designed">Designed by Genna</span>
+            </p>
         </footer>
+    </div>
+
+    <!-- Foglio "Che cos'e'" della riga A4 (spec 03 §2/§6, contratto
+         .tb-info/.tb-sheet in shared/components.css): fuori da .tb-shell,
+         come #met-counter in metronomo, perche' e' un overlay fixed.
+         sheet.js apre/chiude togliendo/mettendo [hidden] + .is-open. -->
+    <div class="tb-sheet-scrim" id="acc-a4-info-scrim" hidden></div>
+    <div class="tb-sheet" id="acc-a4-info" role="dialog" aria-modal="true" aria-labelledby="acc-a4-info-title" hidden>
+        <div class="tb-sheet-head">
+            <h2 id="acc-a4-info-title" data-i18n="acc-a4-info-title">Riferimento A4</h2>
+            <button type="button" class="tb-sheet-close" data-i18n-aria="sheet-close" aria-label="Chiudi">&times;</button>
+        </div>
+        <div class="tb-sheet-body" data-i18n="acc-a4-info-text">Gli strumenti si accordano su un La di riferimento: 440 Hz è lo standard. Cambialo solo se suoni con chi ne usa un altro.</div>
     </div>
 
     <script type="module" src="/accordatore/accordatore.js"></script>

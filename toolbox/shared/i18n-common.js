@@ -14,13 +14,14 @@
 // needsGesture() al ritorno in primo piano.
 export default {
     it: {
-        'tb-back': '← Toolbox',
+        'tb-back': 'Toolbox',
         'tb-lang-aria': 'Cambia lingua',
 
         'bar-menu-open': 'Apri il menu',
         'bar-menu-close': 'Chiudi il menu',
-        'bar-logo-aria': 'Tiny Temple Toolbox — vai alla dashboard',
+        'bar-logo-aria': 'Toolbox, vai alla dashboard',
         'menu-all': 'Dashboard',
+        'menu-tools': 'Strumenti',
         'menu-install': 'Installa l’app',
         'menu-ext': 'Sito dello studio',
         'pill-soon': 'In arrivo',
@@ -78,11 +79,10 @@ export default {
         'pwa-update': 'Nuova versione disponibile.',
         'pwa-update-action': 'Aggiorna',
 
-        'tb-footer-legal-note': 'Tiny Temple Studio è il nome con cui Francesco Pontillo, libero professionista, esercita la propria attività. I professionisti indicati sul sito collaborano in qualità di lavoratori autonomi indipendenti.',
-        'tb-footer-privacy': 'Privacy Policy',
-        'tb-footer-cookie': 'Cookie Policy',
-        'tb-footer-note-legali': 'Note legali',
-        'tb-footer-site': 'Sito dello studio',
+        'tb-footer-privacy': 'Privacy',
+        'footer-designed': 'Designed by Genna',
+        'sheet-close': 'Chiudi',
+        'info-aria': 'Che cos\'è',
 
         'e404-eyebrow': 'Errore 404',
         'e404-title': 'Pagina non trovata',
@@ -91,13 +91,14 @@ export default {
         'audio-resume-msg': 'Tocca per riprendere'
     },
     en: {
-        'tb-back': '← Toolbox',
+        'tb-back': 'Toolbox',
         'tb-lang-aria': 'Change language',
 
         'bar-menu-open': 'Open menu',
         'bar-menu-close': 'Close menu',
-        'bar-logo-aria': 'Tiny Temple Toolbox — go to the dashboard',
+        'bar-logo-aria': 'Toolbox, go to the dashboard',
         'menu-all': 'Dashboard',
+        'menu-tools': 'Tools',
         'menu-install': 'Install the app',
         'menu-ext': 'Studio website',
         'pill-soon': 'Coming soon',
@@ -155,11 +156,10 @@ export default {
         'pwa-update': 'New version available.',
         'pwa-update-action': 'Update',
 
-        'tb-footer-legal-note': 'Tiny Temple Studio is the name under which Francesco Pontillo, a self-employed professional, carries out his activity. The professionals listed on this site work with the studio as independent self-employed contractors.',
-        'tb-footer-privacy': 'Privacy Policy',
-        'tb-footer-cookie': 'Cookie Policy',
-        'tb-footer-note-legali': 'Legal notice',
-        'tb-footer-site': 'Studio website',
+        'tb-footer-privacy': 'Privacy',
+        'footer-designed': 'Designed by Genna',
+        'sheet-close': 'Close',
+        'info-aria': 'What is this',
 
         'e404-eyebrow': 'Error 404',
         'e404-title': 'Page not found',

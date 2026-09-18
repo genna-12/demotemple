@@ -31,7 +31,7 @@
          feedback Genna): e' solo il contenitore atteso da shared/nav.js
          (mountBar), i due figli sono `position: fixed` per conto loro. -->
     <header class="tb-bar">
-        <a class="tb-logo" href="/" data-i18n-aria="bar-logo-aria" aria-label="Tiny Temple Toolbox — vai alla dashboard">
+        <a class="tb-logo" href="/" data-i18n-aria="bar-logo-aria" aria-label="Toolbox, vai alla dashboard">
             <img src="/assets/brand/logo-arancione.png" width="100" height="100" alt="" loading="eager">
             <span class="sr-only">Tiny Temple Toolbox</span>
         </a>
@@ -96,12 +96,40 @@
             <path d="M12 12V3"></path>
             <path d="M12 12l7.5 4.33"></path>
         </symbol>
+        <!-- Icone di UI (spec 03 §3/§5/§9: niente piu' frecce/simboli scritti a
+             mano nel testo). -->
+        <symbol id="tb-icon-arrow-left" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 12H5"></path>
+            <path d="M11 18l-6-6 6-6"></path>
+        </symbol>
+        <symbol id="tb-icon-chevron-down" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M6 9l6 6 6-6"></path>
+        </symbol>
+        <symbol id="tb-icon-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M5 13l4 4L19 7"></path>
+        </symbol>
+        <symbol id="tb-icon-minus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M5 12h14"></path>
+        </symbol>
+        <symbol id="tb-icon-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 5v14"></path>
+            <path d="M5 12h14"></path>
+        </symbol>
+        <symbol id="tb-icon-grip" viewBox="0 0 24 24">
+            <circle cx="9" cy="6" r="1.6" fill="currentColor"></circle>
+            <circle cx="15" cy="6" r="1.6" fill="currentColor"></circle>
+            <circle cx="9" cy="12" r="1.6" fill="currentColor"></circle>
+            <circle cx="15" cy="12" r="1.6" fill="currentColor"></circle>
+            <circle cx="9" cy="18" r="1.6" fill="currentColor"></circle>
+            <circle cx="15" cy="18" r="1.6" fill="currentColor"></circle>
+        </symbol>
     </svg>
 
     <div id="tb-menu" class="tb-menu" hidden>
         <div class="tb-menu-scrim"></div>
         <div class="tb-menu-panel" role="dialog" aria-modal="true" aria-label="Menu">
             <a class="tb-menu-home tb-menu-item" href="/" data-i18n="menu-all" aria-current="page">Dashboard</a>
+            <div class="tb-menu-title" data-i18n="menu-tools">Strumenti</div>
             <div class="tb-menu-groups"></div>
             <div class="tb-menu-foot tb-menu-item">
                 <div class="tb-menu-install-group">
@@ -149,27 +177,25 @@
             <ul class="tb-tiles" id="tb-tiles" aria-label="Toolbox"></ul>
             <div id="tb-dash-live" class="sr-only" aria-live="polite"></div>
 
-            <button type="button" id="tb-tile-add" class="tb-tile-add" hidden data-i18n-aria="dash-add" aria-label="Aggiungi strumento">+</button>
+            <button type="button" id="tb-tile-add" class="tb-tile-add" hidden data-i18n-aria="dash-add" aria-label="Aggiungi strumento">
+                <svg aria-hidden="true" focusable="false"><use href="#tb-icon-plus"></use></svg>
+            </button>
 
             <!-- Riservato per "Recenti" quando Penna/DNA salveranno record (spec 02 §4): niente per ora. -->
             <div id="tb-slot" class="tb-slot" hidden></div>
         </main>
 
+        <!-- Riga sola su ogni pagina (spec 03 §4): niente piu' cookie/note
+             legali (restano sulla vetrina), solo Privacy verso Iubenda. -->
         <footer class="tb-footer">
-            <p class="tb-footer-legal" data-i18n="tb-footer-legal-note">
-                Tiny Temple Studio &egrave; il nome con cui Francesco Pontillo, libero professionista, esercita
-                la propria attivit&agrave;. I professionisti indicati sul sito collaborano in qualit&agrave; di
-                lavoratori autonomi indipendenti.
-            </p>
-            <div class="tb-footer-links">
+            <p class="tb-footer-line">
+                <span>Tiny Temple Studio</span>
+                <span class="tb-footer-sep" aria-hidden="true">&middot;</span>
                 <a href="https://www.iubenda.com/privacy-policy/35861019" target="_blank" rel="noopener"
-                    data-i18n="tb-footer-privacy">Privacy Policy</a>
-                <a href="https://www.iubenda.com/privacy-policy/35861019/cookie-policy" target="_blank"
-                    rel="noopener" data-i18n="tb-footer-cookie">Cookie Policy</a>
-                <a href="https://tinytemplestudio.it/note-legali" data-i18n="tb-footer-note-legali">Note
-                    legali</a>
-                <a href="https://tinytemplestudio.it/" data-i18n="tb-footer-site">Sito dello studio</a>
-            </div>
+                    data-i18n="tb-footer-privacy">Privacy</a>
+                <span class="tb-footer-sep" aria-hidden="true">&middot;</span>
+                <span data-i18n="footer-designed">Designed by Genna</span>
+            </p>
         </footer>
     </div>
 

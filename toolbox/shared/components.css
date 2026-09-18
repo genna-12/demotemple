@@ -1,11 +1,94 @@
 /* ========================================================
    TINY TEMPLE TOOLBOX - COMPONENTS
    Componenti tb-* riusabili nelle pagine della Toolbox: tile
-   della dashboard, picker, pill, bottoni, stato, toast, consenso
-   microfono. Richiede shared/tokens.css e shared/base.css caricati
-   prima. Nomi generici (nessun "toolbox"): riusabili da un altro
-   sottodominio (spec 02 §6).
-   ======================================================== */
+   della dashboard, picker, pill, bottoni, segmented, select,
+   range, toggle, campo numerico, info+foglio, stato, toast,
+   consenso microfono. Richiede shared/tokens.css e shared/base.css
+   caricati prima. Nomi generici (nessun "toolbox"): riusabili da
+   un altro sottodominio (spec 02 §6). Regole comuni ai componenti
+   nuovi (spec 03 §2): altezza >= --tap (44px), hover solo con
+   puntatore fine, :active/.is-pressed scala 0.97, :focus-visible
+   arancione (gia' globale in base.css), disabilitato a opacita'
+   0.45 senza cambi di colore (regola in fondo a questo blocco),
+   transizioni --dur-fast, azzerate da reduced-motion (regola
+   globale gia' in base.css, agisce su transition/animation-duration
+   di qualunque selettore quindi copre anche questi).
+
+   CONTRATTO per shared/select.js, shared/sheet.js, shared/dash.js
+   (spec 03 §9 — builder scrive SOLO il markup statico e questo CSS,
+   zero JS):
+
+   .tb-select (select.js). Markup gia' pronto in ogni pagina che lo usa:
+     <div class="tb-select" data-value="<valore iniziale>">
+       <select class="tb-select-native" id="<id>">...<option value>...</select>
+       <button type="button" class="tb-select-trigger" aria-haspopup="listbox"
+               aria-expanded="false" aria-controls="<id>-panel" id="<id>-trigger">
+         <span class="tb-select-label" data-i18n="...">...</span>
+         <span class="tb-select-value">...</span>
+         <svg class="tb-select-chevron" aria-hidden="true"><use href="#tb-icon-chevron-down"></use></svg>
+       </button>
+       <div class="tb-select-panel" role="listbox" id="<id>-panel" hidden
+            aria-labelledby="<id>-trigger" tabindex="-1">
+         <button type="button" class="tb-select-option" role="option" data-value="..."
+                 aria-selected="true|false">
+           <span>...</span>
+           <svg class="tb-select-check" aria-hidden="true"><use href="#tb-icon-check"></use></svg>
+         </button>...
+       </div>
+     </div>
+   Il <select> nativo e' il valore vero e il ripiego senza JS (visibile,
+   utilizzabile, come lo era prima di questa spec): select.js aggiunge
+   .tb-select.is-enhanced, che nasconde il nativo (sr-only, resta nel DOM
+   e nel form) e mostra pillola+pannello, tenuti sincronizzati (cambiare
+   l'uno aggiorna l'altro). Apertura: click/Invio/Spazio/freccia sul
+   trigger; dentro il pannello frecce/Home/End/lettere spostano l'opzione
+   attiva (.tb-select-option.is-active + aria-activedescendant sul
+   pannello); Invio o click scelgono (aria-selected sull'opzione, il
+   valore sul trigger/nativo); Esc, tocco fuori o scelta chiudono
+   ([hidden] sul pannello, aria-expanded=false) e riportano il focus al
+   trigger. Sopra 480px il pannello e' ancorato sotto il trigger (sopra
+   se manca spazio: .tb-select-panel.is-above); sotto 480px diventa un
+   .tb-sheet (aggiungi anche quella classe al pannello, vedi sotto).
+
+   .tb-info + .tb-sheet (sheet.js). Markup gia' pronto:
+     <button type="button" class="tb-info" aria-haspopup="dialog" aria-expanded="false"
+             aria-controls="<id>" data-i18n-aria="info-aria" aria-label="Che cos'e'">
+       <span class="tb-info-glyph" aria-hidden="true">i</span>
+     </button>
+     <div class="tb-sheet-scrim" id="<id>-scrim" hidden></div>
+     <div class="tb-sheet" id="<id>" role="dialog" aria-modal="true" aria-labelledby="<id>-title" hidden>
+       <div class="tb-sheet-head">
+         <h2 id="<id>-title" data-i18n="...">...</h2>
+         <button type="button" class="tb-sheet-close" data-i18n-aria="sheet-close" aria-label="Chiudi">&times;</button>
+       </div>
+       <div class="tb-sheet-body" data-i18n="...">...</div>
+     </div>
+   sheet.js apre/chiude togliendo/mettendo [hidden] su scrim+foglio insieme
+   a .is-open (l'animazione sta sulle classi, come #tb-menu); sotto 768px
+   e' un foglio dal basso con scrim scuro; da 768px un popover ancorato
+   vicino al bottone, senza scrim scuro (solo per chiudere al tocco fuori:
+   .tb-sheet-scrim resta presente ma trasparente, vedi CSS). Chiude con la
+   X, lo scrim o Esc; il focus trap e il resto (inert sul contenuto dietro,
+   scroll-lock) sono lo stesso meccanismo di #tb-menu in nav.js: sheet.js
+   lo riusa, non lo reinventa. Riporta il focus al bottone .tb-info che
+   l'ha aperto.
+
+   .tb-tile-grip (dash.js, spec 03 §5). Solo in Modifica, dentro ogni
+   .tb-tile-editable (o hook equivalente a scelta di dash.js), PRIMA del
+   contenuto del tile cosi' riceve il focus per primo da tastiera:
+     <button type="button" class="tb-tile-grip" tabindex="-1" aria-hidden="true">
+       <svg aria-hidden="true"><use href="#tb-icon-grip"></use></svg>
+     </button>
+   aria-hidden perche' il trascinamento da tastiera resta sul tile (come
+   oggi, invariato): il grip serve solo al puntatore. .tb-tile-grip ha
+   touch-action: none (qui sotto): il trascinamento deve partire SOLO da
+   li'. L'elemento che oggi riceve `touch-action: none` durante il
+   riordino (il <li>, via style.setProperty in dash.js) deve tornare a
+   `pan-y` appena il drag parte dal grip: e' l'unico modo perche' il dito
+   scorra la pagina quando tocca il resto del tile invece di trascinarlo
+   per sbaglio (criterio 6). .tb-tile-remove passa da "&minus;" a
+   un'icona (<svg><use href="#tb-icon-minus">, sprite qui sotto): stesso
+   dimensionamento di .tb-tile-icon (currentColor, nessun colore a mano). */
 
 /* --- DASHBOARD: TILE (spec 02 §4) --- */
 /* CONTRATTO shared/dash.js (markup gia' pronto in index.html: griglia
@@ -143,9 +226,12 @@ a.tb-tile:active {
     justify-content: center;
     background: var(--accent-orange);
     color: #ffffff;
-    font-size: 1rem;
-    line-height: 1;
     border: 2px solid var(--bg-color);
+}
+
+.tb-tile-remove svg {
+    width: 14px;
+    height: 14px;
 }
 
 /* display:flex qui sopra ha la stessa specificita' di [hidden] dell'UA:
@@ -165,10 +251,48 @@ a.tb-tile:active {
     border-radius: 50%;
     border: 1px dashed rgba(255, 255, 255, 0.25);
     color: var(--text-muted);
-    font-size: 1.3rem;
+}
+
+.tb-tile-add svg {
+    width: 18px;
+    height: 18px;
 }
 
 .tb-tile-add[hidden] {
+    display: none !important;
+}
+
+/* --- MANIGLIA TILE (spec 03 §5): solo in Modifica, trascinamento SOLO da
+   qui (touch-action:none); il resto del <li> torna a pan-y (dash.js), cosi'
+   il dito scorre la pagina anche mentre una tile e' "presa" in Modifica. */
+.tb-tile-grip {
+    position: absolute;
+    top: -6px;
+    left: -6px;
+    z-index: 2;
+    width: var(--tap);
+    height: var(--tap);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    color: var(--text-muted);
+    touch-action: none;
+    cursor: grab;
+}
+
+.tb-tile-grip:active {
+    cursor: grabbing;
+}
+
+.tb-tile-grip svg {
+    width: 18px;
+    height: 18px;
+}
+
+.tb-tile-grip[hidden] {
     display: none !important;
 }
 
@@ -366,15 +490,19 @@ a.tb-tile:active {
     color: var(--text-muted);
 }
 
-/* --- BOTTONI --- */
+/* --- BOTTONI (spec 03 §2) --- */
+/* Base = variante "secondaria" (vetro scuro): usata cosi' com'e' per i
+   bottoni secondari (Tap/Conta del metronomo, Ripristina ordine...). Una
+   sola --primary per schermata (disciplina di chi scrive il markup, non
+   imposta dal CSS). */
 .tb-btn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 10px;
-    min-height: 44px;
+    gap: var(--sp-2);
+    min-height: var(--tap);
     padding: 14px 32px;
-    border-radius: 50px;
+    border-radius: var(--r-pill);
     border: 1px solid rgba(255, 255, 255, 0.2);
     background: rgba(255, 255, 255, 0.04);
     backdrop-filter: blur(20px);
@@ -386,7 +514,7 @@ a.tb-tile:active {
     letter-spacing: 2px;
     color: var(--text-primary);
     text-decoration: none;
-    transition: all 0.4s var(--ease-cinematic);
+    transition: all var(--dur-med) var(--ease-cinematic);
 }
 
 .tb-btn:active {
@@ -394,12 +522,22 @@ a.tb-tile:active {
     border-color: var(--accent-orange);
 }
 
-/* .tb-install: alias dello stile del pulsante primario, per un futuro CTA
-   pieno arancione (es. dentro uno strumento); da usare insieme a .tb-btn. */
+/* Icona dentro un bottone (es. tb-back): stessa altezza del testo uppercase. */
+.tb-btn svg {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+}
+
+/* --primary (e .tb-install, suo alias per il CTA di installazione):
+   vetro colorato, non piatto - lo stesso backdrop-filter della base sopra
+   il gradiente, bordo chiaro in alto, --shadow-btn. */
 .tb-btn--primary,
 .tb-install {
-    background: var(--accent-orange);
+    background: var(--grad-accent);
     border-color: var(--accent-orange);
+    border-top-color: rgba(255, 255, 255, 0.5);
+    box-shadow: var(--shadow-btn);
     color: #ffffff;
 }
 
@@ -407,6 +545,45 @@ a.tb-tile:active {
 .tb-install:active {
     background: #b64d2c;
     border-color: #b64d2c;
+}
+
+/* --ghost: solo testo, nessun bordo/sfondo (es. "Disattiva microfono"). */
+.tb-btn--ghost {
+    min-height: var(--tap);
+    padding: 0 var(--sp-2);
+    border: none;
+    background: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    color: var(--text-muted);
+    text-transform: none;
+    letter-spacing: normal;
+    font-weight: 600;
+}
+
+.tb-btn--ghost:active {
+    border-color: transparent;
+    color: var(--accent-orange);
+}
+
+/* --icon: tondo 44px, per i passi del metronomo (+1/-1/+5/-5) e simili. */
+.tb-btn--icon {
+    min-width: var(--tap);
+    min-height: var(--tap);
+    padding: 0 10px;
+    border-radius: var(--r-pill);
+    font-size: 0.95rem;
+    letter-spacing: normal;
+    text-transform: none;
+}
+
+/* --lg: azione principale a piena evidenza (es. Avvia/Ferma). */
+.tb-btn--lg {
+    min-height: 56px;
+    min-width: 200px;
+    padding: 16px 40px;
+    font-size: 0.95rem;
+    letter-spacing: 0.05em;
 }
 
 @media (hover: hover) and (pointer: fine) {
@@ -419,10 +596,698 @@ a.tb-tile:active {
         background: #b64d2c;
         border-color: #b64d2c;
     }
+    .tb-btn--ghost:hover {
+        color: var(--accent-orange);
+        background: none;
+    }
 }
 
 .tb-btn[hidden] {
     display: none !important;
+}
+
+/* --- SEGMENTED (spec 03 §2/§7): sostituisce le file di bottoni fatte a
+   mano (.met-choices, .acc-mode...). Markup: .tb-segment[role=radiogroup]
+   > .tb-segment-btn[role=radio][aria-checked]. --scroll: una riga sola a
+   scorrimento orizzontale con snap, per i gruppi piu' lunghi (battute,
+   suddivisioni). */
+.tb-segment {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-1);
+    padding: var(--sp-1);
+    border-radius: var(--r-pill);
+    background: var(--surface-1);
+    border: 1px solid var(--glass-border);
+}
+
+.tb-segment-btn {
+    flex: 1;
+    min-width: var(--tap);
+    min-height: 40px;
+    padding: 0 var(--sp-3);
+    border-radius: var(--r-pill);
+    color: var(--text-muted);
+    font-weight: 600;
+    font-size: 0.85rem;
+    transition: background var(--dur-med) ease, color var(--dur-med) ease;
+}
+
+/* Gradiente "tenue" (spec 03 §2): il token --grad-accent smorzato con un
+   velo scuro sopra, non piatto ma neanche a piena intensita' come --primary. */
+.tb-segment-btn[aria-checked="true"] {
+    background:
+        linear-gradient(rgba(8, 8, 8, 0.78), rgba(8, 8, 8, 0.78)),
+        var(--grad-accent);
+    color: #ffffff;
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .tb-segment-btn:not([aria-checked="true"]):hover {
+        color: var(--text-primary);
+    }
+}
+
+.tb-segment--scroll {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x proximity;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 16px, #000 calc(100% - 16px), transparent 100%);
+    mask-image: linear-gradient(90deg, transparent 0, #000 16px, #000 calc(100% - 16px), transparent 100%);
+}
+
+.tb-segment--scroll::-webkit-scrollbar {
+    display: none;
+}
+
+.tb-segment--scroll .tb-segment-btn {
+    flex: none;
+    scroll-snap-align: center;
+}
+
+/* --- SELECT (spec 03 §2/§9: vedi il CONTRATTO select.js in cima al file) --- */
+.tb-select {
+    position: relative;
+    width: 100%;
+}
+
+.tb-select-native {
+    width: 100%;
+    min-height: var(--tap);
+    padding: 0 var(--sp-3);
+    border-radius: var(--r-md);
+    border: 1px solid var(--glass-border);
+    background: var(--surface-1);
+    color: var(--text-primary);
+    font-family: var(--font-text);
+    font-size: 0.9rem;
+}
+
+/* Preso in carico da select.js: nativo fuori vista ma nel DOM/nel form
+   (sr-only, non display:none: resta annunciabile e nel tab order se la
+   pillola per qualche motivo non lo e'). */
+.tb-select.is-enhanced .tb-select-native {
+    position: absolute !important;
+    width: 1px !important;
+    height: 1px !important;
+    padding: 0 !important;
+    margin: -1px !important;
+    overflow: hidden !important;
+    clip: rect(0, 0, 0, 0) !important;
+    white-space: nowrap !important;
+    border: 0 !important;
+}
+
+.tb-select-trigger {
+    display: none;
+    align-items: center;
+    gap: var(--sp-2);
+    width: 100%;
+    min-height: var(--tap);
+    padding: 0 var(--sp-4);
+    border-radius: var(--r-pill);
+    border: 1px solid var(--glass-border);
+    border-top: 1px solid var(--glass-border-top);
+    background: var(--glass-bg);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    color: var(--text-primary);
+    text-align: left;
+}
+
+.tb-select.is-enhanced .tb-select-trigger {
+    display: flex;
+}
+
+.tb-select-trigger:active {
+    transform: scale(0.99);
+}
+
+.tb-select-label {
+    flex-shrink: 0;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text-muted);
+}
+
+.tb-select-value {
+    flex: 1;
+    min-width: 0;
+    font-size: 0.9rem;
+    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.tb-select-chevron {
+    flex-shrink: 0;
+    width: 16px;
+    height: 16px;
+    color: var(--text-muted);
+    transition: transform var(--dur-med) ease;
+}
+
+.tb-select-trigger[aria-expanded="true"] .tb-select-chevron {
+    transform: rotate(180deg);
+}
+
+.tb-select-panel {
+    position: absolute;
+    z-index: 30;
+    top: calc(100% + var(--sp-2));
+    left: 0;
+    right: 0;
+    max-height: 280px;
+    overflow-y: auto;
+    scrollbar-width: none;
+    padding: var(--sp-2);
+    border-radius: var(--r-md);
+    background: var(--glass-bg);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    border: 1px solid var(--glass-border);
+    border-top: 1px solid var(--glass-border-top);
+    box-shadow: var(--shadow-pop);
+}
+
+.tb-select-panel::-webkit-scrollbar {
+    display: none;
+}
+
+.tb-select-panel[hidden] {
+    display: none;
+}
+
+.tb-select-panel.is-above {
+    top: auto;
+    bottom: calc(100% + var(--sp-2));
+}
+
+.tb-select-option {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-2);
+    width: 100%;
+    min-height: var(--tap);
+    padding: 0 var(--sp-3);
+    border-radius: var(--r-sm);
+    color: var(--text-primary);
+    font-size: 0.88rem;
+    text-align: left;
+}
+
+.tb-select-option.is-active {
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.tb-select-check {
+    flex-shrink: 0;
+    width: 16px;
+    height: 16px;
+    color: var(--accent-orange);
+    visibility: hidden;
+}
+
+.tb-select-option[aria-selected="true"] {
+    color: var(--accent-orange);
+    font-weight: 700;
+}
+
+.tb-select-option[aria-selected="true"] .tb-select-check {
+    visibility: visible;
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .tb-select-trigger:hover {
+        border-color: var(--accent-orange);
+    }
+    .tb-select-option:hover {
+        background: rgba(255, 255, 255, 0.06);
+    }
+}
+
+/* Sotto 480px il pannello diventa un .tb-sheet (select.js aggiunge anche
+   quella classe): niente altro da fare qui, le regole .tb-sheet sotto
+   bastano perche' .tb-select-panel non porta posizionamento fisso proprio
+   a quella larghezza (lo sovrascrive .tb-sheet). */
+
+/* --- RANGE (spec 03 §2/§7): contenitore 44px, traccia 4px sottile,
+   riempimento arancione via --tb-fill, thumb 26px "vetro". --tb-fill lo
+   aggiorna lo strumento a ogni "input" con
+   el.style.setProperty('--tb-fill', 'NN%') (mai style="" nel markup: CSSOM
+   via JS, stesso principio di .met-wheel/.acc-needle). Fallback 50% qui
+   sotto finche' l'JS non gira. */
+.tb-range {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: var(--tap);
+    background: transparent;
+    --tb-fill: 50%;
+}
+
+.tb-range::-webkit-slider-runnable-track {
+    height: 4px;
+    border-radius: var(--r-pill);
+    background: linear-gradient(to right, var(--accent-orange) 0%, var(--accent-orange) var(--tb-fill), var(--track) var(--tb-fill), var(--track) 100%);
+}
+
+.tb-range::-moz-range-track {
+    height: 4px;
+    border-radius: var(--r-pill);
+    background: var(--track);
+}
+
+.tb-range::-moz-range-progress {
+    height: 4px;
+    border-radius: var(--r-pill);
+    background: var(--accent-orange);
+}
+
+.tb-range::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 26px;
+    height: 26px;
+    margin-top: -11px;
+    border-radius: 50%;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border-top);
+    box-shadow: var(--shadow-pop);
+    cursor: pointer;
+}
+
+.tb-range::-moz-range-thumb {
+    width: 26px;
+    height: 26px;
+    border: 1px solid var(--glass-border-top);
+    border-radius: 50%;
+    background: var(--glass-bg);
+    box-shadow: var(--shadow-pop);
+    cursor: pointer;
+}
+
+.tb-range-value {
+    flex-shrink: 0;
+    min-width: 2.5em;
+    font-variant-numeric: tabular-nums;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    text-align: right;
+}
+
+/* --- TOGGLE (spec 03 §2): interruttore button[role=switch], per stati
+   on/off che non sono una scelta fra piu' opzioni (a differenza di
+   .tb-segment). aria-checked pilota lo stato, come i radio. */
+.tb-toggle {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    width: 52px;
+    height: 32px;
+    padding: 2px;
+    border-radius: var(--r-pill);
+    background: var(--track);
+    transition: background var(--dur-med) ease;
+}
+
+.tb-toggle-thumb {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border-top);
+    box-shadow: var(--shadow-pop);
+    transition: transform var(--dur-med) var(--ease-cinematic);
+}
+
+.tb-toggle[aria-checked="true"] {
+    background: var(--accent-orange);
+}
+
+.tb-toggle[aria-checked="true"] .tb-toggle-thumb {
+    transform: translateX(22px);
+}
+
+/* --- NUMERO (spec 03 §2): campo inline (es. il BPM editabile). Invio o
+   uscita confermano, Esc annulla, i valori fuori scala rientrano nei
+   limiti: comportamento dello strumento, qui solo l'aspetto. */
+.tb-number {
+    width: 100%;
+    min-height: var(--tap);
+    padding: 0 var(--sp-2);
+    border: none;
+    border-bottom: 2px solid var(--accent-orange);
+    background: transparent;
+    color: var(--text-primary);
+    font-family: var(--font-title);
+    font-variant-numeric: tabular-nums;
+    text-align: center;
+    font-size: 1.6rem;
+    font-weight: 700;
+}
+
+.tb-number::-webkit-inner-spin-button,
+.tb-number::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+.tb-number[hidden] {
+    display: none !important;
+}
+
+/* --- INFO + FOGLIO (spec 03 §2/§9: vedi il CONTRATTO sheet.js in cima al
+   file). Il glifo "i" e' testo (non un'icona): come "X" per chiudere, e'
+   una convenzione universale, non un simbolo decorativo. */
+.tb-info {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--tap);
+    height: var(--tap);
+    flex-shrink: 0;
+}
+
+.tb-info-glyph {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: 1px solid var(--glass-border);
+    background: var(--surface-1);
+    font-family: var(--font-title);
+    font-style: italic;
+    font-weight: 700;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    transition: border-color var(--dur-fast) ease, color var(--dur-fast) ease;
+}
+
+.tb-info[aria-expanded="true"] .tb-info-glyph,
+.tb-info:active .tb-info-glyph {
+    border-color: var(--accent-orange);
+    color: var(--accent-orange);
+}
+
+.tb-sheet-scrim {
+    position: fixed;
+    inset: 0;
+    z-index: 10030;
+    background: rgba(0, 0, 0, 0.55);
+    opacity: 0;
+    transition: opacity var(--dur-med) ease;
+}
+
+.tb-sheet-scrim[hidden] {
+    display: none;
+}
+
+.tb-sheet-scrim.is-open {
+    opacity: 1;
+}
+
+.tb-sheet {
+    position: fixed;
+    z-index: 10031;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    box-sizing: border-box;
+    max-height: min(70vh, 520px);
+    padding: var(--sp-4) var(--sp-4) calc(var(--sp-4) + var(--tb-safe-b));
+    border-radius: var(--r-lg) var(--r-lg) 0 0;
+    background: var(--glass-bg);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    border: 1px solid var(--glass-border);
+    border-top: 1px solid var(--glass-border-top);
+    box-shadow: var(--shadow-pop);
+    overflow-y: auto;
+    scrollbar-width: none;
+    transform: translateY(100%);
+    transition: transform var(--dur-med) var(--ease-cinematic);
+}
+
+.tb-sheet::-webkit-scrollbar {
+    display: none;
+}
+
+.tb-sheet[hidden] {
+    display: none;
+}
+
+.tb-sheet.is-open {
+    transform: translateY(0);
+}
+
+/* Un solo componente su ogni larghezza (spec 03 criterio 5, decisione
+   post-lancio strumento 3): niente piu' popover separato da 768px, solo
+   un limite di larghezza perche' un foglio a schermo intero non stia bene
+   su desktop. Scrim scuro e foglio dal basso restano identici ovunque. */
+.tb-sheet {
+    width: min(480px, 100%);
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.tb-sheet-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-3);
+    margin-bottom: var(--sp-3);
+}
+
+.tb-sheet-head h2 {
+    font-family: var(--font-title);
+    font-size: 1rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    color: var(--text-primary);
+}
+
+.tb-sheet-close {
+    flex-shrink: 0;
+    width: 32px;
+    height: 32px;
+    min-height: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    color: var(--text-muted);
+}
+
+.tb-sheet-body {
+    font-size: 0.88rem;
+    line-height: 1.6;
+    color: var(--text-muted);
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .tb-info:hover .tb-info-glyph,
+    .tb-sheet-close:hover {
+        color: var(--accent-orange);
+    }
+}
+
+/* --- Disabilitato: opacita' 0.45, nessun cambio di colore (spec 03 §2). --- */
+.tb-btn:disabled,
+.tb-btn[aria-disabled="true"],
+.tb-segment-btn:disabled,
+.tb-select-trigger:disabled,
+.tb-range:disabled,
+.tb-toggle:disabled,
+.tb-toggle[aria-disabled="true"],
+.tb-number:disabled,
+.tb-info:disabled {
+    opacity: 0.45;
+    pointer-events: none;
+}
+
+/* --- ROTELLA BPM (.tb-wheel*, spec 12 §4/§5) --- */
+/* CONTRATTO shared/bpm-control.js: createBpmControl({ wheel, drum, readout,
+   input, min, max, value, ticks, classes: { tick, major, dragging },
+   onChange }) prende gli elementi gia' pronti nel markup, non li crea.
+   Markup atteso (un'istanza per rotella: calcolatore-tempo ne monta due,
+   una per scheda "Delay e riverbero" e una per "Sidechain", vedi il
+   commento in calcolatore-tempo/index.html):
+     <div class="tb-wheel" role="slider" tabindex="0" aria-valuemin="30"
+          aria-valuemax="300" aria-valuenow="120" aria-valuetext="120 BPM">
+       <div class="tb-wheel-drum" aria-hidden="true"></div>
+       <div class="tb-wheel-face" aria-hidden="true"></div>
+       <button type="button" class="tb-wheel-edge is-left" data-bpm-step="-1" tabindex="-1" aria-hidden="true"></button>
+       <button type="button" class="tb-wheel-edge is-right" data-bpm-step="+1" tabindex="-1" aria-hidden="true"></button>
+       <div class="tb-wheel-readout">
+         <span class="tb-wheel-value" aria-live="polite" aria-atomic="true">120</span>
+         <input type="number" class="tb-wheel-input tb-number" inputmode="numeric" min="30" max="300" step="1" value="120" hidden>
+         <span class="tb-wheel-unit">BPM</span>
+       </div>
+     </div>
+   wheel=.tb-wheel, drum=.tb-wheel-drum (vuoto: bpm-control.js vi crea/posa
+   le tacche <span> con element.style.transform, mai style="" nel markup,
+   stesso principio di .met-wheel), readout=.tb-wheel-value, input=
+   .tb-wheel-input; classes di default tick/major/dragging sotto (uguali
+   ai nomi usati qui, il chiamante puo' passarne altri). Stessa "grammatica"
+   di .met-wheel/.met-tick/.met-wheel-drum in metronomo.css (che RESTA
+   invariato: la rotella del metronomo non usa queste classi, e'
+   l'estrazione a farla passare per gli stessi parametri, non a
+   rinominarla). Piu' compatta di quella del metronomo (spec 12 §4: una
+   schermata per scheda a 390x844 con tabella sotto). */
+.tb-wheel {
+    position: relative;
+    width: 100%;
+    height: 84px;
+    overflow: hidden;
+    perspective: 1000px;
+    transform-style: preserve-3d;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: grab;
+    touch-action: none;
+    -webkit-user-select: none;
+    user-select: none;
+}
+
+.tb-wheel:active,
+.tb-wheel.is-dragging {
+    cursor: grabbing;
+}
+
+.tb-wheel.is-dragging .tb-wheel-tick {
+    transition: none;
+}
+
+.tb-wheel-drum {
+    position: absolute;
+    inset: 0;
+    transform-style: preserve-3d;
+    pointer-events: none;
+}
+
+.tb-wheel-tick {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 2px;
+    height: 18px;
+    margin: -9px 0 0 -1px;
+    border-radius: 1px;
+    background: var(--text-muted);
+    opacity: 0.5;
+    transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.4s ease;
+    backface-visibility: hidden;
+}
+
+.tb-wheel-tick.is-major {
+    width: 3px;
+    height: 28px;
+    margin-left: -1.5px;
+    background: var(--text-primary);
+    opacity: 0.85;
+}
+
+.tb-wheel-face {
+    position: absolute;
+    inset: 0;
+    border-radius: 20px;
+    background: var(--glass-bg);
+    border-top: 1px solid var(--glass-border-top);
+    -webkit-backdrop-filter: var(--glass-blur);
+    backdrop-filter: var(--glass-blur);
+    box-shadow: var(--glass-shadow);
+    -webkit-mask-image: linear-gradient(90deg, transparent 0%, #000 18%, #000 82%, transparent 100%);
+    mask-image: linear-gradient(90deg, transparent 0%, #000 18%, #000 82%, transparent 100%);
+    pointer-events: none;
+}
+
+.tb-wheel-edge {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: var(--tap);
+    background: transparent;
+    z-index: 1;
+}
+
+.tb-wheel-edge.is-left {
+    left: 0;
+}
+
+.tb-wheel-edge.is-right {
+    right: 0;
+}
+
+.tb-wheel-readout {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    pointer-events: none;
+}
+
+.tb-wheel-value,
+.tb-wheel-input {
+    pointer-events: auto;
+}
+
+.tb-wheel-value {
+    font-family: var(--font-title);
+    font-size: 2.6rem;
+    font-weight: 700;
+    line-height: 1.1;
+    color: var(--text-primary);
+    font-variant-numeric: tabular-nums;
+    cursor: text;
+}
+
+.tb-wheel-input {
+    display: block;
+    width: 7ch;
+    border-bottom: 2px solid var(--accent-orange);
+    background: transparent;
+    color: var(--text-primary);
+    font-family: var(--font-title);
+    font-size: 2.6rem;
+    font-weight: 700;
+    line-height: 1.1;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+}
+
+.tb-wheel-input[hidden] {
+    display: none !important;
+}
+
+.tb-wheel-input::-webkit-inner-spin-button,
+.tb-wheel-input::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+.tb-wheel-unit {
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .tb-wheel-tick {
+        transition: none;
+    }
 }
 
 /* --- STATO (idle/busy/ok/error/denied) --- */
@@ -434,7 +1299,7 @@ a.tb-tile:active {
 .tb-status {
     display: inline-flex;
     align-items: center;
-    gap: 8px;
+    gap: var(--sp-2);
     font-size: 0.82rem;
     font-weight: 500;
     color: var(--text-muted);
@@ -487,7 +1352,7 @@ a.tb-tile:active {
     justify-content: space-between;
     gap: 14px;
     padding: 14px 18px;
-    border-radius: 16px;
+    border-radius: var(--r-md);
     background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(16, 15, 14, 0.85) 100%);
     backdrop-filter: blur(25px) saturate(180%);
     -webkit-backdrop-filter: blur(25px) saturate(180%);
@@ -510,9 +1375,9 @@ a.tb-tile:active {
     flex-shrink: 0;
     display: inline-flex;
     align-items: center;
-    min-height: 44px;
+    min-height: var(--tap);
     padding: 6px 16px;
-    border-radius: 50px;
+    border-radius: var(--r-pill);
     border: 1px solid var(--accent-orange);
     color: var(--accent-orange);
     font-size: 0.72rem;

@@ -439,6 +439,18 @@ html.tb-no-intro .tb-intro {
     color: var(--accent-orange);
 }
 
+/* Intestazione "Strumenti" (spec 03 §3/criterio 8): prima dei gruppi per
+   famiglia, cosi' l'ordine del menu e' sempre Dashboard/Strumenti/
+   Installa/lingua+sito, uguale su ogni pagina. */
+.tb-menu-title {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--text-muted);
+    margin: 2px 0 8px;
+}
+
 /* Da 768px le famiglie scorrono su due colonne (spec 02 §3/criterio 3):
    con 8 strumenti su 5 famiglie e' quello che libera piu' spazio in
    verticale nel pannello compatto. */
@@ -661,10 +673,6 @@ a.tb-menu-link[aria-current="page"] {
     transition: color 0.3s ease;
 }
 
-.tb-menu-ext::after {
-    content: ' \2197';
-}
-
 @media (hover: hover) and (pointer: fine) {
     .tb-menu-install:hover,
     .tb-menu-ext:hover {
@@ -677,52 +685,56 @@ a.tb-menu-link[aria-current="page"] {
     transition-duration: 0.09s !important;
 }
 
-/* --- FOOTER --- */
-/* Safe-area in basso SOLO qui (vedi commento sul body in cima al file). */
+/* --- FOOTER (spec 03 §4/criterio 7) --- */
+/* Una riga sola, uguale su ogni pagina: "Tiny Temple Studio . Privacy .
+   Designed by Genna". Safe-area in basso SOLO qui (vedi commento sul body
+   in cima al file). Niente piu' cookie/note legali (restano sulla
+   vetrina): la Toolbox non pianta cookie ne' terze parti, l'unico link
+   che serve da ogni pagina e' l'informativa privacy (dominio a se'). */
 .tb-footer {
-    margin-top: 70px;
-    padding-top: 30px;
-    padding-bottom: calc(40px + var(--tb-safe-b));
+    margin-top: 56px;
+    padding-top: 20px;
+    padding-bottom: calc(24px + var(--tb-safe-b));
     border-top: 1px solid rgba(255, 255, 255, 0.08);
     text-align: center;
     font-size: 0.78rem;
-    line-height: 1.7;
     color: var(--text-muted);
 }
 
-.tb-footer p {
-    margin-bottom: 4px;
-}
-
-.tb-footer-legal {
-    max-width: 640px;
-    margin: 14px auto;
-}
-
-.tb-footer-links {
-    display: flex;
+.tb-footer-line {
+    display: inline-flex;
     flex-wrap: wrap;
+    align-items: center;
     justify-content: center;
-    gap: 8px 18px;
-    margin-top: 14px;
+    gap: 0 var(--sp-1);
 }
 
-.tb-footer-links a {
+.tb-footer-sep {
+    opacity: 0.5;
+}
+
+.tb-footer-line a {
     display: inline-flex;
     align-items: center;
-    min-height: 44px;
+    min-height: var(--tap);
+    padding: 0 4px;
     color: var(--text-muted);
     text-decoration: none;
-    transition: color 0.3s ease;
+    transition: color var(--dur-med) ease;
 }
 
 @media (hover: hover) and (pointer: fine) {
-    .tb-footer-links a:hover {
+    .tb-footer-line a:hover {
         color: var(--accent-orange);
     }
 }
 
-.tb-footer-links a.is-pressed {
+/* .is-pressed (shared/ui.js) resta per compatibilita', ma il selettore
+   PRESS_SELECTOR li' dentro cita ancora ".tb-footer-links a" (classe
+   rimossa da qui, ui.js non e' nel perimetro di questo giro): :active
+   copre il tocco senza dover toccare ui.js. */
+.tb-footer-line a:active,
+.tb-footer-line a.is-pressed {
     color: var(--accent-orange);
 }
 

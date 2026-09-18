@@ -141,4 +141,27 @@
     --glass-border-top: rgba(255, 255, 255, 0.35);
     --glass-blur: blur(25px) saturate(200%);
     --glass-shadow: 0 12px 28px rgba(0, 0, 0, 0.6), inset 0 1px 2px rgba(255, 255, 255, 0.3), inset 0 -1px 2px rgba(0, 0, 0, 0.4);
+
+    /* Set componenti tb-* (spec 03 §1): raggi, spaziature, area di tocco
+       minima, gradiente/ombre dei bottoni pieni, superfici e traccia dei
+       controlli, durate delle transizioni. I componenti in components.css
+       usano SOLO questi token (piu' --accent-*/--text-*/--glass-* qui
+       sopra): nessun colore scritto a mano li' dentro. */
+    --r-pill: 999px;
+    --r-lg: 22px;
+    --r-md: 16px;
+    --r-sm: 12px;
+    --sp-1: 4px;
+    --sp-2: 8px;
+    --sp-3: 12px;
+    --sp-4: 16px;
+    --sp-5: 24px;
+    --tap: 44px;
+    --grad-accent: linear-gradient(135deg, #e07048 0%, #cf5c36 55%, #b64d2c 100%);
+    --shadow-btn: 0 10px 24px rgba(207, 92, 54, 0.35), inset 0 1px 1px rgba(255, 255, 255, 0.25);
+    --shadow-pop: var(--glass-shadow);
+    --surface-1: rgba(255, 255, 255, 0.04);
+    --track: rgba(255, 255, 255, 0.12);
+    --dur-fast: 0.18s;
+    --dur-med: 0.3s;
 }

@@ -22,6 +22,7 @@ import { mountBar } from '/shared/nav.js';
 import { initPwa } from '/shared/pwa.js';
 import { getContext, unlock, needsGesture, onStateChange } from '/shared/audio.js';
 import { createScheduler } from '/shared/scheduler.js';
+import { createBpmControl } from '/shared/bpm-control.js';
 import { prefs } from '/shared/storage.js';
 
 const TOOL = 'metronomo';
@@ -31,8 +32,6 @@ const BPM_DEFAULT = 120;
 const WHEEL_PX = 8;       // px di trascinamento per 1 BPM sulla rotella (spec 10 §11.1)
 const WHEEL_TICKS = 12;   // tacche visibili per lato
 const TICK_PX = 26;       // distanza fra due tacche
-const INERTIA_K = 5;      // decelerazione esponenziale: fermo entro 1 s
-const INERTIA_MIN = 0.6;  // BPM/s sotto cui ci si ferma e si aggancia all'intero
 const BUZZ_MS = 40;       // un impulso ogni tot durante l'inerzia
 const VOL_DEFAULT = 85;   // spec 10 §11.4
 const DOT_MIN_MS = 90;    // il pallino resta acceso almeno cosi'
@@ -315,11 +314,6 @@ export function createTapTempo({ max = 6, resetMs = TAP_RESET_MS } = {}) {
 
 const now = () => (typeof performance !== 'undefined' && performance.now ? performance.now() : Date.now());
 
-function reducedMotion() {
-    return typeof window.matchMedia === 'function'
-        && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-}
-
 function isTextField(node) {
     if (!node) return false;
     const tag = node.tagName;
@@ -354,13 +348,10 @@ export function mountMetronome() {
     let saveTimer = null;
     let resumeWanted = false; // era in funzione quando la pagina e' sparita
     const dots = [];
-    const ticks = [];
     const tapper = createTapTempo();
     const counterTap = createTapTempo();
     let counterCount = 0;
     let counterBpm = null;
-    let wheelValue = 0;   // valore continuo della rotella (il BPM e' il suo intero)
-    let inertia = null;   // rAF dell'inerzia
     let lastBuzz = 0;
 
     /* preferenze salvate */
@@ -460,17 +451,14 @@ export function mountMetronome() {
         }
     }
 
-    function setBpm(v, { fromWheel = false } = {}) {
+    function setBpm(v, { fromControl = false } = {}) {
         const n = clampBpm(v);
         if (n === ui.bpm) return;
         ui.bpm = n;
         if (engine) engine.setBpm(n);
         renderBpm();
         buzz();
-        if (!fromWheel) {
-            wheelValue = n;
-            renderWheel();
-        }
+        if (!fromControl && bpmControl) bpmControl.sync(n); // la rotella segue
         saveSoon();
     }
 
@@ -604,178 +592,24 @@ export function mountMetronome() {
         volume.addEventListener('input', () => setVolume(volume.value));
     }
 
-    /* --- rotella BPM (spec 10 §11.1): tacche in prospettiva, trascinamento
-       con inerzia e aggancio all'intero, rotella del mouse, bordi, tastiera --- */
-    function buildTicks() {
-        if (!drum) return;
-        drum.textContent = '';
-        ticks.length = 0;
-        for (let i = -WHEEL_TICKS; i <= WHEEL_TICKS; i++) {
-            const el = document.createElement('span');
-            el.className = 'met-tick';
-            drum.appendChild(el);
-            ticks.push(el);
-        }
-    }
-
-    function renderWheel() {
-        if (!ticks.length) return;
-        const base = Math.round(wheelValue);
-        ticks.forEach((el, i) => {
-            const bpmAt = base + (i - WHEEL_TICKS);
-            const off = bpmAt - wheelValue;
-            const far = Math.abs(off);
-            const visible = bpmAt >= BPM_MIN && bpmAt <= BPM_MAX && far <= WHEEL_TICKS;
-            el.classList.toggle('is-major', bpmAt % 10 === 0);
-            /* stessa posa di .carousel-item nella vetrina: sposta, allontana e ruota */
-            el.style.setProperty('transform', 'translateX(' + (off * TICK_PX).toFixed(2) + 'px) '
-                + 'translateZ(' + (-far * 26).toFixed(2) + 'px) '
-                + 'rotateY(' + Math.max(-45, Math.min(45, -off * 7)).toFixed(2) + 'deg)');
-            el.style.setProperty('opacity', visible ? String(Math.max(0, 1 - far / 9).toFixed(3)) : '0');
-        });
-    }
-
-    /* la rotella lavora su un valore continuo; il BPM e' il suo intero */
-    function applyWheel() {
-        wheelValue = Math.min(BPM_MAX, Math.max(BPM_MIN, wheelValue));
-        renderWheel();
-        setBpm(Math.round(wheelValue), { fromWheel: true });
-    }
-
-    function snapWheel() {
-        wheelValue = clampBpm(wheelValue);
-        applyWheel();
-    }
-
-    function stopInertia() {
-        if (inertia !== null) window.cancelAnimationFrame(inertia);
-        inertia = null;
-    }
-
-    function startInertia(v0) {
-        stopInertia();
-        if (reducedMotion() || Math.abs(v0) < INERTIA_MIN) { snapWheel(); return; }
-        let vel = Math.max(-600, Math.min(600, v0));
-        let last = now();
-        const begin = last;
-        const step = () => {
-            const t = now();
-            const dt = Math.min(0.05, (t - last) / 1000);
-            last = t;
-            wheelValue += vel * dt;
-            vel *= Math.exp(-INERTIA_K * dt);
-            applyWheel();
-            if (Math.abs(vel) < INERTIA_MIN || t - begin > 1000
-                || wheelValue <= BPM_MIN || wheelValue >= BPM_MAX) {
-                inertia = null;
-                snapWheel();
-                return;
-            }
-            inertia = window.requestAnimationFrame(step);
-        };
-        inertia = window.requestAnimationFrame(step);
-    }
-
-    if (wheel) {
-        buildTicks();
-        renderWheel();
-        let drag = null;
-        wheel.addEventListener('pointerdown', (e) => {
-            if (e.button !== undefined && e.button !== 0) return;
-            const onEdge = e.target.closest && e.target.closest('.met-wheel-edge');
-            const onReadout = e.target === bpmOut || e.target === bpmInput;
-            if (onEdge || onReadout) return;
-            stopInertia();
-            drag = { id: e.pointerId, x0: e.clientX, v0: wheelValue, x: e.clientX, t: now(), vel: 0 };
-            wheel.classList.add('is-dragging');
-            e.preventDefault(); // niente selezione ne' scroll della pagina
-            if (wheel.setPointerCapture) {
-                try { wheel.setPointerCapture(e.pointerId); } catch (err) { /* niente capture */ }
-            }
-        });
-        wheel.addEventListener('pointermove', (e) => {
-            if (!drag || e.pointerId !== drag.id) return;
-            e.preventDefault();
-            const t = now();
-            const dt = t - drag.t;
-            if (dt > 0) drag.vel = ((e.clientX - drag.x) / WHEEL_PX) / (dt / 1000);
-            drag.x = e.clientX;
-            drag.t = t;
-            wheelValue = drag.v0 + (e.clientX - drag.x0) / WHEEL_PX;
-            applyWheel();
-        });
-        ['pointerup', 'pointercancel'].forEach((ev) => {
-            wheel.addEventListener(ev, (e) => {
-                if (!drag || (e.pointerId !== undefined && e.pointerId !== drag.id)) return;
-                const vel = ev === 'pointerup' ? drag.vel : 0;
-                drag = null;
-                wheel.classList.remove('is-dragging');
-                startInertia(vel);
-            });
-        });
-        wheel.addEventListener('wheel', (e) => {
-            if (!e.deltaY) return;
-            e.preventDefault();
-            stopInertia();
-            setBpm(ui.bpm + (e.deltaY < 0 ? 1 : -1)); // 1 BPM per tacca
-        }, { passive: false });
-        wheel.addEventListener('keydown', (e) => {
-            let v = null;
-            if (e.key === 'ArrowUp' || e.key === 'ArrowRight') v = ui.bpm + 1;
-            else if (e.key === 'ArrowDown' || e.key === 'ArrowLeft') v = ui.bpm - 1;
-            else if (e.key === 'PageUp') v = ui.bpm + 5;
-            else if (e.key === 'PageDown') v = ui.bpm - 5;
-            else if (e.key === 'Home') v = BPM_MIN;
-            else if (e.key === 'End') v = BPM_MAX;
-            if (v === null) return;
-            e.preventDefault();
-            stopInertia();
-            setBpm(v);
-        });
-    }
-
-    /* --- BPM scrivibile (spec 10 §11.2): tap sul numero -> campo numerico --- */
-    let editCancelled = false;
-
-    function openEditor() {
-        if (!bpmInput || !bpmOut || !bpmInput.hidden) return; // gia' aperto
-        editCancelled = false;
-        bpmInput.value = String(ui.bpm);
-        bpmOut.hidden = true;
-        bpmInput.hidden = false;
-        bpmInput.focus();
-        if (bpmInput.select) bpmInput.select();
-    }
-
-    function closeEditor(commit) {
-        if (!bpmInput || bpmInput.hidden) return;
-        if (commit) {
-            const n = parseInt(bpmInput.value, 10);
-            if (isFinite(n)) setBpm(n); // clamp 30-300; testo non valido: invariato
-        }
-        bpmInput.hidden = true;
-        if (bpmOut) bpmOut.hidden = false;
-    }
-
-    if (bpmOut) bpmOut.addEventListener('click', openEditor);
-    if (bpmInput) {
-        bpmInput.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                closeEditor(true);
-                if (wheel && wheel.focus) wheel.focus();
-            } else if (e.key === 'Escape' || e.key === 'Esc') {
-                e.preventDefault();
-                editCancelled = true;
-                closeEditor(false);
-            }
-            e.stopPropagation(); // con il campo aperto lo spazio non avvia
-        });
-        bpmInput.addEventListener('blur', () => {
-            if (editCancelled) { editCancelled = false; return; }
-            closeEditor(true);
-        });
-    }
+    /* --- rotella BPM + campo numerico: shared/bpm-control.js (spec 12 §4).
+       Stessi elementi, stesse classi (met-tick/is-major/is-dragging) e
+       stesso CSS di prima: qui resta solo il collegamento. --- */
+    const bpmControl = createBpmControl({
+        wheel,
+        drum,
+        readout: bpmOut,
+        input: bpmInput,
+        min: BPM_MIN,
+        max: BPM_MAX,
+        value: ui.bpm,
+        ticks: WHEEL_TICKS,
+        tickPx: TICK_PX,
+        pxPerBpm: WHEEL_PX,
+        edgeSelector: '.met-wheel-edge',
+        classes: { tick: 'met-tick', major: 'is-major', dragging: 'is-dragging' },
+        onChange: (v) => setBpm(v, { fromControl: true })
+    });
 
     /* --- modalita' Counter (spec 10 §11.3) --- */
     function onCounterKey(e) {
@@ -881,9 +715,7 @@ export function mountMetronome() {
     });
 
     /* ---- stato iniziale ---- */
-    wheelValue = ui.bpm;
     renderBpm();
-    renderWheel();
     markGroup(metersBox, 'data-met-meter', ui.meter);
     markGroup(subsBox, 'data-met-sub', ui.subdiv);
     markGroup(soundsBox, 'data-met-sound', ui.sound);
@@ -908,7 +740,7 @@ export function mountMetronome() {
         },
         engine: () => engine,
         dots: () => dots,
-        ticks: () => ticks,
+        ticks: () => (drum ? [...drum.children] : []),
         openCounter,
         closeCounter
     };

@@ -22,7 +22,7 @@
  * popoli da solo (vedi vendor() sotto, che li trova li' come ripiego).
  */
 
-const VERSION = 'tb-v8';
+const VERSION = 'tb-v10';
 const CACHE = 'toolbox-' + VERSION;
 const VENDOR_CACHE = 'toolbox-vendor';
 
@@ -41,6 +41,7 @@ const SHELL = [
     '/shared/mic.js',
     '/shared/pitch.js',
     '/shared/pitch-worklet.js',
+    '/shared/strings.js',
     '/vendor/pitchy@4.1.0/pitchy.js',
     '/vendor/pitchy@4.1.0/fft.js',
     '/shared/lang-boot.js',
@@ -52,6 +53,11 @@ const SHELL = [
     '/shared/nav.js',
     '/shared/tools.js',
     '/shared/dash.js',
+    '/shared/focus.js',
+    '/shared/select.js',
+    '/shared/sheet.js',
+    '/shared/tempo-math.js',
+    '/shared/bpm-control.js',
     '/shared/intro.js',
     '/shared/scheduler.js',
 
@@ -89,7 +95,12 @@ const TOOLS = [
     '/accordatore/',
     '/accordatore/accordatore.js',
     '/accordatore/accordatore.css',
-    '/accordatore/i18n.js'
+    '/accordatore/i18n.js',
+
+    '/calcolatore-tempo/',
+    '/calcolatore-tempo/calcolatore-tempo.js',
+    '/calcolatore-tempo/calcolatore-tempo.css',
+    '/calcolatore-tempo/i18n.js'
 ];
 
 const PRECACHE = SHELL.concat(TOOLS);

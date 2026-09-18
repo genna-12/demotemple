@@ -51,15 +51,13 @@
 //   successive non rimontano nulla e ritornano la stessa api { open, close, isOpen }.
 import { t, lang, setLang, apply, onChange } from './i18n.js';
 import { TOOLS, FAMILIES } from './tools.js';
+import { FOCUSABLE, focusables, createScrollLock, createInert } from './focus.js';
 
 const MENU_ID = 'tb-menu';
 const SVG_NS = 'http://www.w3.org/2000/svg';
 const XLINK_NS = 'http://www.w3.org/1999/xlink';
-const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), '
-    + 'textarea:not([disabled]), summary, [tabindex]:not([tabindex="-1"])';
 const CLOSE_FALLBACK_MS = 700;
 const CLOSE_FALLBACK_REDUCED_MS = 200;
-const SKIP_TAGS = new Set(['SCRIPT', 'STYLE', 'TEMPLATE', 'LINK', 'NOSCRIPT']);
 
 let api = null;
 
@@ -198,99 +196,6 @@ function fillGroups(groups, current) {
 
 /* ---------- blocco scroll (iOS compreso) ---------- */
 
-const BODY_PROPS = ['position', 'top', 'left', 'right', 'width', 'padding-right'];
-
-function saveStyle(node, props) {
-    const saved = {};
-    props.forEach((p) => {
-        saved[p] = [node.style.getPropertyValue(p), node.style.getPropertyPriority(p)];
-    });
-    return saved;
-}
-
-function restoreStyle(node, saved) {
-    Object.keys(saved).forEach((p) => {
-        const [v, prio] = saved[p];
-        if (v) node.style.setProperty(p, v, prio);
-        else node.style.removeProperty(p);
-    });
-}
-
-/* Logo e hamburger sono position:fixed: col body bloccato restano al loro posto. */
-function createScrollLock() {
-    let state = null;
-    return {
-        lock() {
-            if (state) return;
-            const body = document.body;
-            const root = document.documentElement;
-            const y = window.scrollY || window.pageYOffset || 0;
-            const scrollbar = Math.max(0, window.innerWidth - root.clientWidth);
-            state = { y, body: saveStyle(body, BODY_PROPS) };
-            body.style.setProperty('position', 'fixed');
-            body.style.setProperty('top', -y + 'px');
-            body.style.setProperty('left', '0');
-            body.style.setProperty('right', '0');
-            body.style.setProperty('width', '100%');
-            if (scrollbar > 0) {
-                const pad = parseFloat(window.getComputedStyle(body).paddingRight) || 0;
-                body.style.setProperty('padding-right', (pad + scrollbar) + 'px');
-            }
-        },
-        unlock() {
-            if (!state) return;
-            const { y } = state;
-            const root = document.documentElement;
-            restoreStyle(document.body, state.body);
-            state = null;
-            const prev = root.style.getPropertyValue('scroll-behavior');
-            root.style.setProperty('scroll-behavior', 'auto'); // niente scroll animato al ripristino
-            window.scrollTo(0, y);
-            if (prev) root.style.setProperty('scroll-behavior', prev);
-            else root.style.removeProperty('scroll-behavior');
-        }
-    };
-}
-
-/* ---------- inert sul resto della pagina ---------- */
-
-function createInert(keep) {
-    const supports = typeof HTMLElement !== 'undefined' && 'inert' in HTMLElement.prototype;
-    let touched = [];
-    const mark = (node) => {
-        if (supports) {
-            if (node.inert) return;
-            node.inert = true;
-            touched.push(node);
-        } else if (!node.hasAttribute('aria-hidden')) {
-            node.setAttribute('aria-hidden', 'true');
-            touched.push(node);
-        }
-    };
-    const walk = (parent) => {
-        [...parent.children].forEach((node) => {
-            if (SKIP_TAGS.has(node.tagName)) return;
-            if (keep.includes(node)) return;
-            if (node.classList.contains('tb-toast-region')) return; // i toast restano annunciati
-            if (keep.some((k) => k && node.contains(k))) { walk(node); return; } // contenitore: si scende
-            mark(node);
-        });
-    };
-    return {
-        on() {
-            touched = [];
-            walk(document.body);
-        },
-        off() {
-            touched.forEach((node) => {
-                if (supports) node.inert = false;
-                else node.removeAttribute('aria-hidden');
-            });
-            touched = [];
-        }
-    };
-}
-
 /* ---------- montaggio ---------- */
 
 export function mountBar({ page = 'home', titleKey, current } = {}) {
@@ -328,8 +233,8 @@ export function mountBar({ page = 'home', titleKey, current } = {}) {
         toggle.setAttribute('aria-label', t(key));
     };
 
-    const focusables = () => [toggle, ...panel.querySelectorAll(FOCUSABLE)]
-        .filter((n) => !n.hidden && !n.closest('[hidden]:not(#' + MENU_ID + ')') && n.getClientRects().length > 0);
+    /* il giro del Tab: hamburger + tutto quel che c'e' nel pannello */
+    const trapList = () => focusables(panel, [toggle]);
 
     const cancelPendingHide = () => {
         if (closeTimer) clearTimeout(closeTimer);
@@ -346,7 +251,7 @@ export function mountBar({ page = 'home', titleKey, current } = {}) {
             return;
         }
         if (e.key !== 'Tab') return;
-        const list = focusables();
+        const list = trapList();
         if (!list.length) return;
         const first = list[0];
         const last = list[list.length - 1];
@@ -368,7 +273,7 @@ export function mountBar({ page = 'home', titleKey, current } = {}) {
         if (!isOpen) return;
         const n = e.target;
         if (n === toggle || n === logo || menu.contains(n)) return;
-        const list = focusables();
+        const list = trapList();
         (list[1] || list[0]).focus({ preventScroll: true });
     }
 

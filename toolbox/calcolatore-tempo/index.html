@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="it">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="format-detection" content="telephone=no, address=no, email=no">
+    <title>Calcolatore Tempo | Tiny Temple Toolbox</title>
+
+    <link rel="icon" href="/assets/icons/favicon.ico">
+    <link rel="apple-touch-icon" href="/assets/icons/apple-touch-icon.png">
+    <meta name="theme-color" content="#080808">
+    <meta name="apple-mobile-web-app-title" content="Toolbox">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <link rel="manifest" href="/manifest.webmanifest">
+
+    <meta name="description" content="Calcolatore tempo online gratuito: tempi di delay e riverbero, frequenze LFO per il sidechain e corrispondenza nota/Hz a partire dal BPM. Funziona offline, nel browser.">
+    <link rel="canonical" href="https://toolbox.tinytemplestudio.it/calcolatore-tempo/">
+
+    <script src="/shared/lang-boot.js"></script>
+    <link rel="stylesheet" href="/shared/tokens.css">
+    <link rel="stylesheet" href="/shared/base.css">
+    <link rel="stylesheet" href="/shared/components.css">
+    <link rel="stylesheet" href="/calcolatore-tempo/calcolatore-tempo.css">
+</head>
+
+<body>
+
+    <!-- tb-bar resta senza sfondo/posizione propri: e' solo il contenitore
+         atteso da shared/nav.js (mountBar). Niente intro (pagina strumento,
+         spec 10 §1). Niente titolo in barra: "Calcolatore tempo" e' solo
+         l'h1 sotto; mountBar va chiamata senza titleKey. -->
+    <header class="tb-bar">
+        <a class="tb-logo in-nav" href="/" data-i18n-aria="bar-logo-aria" aria-label="Toolbox, vai alla dashboard">
+            <img src="/assets/brand/logo-arancione.png" width="100" height="100" alt="" loading="eager">
+            <span class="sr-only">Tiny Temple Toolbox</span>
+        </a>
+        <button type="button" class="tb-menu-toggle is-visible" aria-controls="tb-menu" aria-expanded="false"
+            data-i18n-aria="bar-menu-open" aria-label="Apri il menu">
+            <span class="tb-menu-toggle-line"></span>
+            <span class="tb-menu-toggle-line"></span>
+        </button>
+    </header>
+
+    <!-- CONTRATTO shared/nav.js: vedi il commento in index.html vicino a #tb-menu.
+         Sprite: solo i simboli usati da questa pagina (spec 10 §1) piu' le
+         icone di dashboard/menu comuni; tb-icon-copy e' nuova (spec 12 §5:
+         "pulsanti copia con icona dallo sprite"), non ancora nelle altre
+         pagine strumento (fuori dal perimetro di questo giro). -->
+    <svg class="tb-sprite" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg">
+        <symbol id="tb-icon-metronomo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M8 20h8"></path>
+            <path d="M9 20 11 5h2l2 15"></path>
+            <path d="M12 9v7"></path>
+        </symbol>
+        <symbol id="tb-icon-accordatore" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M5 16a7 7 0 0 1 14 0"></path>
+            <path d="M12 16 15 9"></path>
+            <circle cx="12" cy="16" r="1" fill="currentColor" stroke="none"></circle>
+        </symbol>
+        <symbol id="tb-icon-dna" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 12h3l2-7 4 14 4-14 2 7h3"></path>
+        </symbol>
+        <symbol id="tb-icon-penna" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 20l4-1 11-11-3-3L5 16z"></path>
+            <path d="M14 6l3 3"></path>
+        </symbol>
+        <symbol id="tb-icon-calcolatore-tempo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="13" r="8"></circle>
+            <path d="M12 9v4l3 2"></path>
+            <path d="M9 2h6"></path>
+        </symbol>
+        <symbol id="tb-icon-pianificatore-uscita" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="4" y="5" width="16" height="16" rx="2"></rect>
+            <path d="M4 10h16"></path>
+            <path d="M8 3v4"></path>
+            <path d="M16 3v4"></path>
+        </symbol>
+        <symbol id="tb-icon-checklist-consegna" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="4" y="4" width="16" height="16" rx="2"></rect>
+            <path d="M8 12l3 3 6-7"></path>
+        </symbol>
+        <symbol id="tb-icon-split-sheet" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="9"></circle>
+            <path d="M12 12V3"></path>
+            <path d="M12 12l7.5 4.33"></path>
+        </symbol>
+        <symbol id="tb-icon-arrow-left" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 12H5"></path>
+            <path d="M11 18l-6-6 6-6"></path>
+        </symbol>
+        <symbol id="tb-icon-chevron-down" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M6 9l6 6 6-6"></path>
+        </symbol>
+        <symbol id="tb-icon-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M5 13l4 4L19 7"></path>
+        </symbol>
+        <symbol id="tb-icon-minus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M5 12h14"></path>
+        </symbol>
+        <symbol id="tb-icon-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 5v14"></path>
+            <path d="M5 12h14"></path>
+        </symbol>
+        <symbol id="tb-icon-grip" viewBox="0 0 24 24">
+            <circle cx="9" cy="6" r="1.6" fill="currentColor"></circle>
+            <circle cx="15" cy="6" r="1.6" fill="currentColor"></circle>
+            <circle cx="9" cy="12" r="1.6" fill="currentColor"></circle>
+            <circle cx="15" cy="12" r="1.6" fill="currentColor"></circle>
+            <circle cx="9" cy="18" r="1.6" fill="currentColor"></circle>
+            <circle cx="15" cy="18" r="1.6" fill="currentColor"></circle>
+        </symbol>
+        <symbol id="tb-icon-copy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="9" y="9" width="12" height="12" rx="2"></rect>
+            <path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1"></path>
+        </symbol>
+    </svg>
+
+    <div id="tb-menu" class="tb-menu" hidden>
+        <div class="tb-menu-scrim"></div>
+        <div class="tb-menu-panel" role="dialog" aria-modal="true" aria-label="Menu">
+            <a class="tb-menu-home tb-menu-item" href="/" data-i18n="menu-all">Dashboard</a>
+            <div class="tb-menu-title" data-i18n="menu-tools">Strumenti</div>
+            <div class="tb-menu-groups"></div>
+            <div class="tb-menu-foot tb-menu-item">
+                <div class="tb-menu-install-group">
+                    <button type="button" id="tb-menu-install" class="tb-menu-install" data-i18n="menu-install">Installa l’app</button>
+                    <details class="tb-menu-ios" id="tb-menu-ios" hidden>
+                        <summary data-i18n="idx-ios-title">Su iPhone</summary>
+                        <div data-pwa-when="safari">
+                            <ol>
+                                <li data-i18n="idx-ios-step1">Apri questa pagina in Safari.</li>
+                                <li data-i18n="idx-ios-step2">Tocca Condividi (il quadrato con la freccia in
+                                    alto).</li>
+                                <li data-i18n="idx-ios-step3">Scegli &ldquo;Aggiungi alla schermata
+                                    Home&rdquo;.</li>
+                            </ol>
+                        </div>
+                        <div data-pwa-when="inapp">
+                            <strong data-i18n="idx-ios-inapp-title">Apri in Safari</strong>
+                            <p data-i18n="idx-ios-inapp-text">Questo browser non permette di installare l’app.
+                                Tocca il menu e scegli &ldquo;Apri in Safari&rdquo;, poi segui i passaggi per
+                                aggiungerla alla schermata Home.</p>
+                        </div>
+                    </details>
+                    <p class="tb-menu-manual" data-pwa-when="manual" hidden data-i18n="pwa-manual">Usa il menu del
+                        browser: Installa app oppure Aggiungi alla schermata Home.</p>
+                </div>
+                <div class="tb-menu-foot-row">
+                    <div class="tb-lang-switch" role="group" aria-label="Lingua / Language">
+                        <button type="button" data-lang="it" aria-pressed="true">IT</button>
+                        <button type="button" data-lang="en" aria-pressed="false">EN</button>
+                    </div>
+                    <a class="tb-menu-ext" href="https://tinytemplestudio.it/" data-i18n="menu-ext">Sito dello
+                        studio</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="tb-shell">
+        <header class="tb-page-header">
+            <h1 data-i18n="calc-title">Calcolatore tempo</h1>
+        </header>
+
+        <!-- CONTRATTO calcolatore-tempo.js (spec 12 §4/§5): data-calc-tab su
+             #calc ("delay" di default qui, niente flash) pilota via CSS
+             quale <section class="calc-panel"> e' visibile (vedi
+             calcolatore-tempo.css). Gli stessi tre valori vanno sui bottoni
+             di #calc-tabs (aria-checked). Le due rotelle (#calc-wheel in
+             questa scheda, #calc-wheel-sc nella scheda Sidechain) sono due
+             istanze separate di .tb-wheel (contratto in shared/components.css,
+             createBpmControl da shared/bpm-control.js): stesso BPM, il JS le
+             tiene sincronizzate e scrive tt.calcolatore-tempo.bpm una sola
+             volta. Le celle tabella (button.calc-cell) hanno data-calc-div
+             (denominatore: 1/2/4/8/16/32/64) e data-calc-mod
+             (straight/dotted/triplet) per la tabella dei delay, o
+             data-calc-rate (denominatore 1/2/4/8/16) per quella del
+             sidechain; il testo e l'aria-label li scrive/aggiorna il JS ad
+             ogni cambio di BPM o unita' (i valori qui sotto sono gia' quelli
+             corretti per 120 BPM/ms, criterio di accettazione 1, per non
+             mostrare nulla di sbagliato prima che il JS giri). Tap su una
+             cella copia negli appunti (clipboard.js di ui.js) e mostra il
+             toast "calc-copied"/"calc-copy-manual". -->
+        <main id="calc" class="calc" data-calc-tab="delay" data-calc-unit="ms" data-calc-dir="note-hz">
+            <div id="calc-tabs" class="tb-segment" role="radiogroup" aria-label="Scheda / Tab">
+                <button type="button" class="tb-segment-btn" data-calc-tab="delay" role="radio" aria-checked="true" data-i18n="calc-tab-delay">Delay e riverbero</button>
+                <button type="button" class="tb-segment-btn" data-calc-tab="note" role="radio" aria-checked="false" data-i18n="calc-tab-note">Nota e frequenza</button>
+                <button type="button" class="tb-segment-btn" data-calc-tab="sidechain" role="radio" aria-checked="false" data-i18n="calc-tab-sidechain">Sidechain</button>
+            </div>
+
+            <!-- ============ SCHEDA 1: Delay e riverbero ============ -->
+            <section id="calc-panel-delay" class="calc-panel">
+                <div class="calc-bpm-wrap">
+                    <div id="calc-wheel" class="tb-wheel" role="slider" tabindex="0"
+                        aria-valuemin="30" aria-valuemax="300" aria-valuenow="120" aria-valuetext="120 BPM"
+                        data-i18n-aria="calc-bpm-aria" aria-label="Tempo in battiti al minuto">
+                        <div class="tb-wheel-drum" aria-hidden="true"></div>
+                        <div class="tb-wheel-face" aria-hidden="true"></div>
+                        <button type="button" class="tb-wheel-edge is-left" data-bpm-step="-1" tabindex="-1" aria-hidden="true"></button>
+                        <button type="button" class="tb-wheel-edge is-right" data-bpm-step="+1" tabindex="-1" aria-hidden="true"></button>
+                        <div class="tb-wheel-readout">
+                            <span id="calc-bpm" class="tb-wheel-value" aria-live="polite" aria-atomic="true">120</span>
+                            <input type="number" id="calc-bpm-input" class="tb-wheel-input tb-number" inputmode="numeric"
+                                min="30" max="300" step="1" value="120" hidden
+                                data-i18n-aria="calc-bpm-input-aria" aria-label="BPM, modifica il valore">
+                            <span class="tb-wheel-unit">BPM</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="calc-unit" class="tb-segment" role="radiogroup" data-i18n-aria="calc-unit-aria" aria-label="Unità, millisecondi o Hz">
+                    <button type="button" class="tb-segment-btn" data-calc-unit="ms" role="radio" aria-checked="true" data-i18n="calc-unit-ms">ms</button>
+                    <button type="button" class="tb-segment-btn" data-calc-unit="hz" role="radio" aria-checked="false" data-i18n="calc-unit-hz">Hz</button>
+                </div>
+
+                <table id="calc-table" class="calc-table">
+                    <caption data-i18n="calc-tab-delay">Delay e riverbero</caption>
+                    <thead>
+                        <tr>
+                            <th scope="col" data-i18n="calc-div">Suddivisione</th>
+                            <th scope="col" data-i18n="calc-straight">Normale</th>
+                            <th scope="col" data-i18n="calc-dotted">Puntata</th>
+                            <th scope="col" data-i18n="calc-triplet">Terzina</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <th scope="row">1/1</th>
+                            <td><button type="button" class="calc-cell" data-calc-div="1" data-calc-mod="straight" aria-label="1/1, 2000,00 millisecondi, copia">2000,00</button></td>
+                            <td><button type="button" class="calc-cell" data-calc-div="1" data-calc-mod="dotted" aria-label="1/1 puntata, 3000,00 millisecondi, copia">3000,00</button></td>
+                            <td><button type="button" class="calc-cell" data-calc-div="1" data-calc-mod="triplet" aria-label="1/1 terzina, 1333,33 millisecondi, copia">1333,33</button></td>
+                        </tr>
+                        <tr>
+                            <th scope="row">1/2</th>
+                            <td><button type="button" class="calc-cell" data-calc-div="2" data-calc-mod="straight" aria-label="1/2, 1000,00 millisecondi, copia">1000,00</button></td>
+                            <td><button type="button" class="calc-cell" data-calc-div="2" data-calc-mod="dotted" aria-label="1/2 puntata, 1500,00 millisecondi, copia">1500,00</button></td>
+                            <td><button type="button" class="calc-cell" data-calc-div="2" data-calc-mod="triplet" aria-label="1/2 terzina, 666,67 millisecondi, copia">666,67</button></td>
+                        </tr>
+                        <tr>
+                            <th scope="row">1/4</th>
+                            <td><button type="button" class="calc-cell" data-calc-div="4" data-calc-mod="straight" aria-label="1/4, 500,00 millisecondi, copia">500,00</button></td>
+                            <td><button type="button" class="calc-cell" data-calc-div="4" data-calc-mod="dotted" aria-label="1/4 puntata, 750,00 millisecondi, copia">750,00</button></td>
+                            <td><button type="button" class="calc-cell" data-calc-div="4" data-calc-mod="triplet" aria-label="1/4 terzina, 333,33 millisecondi, copia">333,33</button></td>
+                        </tr>
+                        <tr>
+                            <th scope="row">1/8</th>
+                            <td><button type="button" class="calc-cell" data-calc-div="8" data-calc-mod="straight" aria-label="1/8, 250,00 millisecondi, copia">250,00</button></td>
+                            <td><button type="button" class="calc-cell" data-calc-div="8" data-calc-mod="dotted" aria-label="1/8 puntata, 375,00 millisecondi, copia">375,00</button></td>
+                            <td><button type="button" class="calc-cell" data-calc-div="8" data-calc-mod="triplet" aria-label="1/8 terzina, 166,67 millisecondi, copia">166,67</button></td>
+                        </tr>
+                        <tr>
+                            <th scope="row">1/16</th>
+                            <td><button type="button" class="calc-cell" data-calc-div="16" data-calc-mod="straight" aria-label="1/16, 125,00 millisecondi, copia">125,00</button></td>
+                            <td><button type="button" class="calc-cell" data-calc-div="16" data-calc-mod="dotted" aria-label="1/16 puntata, 187,50 millisecondi, copia">187,50</button></td>
+                            <td><button type="button" class="calc-cell" data-calc-div="16" data-calc-mod="triplet" aria-label="1/16 terzina, 83,33 millisecondi, copia">83,33</button></td>
+                        </tr>
+                        <tr>
+                            <th scope="row">1/32</th>
+                            <td><button type="button" class="calc-cell" data-calc-div="32" data-calc-mod="straight" aria-label="1/32, 62,50 millisecondi, copia">62,50</button></td>
+                            <td><button type="button" class="calc-cell" data-calc-div="32" data-calc-mod="dotted" aria-label="1/32 puntata, 93,75 millisecondi, copia">93,75</button></td>
+                            <td><button type="button" class="calc-cell" data-calc-div="32" data-calc-mod="triplet" aria-label="1/32 terzina, 41,67 millisecondi, copia">41,67</button></td>
+                        </tr>
+                        <tr>
+                            <th scope="row">1/64</th>
+                            <td><button type="button" class="calc-cell" data-calc-div="64" data-calc-mod="straight" aria-label="1/64, 31,25 millisecondi, copia">31,25</button></td>
+                            <td><button type="button" class="calc-cell" data-calc-div="64" data-calc-mod="dotted" aria-label="1/64 puntata, 46,88 millisecondi, copia">46,88</button></td>
+                            <td><button type="button" class="calc-cell" data-calc-div="64" data-calc-mod="triplet" aria-label="1/64 terzina, 20,83 millisecondi, copia">20,83</button></td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <div class="calc-reverb">
+                    <p class="calc-reverb-title" data-i18n="calc-reverb-title">Riverbero</p>
+                    <div class="calc-reverb-row">
+                        <span class="calc-reverb-label" data-i18n="calc-predelay">Pre-delay</span>
+                        <button type="button" class="calc-cell" data-calc-reverb="predelay-64" aria-label="Pre-delay 1/64, 31,25 millisecondi, copia">31,25</button>
+                        <button type="button" class="calc-cell" data-calc-reverb="predelay-128" aria-label="Pre-delay 1/128, 15,63 millisecondi, copia">15,63</button>
+                    </div>
+                    <div class="calc-reverb-row">
+                        <span class="calc-reverb-label" data-i18n="calc-decay">Coda</span>
+                        <button type="button" class="calc-cell" data-calc-reverb="decay-1" aria-label="Coda 1 battuta, 2000,00 millisecondi, copia">2000,00</button>
+                        <button type="button" class="calc-cell" data-calc-reverb="decay-2" aria-label="Coda 2 battute, 4000,00 millisecondi, copia">4000,00</button>
+                        <button type="button" class="calc-cell" data-calc-reverb="decay-4" aria-label="Coda 4 battute, 8000,00 millisecondi, copia">8000,00</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ============ SCHEDA 2: Nota e frequenza ============ -->
+            <section id="calc-panel-note" class="calc-panel" hidden>
+                <div id="calc-dir" class="tb-segment" role="radiogroup" data-i18n-aria="calc-dir-aria" aria-label="Direzione">
+                    <button type="button" class="tb-segment-btn" data-calc-dir="note-hz" role="radio" aria-checked="true" data-i18n="calc-dir-note-hz">Nota → Hz</button>
+                    <button type="button" class="tb-segment-btn" data-calc-dir="hz-note" role="radio" aria-checked="false" data-i18n="calc-dir-hz-note">Hz → Nota</button>
+                </div>
+
+                <!-- Solo direzione "note-hz": nota + ottava + A4 in ingresso. -->
+                <div id="calc-note-inputs" class="calc-note-inputs">
+                    <div id="calc-note" class="tb-segment tb-segment--scroll" role="radiogroup" data-i18n-aria="calc-note-aria" aria-label="Nota">
+                        <button type="button" class="tb-segment-btn" data-calc-note="C" role="radio" aria-checked="false">C</button>
+                        <button type="button" class="tb-segment-btn" data-calc-note="C#" role="radio" aria-checked="false">C#</button>
+                        <button type="button" class="tb-segment-btn" data-calc-note="D" role="radio" aria-checked="false">D</button>
+                        <button type="button" class="tb-segment-btn" data-calc-note="D#" role="radio" aria-checked="false">D#</button>
+                        <button type="button" class="tb-segment-btn" data-calc-note="E" role="radio" aria-checked="false">E</button>
+                        <button type="button" class="tb-segment-btn" data-calc-note="F" role="radio" aria-checked="false">F</button>
+                        <button type="button" class="tb-segment-btn" data-calc-note="F#" role="radio" aria-checked="false">F#</button>
+                        <button type="button" class="tb-segment-btn" data-calc-note="G" role="radio" aria-checked="false">G</button>
+                        <button type="button" class="tb-segment-btn" data-calc-note="G#" role="radio" aria-checked="false">G#</button>
+                        <button type="button" class="tb-segment-btn" data-calc-note="A" role="radio" aria-checked="true">A</button>
+                        <button type="button" class="tb-segment-btn" data-calc-note="A#" role="radio" aria-checked="false">A#</button>
+                        <button type="button" class="tb-segment-btn" data-calc-note="B" role="radio" aria-checked="false">B</button>
+                    </div>
+
+                    <div class="calc-field">
+                        <div class="tb-select" data-value="4">
+                            <select id="calc-octave" class="tb-select-native">
+                                <option value="0">0</option>
+                                <option value="1">1</option>
+                                <option value="2">2</option>
+                                <option value="3">3</option>
+                                <option value="4" selected>4</option>
+                                <option value="5">5</option>
+                                <option value="6">6</option>
+                                <option value="7">7</option>
+                                <option value="8">8</option>
+                            </select>
+                            <button type="button" class="tb-select-trigger" aria-haspopup="listbox" aria-expanded="false"
+                                aria-controls="calc-octave-panel" id="calc-octave-trigger">
+                                <span class="tb-select-label" data-i18n="calc-octave">Ottava</span>
+                                <span class="tb-select-value">4</span>
+                                <svg class="tb-select-chevron" aria-hidden="true"><use href="#tb-icon-chevron-down"></use></svg>
+                            </button>
+                            <div class="tb-select-panel" role="listbox" id="calc-octave-panel" hidden
+                                aria-labelledby="calc-octave-trigger" tabindex="-1">
+                                <button type="button" class="tb-select-option" role="option" data-value="0" aria-selected="false"><span>0</span><svg class="tb-select-check" aria-hidden="true"><use href="#tb-icon-check"></use></svg></button>
+                                <button type="button" class="tb-select-option" role="option" data-value="1" aria-selected="false"><span>1</span><svg class="tb-select-check" aria-hidden="true"><use href="#tb-icon-check"></use></svg></button>
+                                <button type="button" class="tb-select-option" role="option" data-value="2" aria-selected="false"><span>2</span><svg class="tb-select-check" aria-hidden="true"><use href="#tb-icon-check"></use></svg></button>
+                                <button type="button" class="tb-select-option" role="option" data-value="3" aria-selected="false"><span>3</span><svg class="tb-select-check" aria-hidden="true"><use href="#tb-icon-check"></use></svg></button>
+                                <button type="button" class="tb-select-option" role="option" data-value="4" aria-selected="true"><span>4</span><svg class="tb-select-check" aria-hidden="true"><use href="#tb-icon-check"></use></svg></button>
+                                <button type="button" class="tb-select-option" role="option" data-value="5" aria-selected="false"><span>5</span><svg class="tb-select-check" aria-hidden="true"><use href="#tb-icon-check"></use></svg></button>
+                                <button type="button" class="tb-select-option" role="option" data-value="6" aria-selected="false"><span>6</span><svg class="tb-select-check" aria-hidden="true"><use href="#tb-icon-check"></use></svg></button>
+                                <button type="button" class="tb-select-option" role="option" data-value="7" aria-selected="false"><span>7</span><svg class="tb-select-check" aria-hidden="true"><use href="#tb-icon-check"></use></svg></button>
+                                <button type="button" class="tb-select-option" role="option" data-value="8" aria-selected="false"><span>8</span><svg class="tb-select-check" aria-hidden="true"><use href="#tb-icon-check"></use></svg></button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Solo direzione "hz-note": Hz in ingresso. -->
+                <div id="calc-hz-input-wrap" class="calc-field" hidden>
+                    <label class="calc-label" for="calc-hz-input" data-i18n="calc-hz-result">Frequenza</label>
+                    <input type="number" id="calc-hz-input" class="tb-number" inputmode="decimal" min="1" max="20000" step="1" value="440"
+                        data-i18n-aria="calc-hz-input-aria" aria-label="Frequenza in Hz">
+                </div>
+
+                <div class="calc-row calc-row--a4">
+                    <label class="calc-label" for="calc-a4" data-i18n="calc-a4">Riferimento A4</label>
+                    <input type="range" id="calc-a4" class="tb-range" min="415" max="466" step="1" value="440">
+                    <span id="calc-a4-value" class="calc-a4-value tb-range-value">440 Hz</span>
+                    <button type="button" class="tb-info" aria-haspopup="dialog" aria-expanded="false"
+                        aria-controls="calc-a4-info" data-i18n-aria="info-aria" aria-label="Che cos'è">
+                        <span class="tb-info-glyph" aria-hidden="true">i</span>
+                    </button>
+                    <button type="button" id="calc-a4-reset" class="tb-btn tb-btn--ghost" disabled
+                        data-i18n="calc-a4-reset">Reimposta 440</button>
+                </div>
+
+                <div class="calc-note-result" aria-live="polite">
+                    <div class="calc-note-result-row">
+                        <span id="calc-hz-out" class="calc-hz-out">440,00 Hz</span>
+                        <span id="calc-note-out" class="calc-note-out" hidden></span>
+                        <span id="calc-cents-out" class="calc-cents-out"></span>
+                    </div>
+                    <div class="calc-note-result-row calc-note-result-row--small">
+                        <span data-i18n="calc-wavelength">Lunghezza d'onda</span>:
+                        <span id="calc-wavelength-out">0,78 m</span>
+                        <span class="calc-reverb-label" aria-hidden="true">·</span>
+                        <span data-i18n="calc-period">Periodo</span>:
+                        <span id="calc-period-out">2,27 ms</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ============ SCHEDA 3: Sidechain ============ -->
+            <section id="calc-panel-sidechain" class="calc-panel" hidden>
+                <div class="calc-bpm-wrap">
+                    <div id="calc-wheel-sc" class="tb-wheel" role="slider" tabindex="0"
+                        aria-valuemin="30" aria-valuemax="300" aria-valuenow="120" aria-valuetext="120 BPM"
+                        data-i18n-aria="calc-bpm-aria" aria-label="Tempo in battiti al minuto">
+                        <div class="tb-wheel-drum" aria-hidden="true"></div>
+                        <div class="tb-wheel-face" aria-hidden="true"></div>
+                        <button type="button" class="tb-wheel-edge is-left" data-bpm-step="-1" tabindex="-1" aria-hidden="true"></button>
+                        <button type="button" class="tb-wheel-edge is-right" data-bpm-step="+1" tabindex="-1" aria-hidden="true"></button>
+                        <div class="tb-wheel-readout">
+                            <span id="calc-bpm-sc" class="tb-wheel-value" aria-live="polite" aria-atomic="true">120</span>
+                            <input type="number" id="calc-bpm-sc-input" class="tb-wheel-input tb-number" inputmode="numeric"
+                                min="30" max="300" step="1" value="120" hidden
+                                data-i18n-aria="calc-bpm-input-aria" aria-label="BPM, modifica il valore">
+                            <span class="tb-wheel-unit">BPM</span>
+                        </div>
+                    </div>
+                </div>
+
+                <p class="calc-attack-note">
+                    <span data-i18n="calc-attack">Attacco</span>:
+                    <span data-i18n="calc-attack-range">0,5–5 ms</span>
+                </p>
+
+                <table id="calc-table-sc" class="calc-table">
+                    <caption data-i18n="calc-tab-sidechain">Sidechain</caption>
+                    <thead>
+                        <tr>
+                            <th scope="col" data-i18n="calc-lfo-rate">Frequenza LFO</th>
+                            <th scope="col" data-i18n="calc-release-soft">Morbido</th>
+                            <th scope="col" data-i18n="calc-release-hard">Deciso</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <th scope="row">1/1 — 0,500 Hz</th>
+                            <td><button type="button" class="calc-cell" data-calc-rate="1" data-calc-release="soft" aria-label="1/1, rilascio morbido, 1200,00 millisecondi, copia">1200,00</button></td>
+                            <td><button type="button" class="calc-cell" data-calc-rate="1" data-calc-release="hard" aria-label="1/1, rilascio deciso, 700,00 millisecondi, copia">700,00</button></td>
+                        </tr>
+                        <tr>
+                            <th scope="row">1/2 — 1,000 Hz</th>
+                            <td><button type="button" class="calc-cell" data-calc-rate="2" data-calc-release="soft" aria-label="1/2, rilascio morbido, 600,00 millisecondi, copia">600,00</button></td>
+                            <td><button type="button" class="calc-cell" data-calc-rate="2" data-calc-release="hard" aria-label="1/2, rilascio deciso, 350,00 millisecondi, copia">350,00</button></td>
+                        </tr>
+                        <tr>
+                            <th scope="row">1/4 — 2,000 Hz</th>
+                            <td><button type="button" class="calc-cell" data-calc-rate="4" data-calc-release="soft" aria-label="1/4, rilascio morbido, 300,00 millisecondi, copia">300,00</button></td>
+                            <td><button type="button" class="calc-cell" data-calc-rate="4" data-calc-release="hard" aria-label="1/4, rilascio deciso, 175,00 millisecondi, copia">175,00</button></td>
+                        </tr>
+                        <tr>
+                            <th scope="row">1/8 — 4,000 Hz</th>
+                            <td><button type="button" class="calc-cell" data-calc-rate="8" data-calc-release="soft" aria-label="1/8, rilascio morbido, 150,00 millisecondi, copia">150,00</button></td>
+                            <td><button type="button" class="calc-cell" data-calc-rate="8" data-calc-release="hard" aria-label="1/8, rilascio deciso, 87,50 millisecondi, copia">87,50</button></td>
+                        </tr>
+                        <tr>
+                            <th scope="row">1/16 — 8,000 Hz</th>
+                            <td><button type="button" class="calc-cell" data-calc-rate="16" data-calc-release="soft" aria-label="1/16, rilascio morbido, 75,00 millisecondi, copia">75,00</button></td>
+                            <td><button type="button" class="calc-cell" data-calc-rate="16" data-calc-release="hard" aria-label="1/16, rilascio deciso, 43,75 millisecondi, copia">43,75</button></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </section>
+
+            <p id="calc-status" class="tb-status" aria-live="polite"></p>
+        </main>
+
+        <!-- Foglio "Che cos'e'" della riga A4 (contratto .tb-info/.tb-sheet
+             in shared/components.css, spec 03 criterio 5: un solo
+             componente, niente popover separato da desktop). -->
+        <div class="tb-sheet-scrim" id="calc-a4-info-scrim" hidden></div>
+        <div class="tb-sheet" id="calc-a4-info" role="dialog" aria-modal="true" aria-labelledby="calc-a4-info-title" hidden>
+            <div class="tb-sheet-head">
+                <h2 id="calc-a4-info-title" data-i18n="calc-a4-info-title">Riferimento A4</h2>
+                <button type="button" class="tb-sheet-close" data-i18n-aria="sheet-close" aria-label="Chiudi">&times;</button>
+            </div>
+            <div class="tb-sheet-body" data-i18n="calc-a4-info-text">Le frequenze delle note si calcolano da un La di riferimento: 440 Hz è lo standard. La velocità del suono usata per la lunghezza d'onda è fissa a 343 m/s (aria a temperatura ambiente).</div>
+        </div>
+
+        <!-- Riga sola su ogni pagina (spec 03 §4). -->
+        <footer class="tb-footer">
+            <p class="tb-footer-line">
+                <span>Tiny Temple Studio</span>
+                <span class="tb-footer-sep" aria-hidden="true">&middot;</span>
+                <a href="https://www.iubenda.com/privacy-policy/35861019" target="_blank" rel="noopener"
+                    data-i18n="tb-footer-privacy">Privacy</a>
+                <span class="tb-footer-sep" aria-hidden="true">&middot;</span>
+                <span data-i18n="footer-designed">Designed by Genna</span>
+            </p>
+        </footer>
+    </div>
+
+    <script type="module" src="/calcolatore-tempo/calcolatore-tempo.js"></script>
+</body>
+
+</html>

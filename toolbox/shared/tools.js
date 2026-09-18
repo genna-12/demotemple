@@ -27,7 +27,7 @@ export const TOOLS = [
     { slug: 'accordatore', family: 'live', key: 'tool-accordatore', status: 'live' },
     { slug: 'dna', family: 'analysis', key: 'tool-dna', status: 'soon', next: true },
     { slug: 'penna', family: 'writing', key: 'tool-penna', status: 'soon' },
-    { slug: 'calcolatore-tempo', family: 'calc', key: 'tool-calcolatore-tempo', status: 'soon' },
+    { slug: 'calcolatore-tempo', family: 'calc', key: 'tool-calcolatore-tempo', status: 'live' },
     { slug: 'pianificatore-uscita', family: 'release', key: 'tool-pianificatore-uscita', status: 'soon' },
     { slug: 'checklist-consegna', family: 'release', key: 'tool-checklist-consegna', status: 'soon' },
     { slug: 'split-sheet', family: 'release', key: 'tool-split-sheet', status: 'soon' }

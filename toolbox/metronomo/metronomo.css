@@ -42,20 +42,12 @@
     padding-bottom: calc(12px + var(--tb-safe-b));
 }
 
-.tb-footer-legal {
-    margin: 6px auto;
-    font-size: 0.68rem;
-    line-height: 1.4;
-}
-
-.tb-footer-links {
-    gap: 4px 12px;
-    margin-top: 6px;
-}
-
-.tb-footer-links a {
-    min-height: 32px;
+.tb-footer-line {
     font-size: 0.72rem;
+}
+
+.tb-footer-line a {
+    min-height: 32px;
 }
 
 /* --- BPM: rotella 3D + numero/input + passi + tap/conta (spec 10 §11.1/2) --- */
@@ -231,75 +223,14 @@
     gap: 8px;
 }
 
-.met-step {
-    min-width: 44px;
-    min-height: 44px;
-    padding: 0 10px;
-    border-radius: 12px;
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    background: rgba(255, 255, 255, 0.04);
-    color: var(--text-primary);
-    font-weight: 600;
-    font-size: 0.95rem;
-    transition: border-color 0.3s ease, background 0.3s ease;
-}
-
-.met-step.is-pressed,
-.met-step:active {
-    border-color: var(--accent-orange);
-}
-
-@media (hover: hover) and (pointer: fine) {
-    .met-step:hover {
-        border-color: var(--accent-orange);
-    }
-}
-
-.met-tap {
-    min-width: 44px;
-    min-height: 44px;
-    padding: 0 32px;
-    border-radius: 50px;
-    border: 1px solid var(--accent-orange);
-    color: var(--accent-orange);
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    font-size: 0.85rem;
-    transition: background 0.15s ease, color 0.15s ease;
-}
-
-.met-tap.is-pressed,
-.met-tap:active {
-    background: var(--accent-orange);
-    color: #ffffff;
-}
-
+/* .met-step/.met-tap/.met-tap--count sono superati (spec 03 §7): i passi
+   +-1/+-5 usano tb-btn--icon, Tap/Conta usano tb-btn/tb-btn--ghost. Resta
+   solo il contenitore di riga. */
 .met-taps {
     display: flex;
     justify-content: center;
     flex-wrap: wrap;
     gap: 8px;
-}
-
-/* #met-count (spec 10 §11.3): stesso stile del Tap, piu' discreto (azione
-   secondaria: apre l'overlay Counter, non avvia il suono). */
-.met-tap--count {
-    border-color: rgba(255, 255, 255, 0.2);
-    color: var(--text-muted);
-}
-
-.met-tap--count.is-pressed,
-.met-tap--count:active {
-    background: rgba(255, 255, 255, 0.1);
-    color: var(--text-primary);
-}
-
-@media (hover: hover) and (pointer: fine) {
-    .met-tap--count:hover {
-        border-color: rgba(255, 255, 255, 0.4);
-        color: var(--text-primary);
-    }
 }
 
 /* --- Indicatore: un pallino per impulso (spec 10 §3/§6) --- */
@@ -355,60 +286,9 @@
     color: var(--text-muted);
 }
 
-.met-choices {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-}
-
-.met-choices button {
-    min-width: 44px;
-    min-height: 44px;
-    padding: 0 12px;
-    border-radius: 10px;
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    background: rgba(255, 255, 255, 0.04);
-    color: var(--text-primary);
-    font-size: 0.85rem;
-    font-weight: 500;
-    transition: border-color 0.3s ease, background 0.3s ease, color 0.3s ease;
-}
-
-.met-choices button[aria-checked="true"] {
-    border-color: var(--accent-orange);
-    background: rgba(207, 92, 54, 0.15);
-    color: var(--accent-orange);
-    font-weight: 700;
-}
-
-@media (hover: hover) and (pointer: fine) {
-    .met-choices button:hover {
-        border-color: var(--accent-orange);
-    }
-}
-
-/* Striscia a scorrimento orizzontale per battuta/suddivisione (feedback
-   Genna): una sola riga, snap sui chip, scrollbar nascosta. Solo su
-   #met-meters/#met-subs (i piu' numerosi): #met-sounds resta a capo,
-   condivide la riga col volume qui sotto. */
-.met-choices--scroll {
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    overscroll-behavior-x: contain;
-    scroll-snap-type: x proximity;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
-    padding-bottom: 2px;
-}
-
-.met-choices--scroll::-webkit-scrollbar {
-    display: none;
-}
-
-.met-choices--scroll button {
-    flex-shrink: 0;
-    scroll-snap-align: center;
-}
+/* .met-choices/--scroll/button sono superati (spec 03 §7): battuta,
+   suddivisione e suono usano tb-segment/tb-segment-btn (tb-segment--scroll
+   su meters/subs, i piu' numerosi; #met-sounds resta a capo). */
 
 /* --- Suono + Volume sulla stessa riga (feedback Genna) --- */
 .met-row--sound {
@@ -429,45 +309,35 @@
     min-width: 120px;
 }
 
+/* #met-volume e' un tb-range (spec 03 §7): niente piu' regole qui, solo la
+   larghezza dentro .met-field--volume. */
 #met-volume {
-    display: block;
     width: 100%;
-    min-height: 32px;
-    accent-color: var(--accent-orange);
 }
 
 /* --- Avvio/stop --- */
-.met-toggle {
-    min-height: 64px;
+/* #met-toggle usa tb-btn tb-btn--lg tb-btn--primary (spec 03 §7): margine
+   di riga qui, il resto viene dai componenti condivisi. metronomo.js
+   aggiunge/toglie .is-on insieme ad aria-pressed: la classe e' id-scoped
+   cosi' .tb-btn--primary resta il solo --primary "pieno" della schermata
+   (criterio 2) quando il metronomo e' fermo, e diventa un contorno quando
+   e' in moto. */
+#met-toggle {
     margin-top: 4px;
-    border-radius: 20px;
-    background: var(--accent-orange);
-    color: #ffffff;
-    font-family: var(--font-title);
-    font-size: 1.1rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    transition: background 0.3s ease, border-color 0.3s ease, color 0.3s ease, transform 0.15s ease;
 }
 
-.met-toggle:active {
-    transform: scale(0.98);
-}
-
-/* metronomo.js aggiunge/toglie .is-on insieme ad aria-pressed. */
-.met-toggle.is-on {
+#met-toggle.is-on {
     background: transparent;
-    border: 2px solid var(--accent-orange);
+    border-color: var(--accent-orange);
+    border-top-color: var(--accent-orange);
+    box-shadow: none;
     color: var(--accent-orange);
 }
 
 @media (hover: hover) and (pointer: fine) {
-    .met-toggle:hover {
-        background: #b64d2c;
-    }
-    .met-toggle.is-on:hover {
+    #met-toggle.is-on:hover {
         background: rgba(207, 92, 54, 0.12);
+        border-color: var(--accent-orange);
     }
 }
 
@@ -494,6 +364,10 @@
    ogni pointerdown sull'overlay conta (mai click); al primo tap nasconde
    #met-counter-hint e toglie [hidden] da #met-counter-value. #met-counter-
    close (o Esc) chiude e applica il BPM contato. */
+/* Il contatore resta un overlay a schermo intero (bersaglio grande per i
+   tap, id/classi invariati: metronomo.js li tocca solo con [hidden] e
+   .met-counter-count), ma prende l'estetica vetro di tb-sheet (spec 03
+   §7: "il contatore -> tb-sheet") invece dello sfondo piatto di prima. */
 .met-counter {
     position: fixed;
     inset: 0;
@@ -513,19 +387,33 @@
     display: none !important;
 }
 
+.met-counter::before {
+    content: '';
+    position: absolute;
+    z-index: -1;
+    inset: 0;
+    background: var(--glass-bg);
+    border-top: 1px solid var(--glass-border-top);
+    -webkit-backdrop-filter: var(--glass-blur);
+    backdrop-filter: var(--glass-blur);
+    pointer-events: none;
+}
+
 .met-counter-close {
     position: absolute;
     top: calc(16px + var(--tb-safe-t));
     right: calc(16px + var(--tb-safe-r));
+    z-index: 1;
     width: 44px;
     height: 44px;
     min-height: 0;
-    border-radius: 50%;
+    border-radius: var(--r-pill);
     display: flex;
     align-items: center;
     justify-content: center;
-    background: rgba(255, 255, 255, 0.06);
-    border: 1px solid rgba(255, 255, 255, 0.15);
+    background: var(--surface-1);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--shadow-pop);
     color: var(--text-primary);
     font-size: 1.4rem;
     line-height: 1;

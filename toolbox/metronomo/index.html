@@ -36,7 +36,7 @@
          "Metronomo" e' solo l'h1 sotto, che scorre col contenuto; mountBar
          va chiamata senza titleKey. -->
     <header class="tb-bar">
-        <a class="tb-logo in-nav" href="/" data-i18n-aria="bar-logo-aria" aria-label="Tiny Temple Toolbox — vai alla dashboard">
+        <a class="tb-logo in-nav" href="/" data-i18n-aria="bar-logo-aria" aria-label="Toolbox, vai alla dashboard">
             <img src="/assets/brand/logo-arancione.png" width="100" height="100" alt="" loading="eager">
             <span class="sr-only">Tiny Temple Toolbox</span>
         </a>
@@ -86,12 +86,40 @@
             <path d="M12 12V3"></path>
             <path d="M12 12l7.5 4.33"></path>
         </symbol>
+        <!-- Icone di UI (spec 03 §3/§5/§9: niente piu' frecce/simboli scritti a
+             mano nel testo). -->
+        <symbol id="tb-icon-arrow-left" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 12H5"></path>
+            <path d="M11 18l-6-6 6-6"></path>
+        </symbol>
+        <symbol id="tb-icon-chevron-down" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M6 9l6 6 6-6"></path>
+        </symbol>
+        <symbol id="tb-icon-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M5 13l4 4L19 7"></path>
+        </symbol>
+        <symbol id="tb-icon-minus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M5 12h14"></path>
+        </symbol>
+        <symbol id="tb-icon-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 5v14"></path>
+            <path d="M5 12h14"></path>
+        </symbol>
+        <symbol id="tb-icon-grip" viewBox="0 0 24 24">
+            <circle cx="9" cy="6" r="1.6" fill="currentColor"></circle>
+            <circle cx="15" cy="6" r="1.6" fill="currentColor"></circle>
+            <circle cx="9" cy="12" r="1.6" fill="currentColor"></circle>
+            <circle cx="15" cy="12" r="1.6" fill="currentColor"></circle>
+            <circle cx="9" cy="18" r="1.6" fill="currentColor"></circle>
+            <circle cx="15" cy="18" r="1.6" fill="currentColor"></circle>
+        </symbol>
     </svg>
 
     <div id="tb-menu" class="tb-menu" hidden>
         <div class="tb-menu-scrim"></div>
         <div class="tb-menu-panel" role="dialog" aria-modal="true" aria-label="Menu">
             <a class="tb-menu-home tb-menu-item" href="/" data-i18n="menu-all">Dashboard</a>
+            <div class="tb-menu-title" data-i18n="menu-tools">Strumenti</div>
             <div class="tb-menu-groups"></div>
             <div class="tb-menu-foot tb-menu-item">
                 <div class="tb-menu-install-group">
@@ -145,21 +173,21 @@
                     <button type="button" class="met-wheel-edge is-right" data-met-step="+1" tabindex="-1" aria-hidden="true"></button>
                     <div class="met-bpm-readout">
                         <span id="met-bpm" class="met-bpm" aria-live="polite" aria-atomic="true">120</span>
-                        <input type="number" id="met-bpm-input" class="met-bpm-input" inputmode="numeric"
+                        <input type="number" id="met-bpm-input" class="met-bpm-input tb-number" inputmode="numeric"
                             min="30" max="300" step="1" value="120" hidden
                             data-i18n-aria="met-bpm-input-aria" aria-label="BPM, modifica il valore">
                         <span class="met-bpm-unit">BPM</span>
                     </div>
                 </div>
                 <div class="met-steps">
-                    <button type="button" class="met-step" data-met-step="-5" data-i18n-aria="met-step-minus5" aria-label="Meno 5">&minus;5</button>
-                    <button type="button" class="met-step" data-met-step="-1" data-i18n-aria="met-step-minus1" aria-label="Meno 1">&minus;1</button>
-                    <button type="button" class="met-step" data-met-step="+1" data-i18n-aria="met-step-plus1" aria-label="Più 1">+1</button>
-                    <button type="button" class="met-step" data-met-step="+5" data-i18n-aria="met-step-plus5" aria-label="Più 5">+5</button>
+                    <button type="button" class="tb-btn tb-btn--icon" data-met-step="-5" data-i18n-aria="met-step-minus5" aria-label="Meno 5">&minus;5</button>
+                    <button type="button" class="tb-btn tb-btn--icon" data-met-step="-1" data-i18n-aria="met-step-minus1" aria-label="Meno 1">&minus;1</button>
+                    <button type="button" class="tb-btn tb-btn--icon" data-met-step="+1" data-i18n-aria="met-step-plus1" aria-label="Più 1">+1</button>
+                    <button type="button" class="tb-btn tb-btn--icon" data-met-step="+5" data-i18n-aria="met-step-plus5" aria-label="Più 5">+5</button>
                 </div>
                 <div class="met-taps">
-                    <button type="button" id="met-tap" class="met-tap" data-i18n="met-tap" data-i18n-aria="met-tap-aria" aria-label="Tocca a tempo per impostare il BPM">Tap</button>
-                    <button type="button" id="met-count" class="met-tap met-tap--count" data-i18n="met-count" data-i18n-aria="met-count-aria" aria-label="Conta i tap per impostare il BPM">Conta</button>
+                    <button type="button" id="met-tap" class="tb-btn" data-i18n="met-tap" data-i18n-aria="met-tap-aria" aria-label="Tocca a tempo per impostare il BPM">Tap</button>
+                    <button type="button" id="met-count" class="tb-btn tb-btn--ghost" data-i18n="met-count" data-i18n-aria="met-count-aria" aria-label="Conta i tap per impostare il BPM">Conta</button>
                 </div>
             </div>
 
@@ -167,43 +195,43 @@
 
             <div class="met-row">
                 <span class="met-label" id="met-meter-label" data-i18n="met-meter">Battuta</span>
-                <div id="met-meters" class="met-choices met-choices--scroll" role="radiogroup" aria-labelledby="met-meter-label">
-                    <button type="button" data-met-meter="2/4" role="radio" aria-checked="false">2/4</button>
-                    <button type="button" data-met-meter="3/4" role="radio" aria-checked="false">3/4</button>
-                    <button type="button" data-met-meter="4/4" role="radio" aria-checked="true">4/4</button>
-                    <button type="button" data-met-meter="5/4" role="radio" aria-checked="false">5/4</button>
-                    <button type="button" data-met-meter="6/8" role="radio" aria-checked="false">6/8</button>
-                    <button type="button" data-met-meter="7/8" role="radio" aria-checked="false">7/8</button>
-                    <button type="button" data-met-meter="12/8" role="radio" aria-checked="false">12/8</button>
+                <div id="met-meters" class="tb-segment tb-segment--scroll" role="radiogroup" aria-labelledby="met-meter-label">
+                    <button type="button" class="tb-segment-btn" data-met-meter="2/4" role="radio" aria-checked="false">2/4</button>
+                    <button type="button" class="tb-segment-btn" data-met-meter="3/4" role="radio" aria-checked="false">3/4</button>
+                    <button type="button" class="tb-segment-btn" data-met-meter="4/4" role="radio" aria-checked="true">4/4</button>
+                    <button type="button" class="tb-segment-btn" data-met-meter="5/4" role="radio" aria-checked="false">5/4</button>
+                    <button type="button" class="tb-segment-btn" data-met-meter="6/8" role="radio" aria-checked="false">6/8</button>
+                    <button type="button" class="tb-segment-btn" data-met-meter="7/8" role="radio" aria-checked="false">7/8</button>
+                    <button type="button" class="tb-segment-btn" data-met-meter="12/8" role="radio" aria-checked="false">12/8</button>
                 </div>
             </div>
 
             <div class="met-row">
                 <span class="met-label" id="met-subdiv-label" data-i18n="met-subdiv">Suddivisione</span>
-                <div id="met-subs" class="met-choices met-choices--scroll" role="radiogroup" aria-labelledby="met-subdiv-label">
-                    <button type="button" data-met-sub="1" role="radio" aria-checked="true" data-i18n="met-sub-1">Quarti</button>
-                    <button type="button" data-met-sub="2" role="radio" aria-checked="false" data-i18n="met-sub-2">Ottavi</button>
-                    <button type="button" data-met-sub="3" role="radio" aria-checked="false" data-i18n="met-sub-3">Terzine</button>
-                    <button type="button" data-met-sub="4" role="radio" aria-checked="false" data-i18n="met-sub-4">Sedicesimi</button>
+                <div id="met-subs" class="tb-segment tb-segment--scroll" role="radiogroup" aria-labelledby="met-subdiv-label">
+                    <button type="button" class="tb-segment-btn" data-met-sub="1" role="radio" aria-checked="true" data-i18n="met-sub-1">Quarti</button>
+                    <button type="button" class="tb-segment-btn" data-met-sub="2" role="radio" aria-checked="false" data-i18n="met-sub-2">Ottavi</button>
+                    <button type="button" class="tb-segment-btn" data-met-sub="3" role="radio" aria-checked="false" data-i18n="met-sub-3">Terzine</button>
+                    <button type="button" class="tb-segment-btn" data-met-sub="4" role="radio" aria-checked="false" data-i18n="met-sub-4">Sedicesimi</button>
                 </div>
             </div>
 
             <div class="met-row met-row--sound">
                 <div class="met-field">
                     <span class="met-label" id="met-sound-label" data-i18n="met-sound">Suono</span>
-                    <div id="met-sounds" class="met-choices" role="radiogroup" aria-labelledby="met-sound-label">
-                        <button type="button" data-met-sound="legno" role="radio" aria-checked="true" data-i18n="met-sound-legno">Legno</button>
-                        <button type="button" data-met-sound="beep" role="radio" aria-checked="false" data-i18n="met-sound-beep">Beep</button>
-                        <button type="button" data-met-sound="rimshot" role="radio" aria-checked="false" data-i18n="met-sound-rimshot">Rimshot</button>
+                    <div id="met-sounds" class="tb-segment" role="radiogroup" aria-labelledby="met-sound-label">
+                        <button type="button" class="tb-segment-btn" data-met-sound="legno" role="radio" aria-checked="true" data-i18n="met-sound-legno">Legno</button>
+                        <button type="button" class="tb-segment-btn" data-met-sound="beep" role="radio" aria-checked="false" data-i18n="met-sound-beep">Beep</button>
+                        <button type="button" class="tb-segment-btn" data-met-sound="rimshot" role="radio" aria-checked="false" data-i18n="met-sound-rimshot">Rimshot</button>
                     </div>
                 </div>
                 <div class="met-field met-field--volume">
                     <label class="met-label" for="met-volume" data-i18n="met-volume">Volume</label>
-                    <input type="range" id="met-volume" min="0" max="100" value="85">
+                    <input type="range" id="met-volume" class="tb-range" min="0" max="100" value="85">
                 </div>
             </div>
 
-            <button type="button" id="met-toggle" class="met-toggle" aria-pressed="false"
+            <button type="button" id="met-toggle" class="tb-btn tb-btn--lg tb-btn--primary" aria-pressed="false"
                 data-i18n-aria="met-toggle-aria" aria-label="Avvia o ferma (barra spaziatrice)">
                 <span id="met-toggle-label" data-i18n="met-start">Avvia</span>
             </button>
@@ -212,21 +240,17 @@
             <p class="met-hint" data-i18n="met-hint">Barra spaziatrice per avviare</p>
         </main>
 
+        <!-- Riga sola su ogni pagina (spec 03 §4): niente piu' cookie/note
+             legali (restano sulla vetrina), solo Privacy verso Iubenda. -->
         <footer class="tb-footer">
-            <p class="tb-footer-legal" data-i18n="tb-footer-legal-note">
-                Tiny Temple Studio &egrave; il nome con cui Francesco Pontillo, libero professionista, esercita
-                la propria attivit&agrave;. I professionisti indicati sul sito collaborano in qualit&agrave; di
-                lavoratori autonomi indipendenti.
-            </p>
-            <div class="tb-footer-links">
+            <p class="tb-footer-line">
+                <span>Tiny Temple Studio</span>
+                <span class="tb-footer-sep" aria-hidden="true">&middot;</span>
                 <a href="https://www.iubenda.com/privacy-policy/35861019" target="_blank" rel="noopener"
-                    data-i18n="tb-footer-privacy">Privacy Policy</a>
-                <a href="https://www.iubenda.com/privacy-policy/35861019/cookie-policy" target="_blank"
-                    rel="noopener" data-i18n="tb-footer-cookie">Cookie Policy</a>
-                <a href="https://tinytemplestudio.it/note-legali" data-i18n="tb-footer-note-legali">Note
-                    legali</a>
-                <a href="https://tinytemplestudio.it/" data-i18n="tb-footer-site">Sito dello studio</a>
-            </div>
+                    data-i18n="tb-footer-privacy">Privacy</a>
+                <span class="tb-footer-sep" aria-hidden="true">&middot;</span>
+                <span data-i18n="footer-designed">Designed by Genna</span>
+            </p>
         </footer>
     </div>
 

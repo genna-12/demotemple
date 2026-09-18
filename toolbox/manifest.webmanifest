@@ -54,6 +54,18 @@
           "type": "image/png"
         }
       ]
+    },
+    {
+      "name": "Calcolatore Tempo",
+      "short_name": "Calcolatore",
+      "url": "/calcolatore-tempo/",
+      "icons": [
+        {
+          "src": "/assets/icons/icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
     }
   ]
 }

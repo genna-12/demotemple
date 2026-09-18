@@ -19,8 +19,12 @@
 //       ...stessa struttura... + <span class="sr-only" data-i18n = pill-soon></span></div>
 //     <button type="button" class="tb-tile-remove" hidden
 //             data-i18n-aria = dash-remove-aria data-i18n-tool = tool-<slug>>&minus;</button>
-//   Il "-" sta nel <li> (non dentro <a>: sarebbe HTML non valido); dash.js mette
-//   `position: relative` sul <li>, ma in CSS va bene aggiungere `.tb-tiles > li { position: relative }`.
+//   In modifica il <li> riceve anche la maniglia (spec 03 §5), prima del tile:
+//     <button type="button" class="tb-tile-grip" tabindex="-1" aria-hidden="true">
+//       <svg aria-hidden="true"><use href="#tb-icon-grip"></use></svg></button>
+//   Il trascinamento col dito parte SOLO dalla maniglia (touch-action: none in
+//   CSS); il resto del <li> resta `pan-y`, cosi' la pagina scorre. Da tastiera
+//   non cambia nulla: il fuoco resta sul tile.
 // Generato in #tb-picker-groups: section.tb-picker-group > span.tb-menu-eyebrow[data-i18n = fam-<id>]
 //   + ul.tb-picker-list > li > button.tb-picker-item[data-slug] (icona + span[data-i18n = tool-<slug>]).
 //
@@ -42,6 +46,9 @@ import { t, apply } from './i18n.js';
 import { TOOLS, FAMILIES } from './tools.js';
 import { prefs } from './storage.js';
 import { toolIcon } from './nav.js';
+
+/* icona dallo sprite di pagina, come toolIcon ma per le icone di servizio */
+const icon_ = (id) => toolIcon(id.replace(/^tb-icon-/, ''));
 
 const AREA = 'dash';
 const DRAG_THRESHOLD = 6; // px: sotto questa soglia e' un tocco, non un trascinamento
@@ -118,15 +125,23 @@ export function mountDash() {
             tile.appendChild(sr);
         }
 
+        const grip = document.createElement('button');
+        grip.type = 'button';
+        grip.className = 'tb-tile-grip';
+        grip.tabIndex = -1;
+        grip.setAttribute('aria-hidden', 'true');
+        grip.hidden = !editing;
+        grip.appendChild(icon_('tb-icon-grip'));
+
         const remove = document.createElement('button');
         remove.type = 'button';
         remove.className = 'tb-tile-remove';
         remove.hidden = !editing;
         remove.setAttribute('data-i18n-aria', 'dash-remove-aria');
         remove.setAttribute('data-i18n-tool', tool.key);
-        remove.textContent = '−';
+        remove.appendChild(icon_('tb-icon-minus'));
 
-        li.append(tile, remove);
+        li.append(grip, tile, remove);
         applyEditState(li);
         return li;
     }
@@ -135,10 +150,13 @@ export function mountDash() {
     function applyEditState(li) {
         const tile = li.querySelector('.tb-tile');
         const remove = li.querySelector('.tb-tile-remove');
+        const grip = li.querySelector('.tb-tile-grip');
         const tool = bySlug(li.getAttribute('data-slug'));
         if (remove) remove.hidden = !editing;
+        if (grip) grip.hidden = !editing;
         if (!tile) return;
-        li.style.setProperty('touch-action', editing ? 'none' : ''); // il dito trascina, non scrolla
+        /* il dito sul tile scorre la pagina: si trascina solo dalla maniglia */
+        li.style.setProperty('touch-action', 'pan-y');
         if (editing) {
             tile.setAttribute('tabindex', '0');
             tile.setAttribute('data-i18n-aria', 'dash-move-aria');
@@ -247,7 +265,9 @@ export function mountDash() {
     grid.addEventListener('pointerdown', (e) => {
         if (!editing || e.button !== 0) return;
         if (e.target.closest && e.target.closest('.tb-tile-remove')) return;
-        const li = e.target.closest ? e.target.closest('li') : null;
+        /* spec 03 §5: solo la maniglia trascina */
+        if (!e.target.closest || !e.target.closest('.tb-tile-grip')) return;
+        const li = e.target.closest('li');
         if (!li || li.parentElement !== grid) return;
         drag = { li, id: e.pointerId, x0: e.clientX, y0: e.clientY, dx: 0, dy: 0, active: false };
     });

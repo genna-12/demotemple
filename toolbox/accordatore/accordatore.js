@@ -22,6 +22,9 @@ import { getContext, unlock, needsGesture, onStateChange } from '/shared/audio.j
 import * as mic from '/shared/mic.js';
 import { prefs } from '/shared/storage.js';
 import { createPitchTracker, noteInfo, noteToHz, nearestIndex } from '/shared/pitch.js';
+import { createStringVoices, voiceFor } from '/shared/strings.js';
+import { mountSelects } from '/shared/select.js';
+import { mountInfos } from '/shared/sheet.js';
 
 const TOOL = 'accordatore';
 const A4_MIN = 415;
@@ -29,9 +32,7 @@ const A4_MAX = 466;
 const A4_DEFAULT = 440;
 const IN_TUNE_CENTS = 5;      // entro questi cent la nota e' giusta
 const NEAR_CENTS = 150;       // oltre, la corda non e' quella
-const TONE_SECONDS = 2;       // durata di una nota di riferimento
-const TONE_RELEASE = 0.03;    // rilascio della nota precedente
-const LOOP_GAP = 0.25;        // pausa fra due ripetizioni
+const LOOP_EVERY = 4000;      // ms fra due ripetizioni con #acc-loop attivo
 const SPRING_MS = 60;         // costante dell'ago (molla critica)
 const SPEAK_MS = 700;         // throttle degli annunci
 
@@ -66,6 +67,11 @@ export function mountTuner() {
     const a4Input = document.getElementById('acc-a4');
     const a4Value = document.getElementById('acc-a4-value');
     const loopBtn = document.getElementById('acc-loop');
+    const loopHint = document.getElementById('acc-loop-hint');
+    const a4Reset = document.getElementById('acc-a4-reset');
+    const micOff = document.getElementById('acc-mic-off');
+    const keysBox = document.getElementById('acc-keys');
+    const octaveBox = document.getElementById('acc-key-octave');
     const status = document.getElementById('acc-status');
 
     const ui = {
@@ -83,10 +89,12 @@ export function mountTuner() {
     let lastFrame = 0;
     let lastSpoken = 0;
     let lastSpeech = '';
-    let voice = null;         // nota di riferimento in corso
+    let strings = null;       // voci di riferimento (shared/strings.js)
     let loopTimer = null;
     let stringFreqs = [];
     let stringBtns = [];
+    let keyNote = null;       // nota scelta sulla tastiera cromatica
+    let keyOctave = 4;
 
     const tuning = () => TUNINGS[ui.instrument] || TUNINGS.guitar;
 
@@ -115,6 +123,42 @@ export function mountTuner() {
             b.classList.toggle('is-target', i === target);
             b.classList.toggle('is-near', i !== target && i === nearIndex);
         });
+        markKeys();
+        renderLoop();
+    }
+
+    function markKeys() {
+        if (!keysBox) return;
+        [...keysBox.querySelectorAll('[data-acc-note]')].forEach((b) => {
+            b.classList.toggle('is-target', b.getAttribute('data-acc-note') === keyNote);
+        });
+        if (!octaveBox) return;
+        [...octaveBox.querySelectorAll('[data-acc-octave]')].forEach((b) => {
+            const on = Number(b.getAttribute('data-acc-octave')) === keyOctave;
+            b.setAttribute('aria-checked', on ? 'true' : 'false');
+            b.classList.toggle('is-active', on);
+        });
+    }
+
+    /* una nota scelta: una corda (strumenti) o un tasto (cromatica) */
+    const chromatic = () => ui.instrument === 'chromatic';
+    const chosen = () => (chromatic() ? keyNote !== null : target >= 0);
+    const chosenHz = () => (chromatic()
+        ? (keyNote === null ? 0 : noteToHz(keyNote + keyOctave, ui.a4))
+        : (stringFreqs[target] || 0));
+
+    /* "Suona in loop" resta spento finche' non si sceglie una nota */
+    function renderLoop() {
+        if (!loopBtn) return;
+        const ready = chosen();
+        loopBtn.disabled = !ready;
+        if (!ready && ui.loop) {
+            ui.loop = false;
+            loopBtn.setAttribute('aria-pressed', 'false');
+            loopBtn.classList.remove('is-on');
+            stopLoop();
+        }
+        if (loopHint) loopHint.hidden = ready;
     }
 
     /* ---------------- lettura ---------------- */
@@ -202,56 +246,23 @@ export function mountTuner() {
 
     /* ---------------- nota di riferimento ---------------- */
 
-    function releaseVoice(ctx, when) {
-        if (!voice) return;
-        const v = voice;
-        voice = null;
-        const at = when || ctx.currentTime;
-        try {
-            v.gain.gain.cancelScheduledValues(at);
-            v.gain.gain.setValueAtTime(Math.max(0.0001, v.gain.gain.value), at);
-            v.gain.gain.exponentialRampToValueAtTime(0.0001, at + TONE_RELEASE);
-            v.oscs.forEach((o) => o.stop(at + TONE_RELEASE + 0.01));
-        } catch (e) { /* voce gia' finita */ }
-    }
-
-    /** Nota con fondamentale + 2a (-10 dB) + 3a (-16 dB), spec 11 §5. */
-    function playNote(hz) {
-        let ctx;
+    function voices() {
+        if (strings) return strings;
         try {
             unlock().catch(() => { /* serve un gesto: lo dice lo stato */ });
-            ctx = getContext();
+            strings = createStringVoices(getContext());
         } catch (e) {
             setStatus(status, { kind: 'error', key: 'audio-resume-msg' });
-            return;
+            return null;
         }
-        const t0 = ctx.currentTime + 0.01;
-        releaseVoice(ctx, t0);
-        const gain = ctx.createGain();
-        gain.gain.setValueAtTime(0.0001, t0);
-        gain.gain.exponentialRampToValueAtTime(0.5, t0 + 0.008); // attacco 8 ms
-        gain.gain.exponentialRampToValueAtTime(0.0001, t0 + 1.8); // decadimento 1,8 s
-        gain.connect(ctx.destination);
-        const oscs = [1, 2, 3].map((n) => {
-            const o = ctx.createOscillator();
-            o.type = 'sine';
-            o.frequency.setValueAtTime(hz * n, t0);
-            const g = ctx.createGain();
-            g.gain.value = n === 1 ? 1 : n === 2 ? 0.316 : 0.158; // -10 dB, -16 dB
-            o.connect(g).connect(gain);
-            o.start(t0);
-            o.stop(t0 + TONE_SECONDS);
-            return o;
-        });
-        const v = { gain, oscs };
-        voice = v;
-        oscs[0].onended = () => {
-            if (voice === v) voice = null;
-            try {
-                gain.disconnect();
-                oscs.forEach((o) => o.disconnect());
-            } catch (e) { /* gia' scollegati */ }
-        };
+        return strings;
+    }
+
+    /** Nota di riferimento: corda pizzicata (o arcata sul violino). */
+    function playNote(hz) {
+        const v = voices();
+        if (!v) return;
+        v.play(hz, voiceFor(ui.instrument));
     }
 
     function stopLoop() {
@@ -264,9 +275,16 @@ export function mountTuner() {
         if (!(hz > 0)) return;
         stopLoop();
         playNote(hz);
-        if (ui.loop) {
-            loopTimer = setTimeout(() => playString(i), (TONE_SECONDS + LOOP_GAP) * 1000);
-        }
+        if (ui.loop) loopTimer = setTimeout(() => playString(i), LOOP_EVERY);
+    }
+
+    /** Suona quel che e' scelto adesso (corda o tasto), eventualmente in loop. */
+    function playChosen() {
+        const hz = chosenHz();
+        if (!(hz > 0)) return;
+        stopLoop();
+        playNote(hz);
+        if (ui.loop) loopTimer = setTimeout(playChosen, LOOP_EVERY);
     }
 
     /* ---------------- microfono ---------------- */
@@ -290,14 +308,22 @@ export function mountTuner() {
         return /FBAN|FBAV|FB_IAB|Instagram|LinkedInApp|Line\/|Snapchat|TikTok|musical_ly|BytedanceWebview/i.test(ua);
     }
 
+    /* "Disattiva microfono": solo in Ascolto e solo se il permesso c'e' */
+    function renderMicOff() {
+        if (!micOff) return;
+        micOff.hidden = !(ui.mode === 'listen' && mic.state() === 'granted');
+    }
+
     function renderConsent() {
         if (!consentBox) return;
         if (ui.mode !== 'listen') { consentBox.textContent = ''; return; }
         if (mic.state() === 'granted' && tracker && tracker.running()) {
             consentBox.textContent = '';
+            renderMicOff();
             return;
         }
         mic.renderConsent(consentBox, { onAllow: startListening });
+        renderMicOff();
         if (mic.state() === 'unavailable' && isInApp()) {
             setStatus(status, { kind: 'denied', key: 'acc-inapp' });
         }
@@ -344,6 +370,7 @@ export function mountTuner() {
         const reason = info && info.reason;
         if (reason === 'resumed') {
             if (tracker) tracker.rebuild();
+            renderMicOff();
             micStatus();
             return;
         }
@@ -353,6 +380,7 @@ export function mountTuner() {
             return;
         }
         renderConsent();
+        renderMicOff();
         micStatus();
     });
 
@@ -379,11 +407,13 @@ export function mountTuner() {
         if (next === 'listen') {
             stopLoop();
             renderConsent();
+            renderMicOff();
             micStatus();
             if (mic.state() === 'granted') startListening();
         } else {
             stopListening();
             if (consentBox) consentBox.textContent = '';
+            if (micOff) micOff.hidden = true;
             if (status) status.textContent = '';
         }
     }
@@ -402,7 +432,9 @@ export function mountTuner() {
             if (!TUNINGS[instrument.value]) return;
             ui.instrument = instrument.value;
             prefs.set(TOOL, 'instrument', ui.instrument);
+            root.setAttribute('data-acc-instrument', ui.instrument);
             stopLoop();
+            keyNote = null;
             buildStrings();
             applyRange();
             clearReading();
@@ -417,7 +449,7 @@ export function mountTuner() {
             if (ui.mode === 'reference') {
                 target = i;
                 markStrings(-1);
-                playString(i);
+                playChosen();
                 return;
             }
             target = target === i ? -1 : i; // in ascolto: scegli/lascia la corda
@@ -425,41 +457,83 @@ export function mountTuner() {
         });
     }
 
-    if (a4Input) {
-        a4Input.addEventListener('input', () => {
-            ui.a4 = clampA4(a4Input.value);
-            if (a4Value) a4Value.textContent = ui.a4 + ' Hz';
-            prefs.set(TOOL, 'a4', ui.a4);
-            stringFreqs = tuning().strings.map((n) => noteToHz(n, ui.a4));
-            applyRange();
+    function setA4(v) {
+        ui.a4 = clampA4(v);
+        if (a4Input && Number(a4Input.value) !== ui.a4) a4Input.value = String(ui.a4);
+        if (a4Value) a4Value.textContent = ui.a4 + ' Hz';
+        if (a4Reset) a4Reset.disabled = ui.a4 === A4_DEFAULT;
+        prefs.set(TOOL, 'a4', ui.a4);
+        stringFreqs = tuning().strings.map((n) => noteToHz(n, ui.a4));
+        applyRange();
+    }
+
+    if (a4Input) a4Input.addEventListener('input', () => setA4(a4Input.value));
+    if (a4Reset) a4Reset.addEventListener('click', () => setA4(A4_DEFAULT));
+
+    /* tastiera cromatica (solo in Riferimento, spec 03 §6) */
+    if (keysBox) {
+        keysBox.addEventListener('click', (e) => {
+            const b = e.target.closest('[data-acc-note]');
+            if (!b) return;
+            keyNote = b.getAttribute('data-acc-note');
+            target = -1;
+            markStrings(-1);
+            playChosen();
+        });
+    }
+    if (octaveBox) {
+        octaveBox.addEventListener('click', (e) => {
+            const b = e.target.closest('[data-acc-octave]');
+            if (!b) return;
+            keyOctave = Number(b.getAttribute('data-acc-octave'));
+            markKeys();
+            if (keyNote !== null) playChosen();
+        });
+    }
+
+    if (micOff) {
+        micOff.addEventListener('click', () => {
+            stopListening();
+            mic.revoke();       // torna a 'unasked': ricompare il box del consenso
+            renderConsent();
+            renderMicOff();
+            micStatus();
         });
     }
 
     if (loopBtn) {
         loopBtn.addEventListener('click', () => {
+            if (!chosen()) return;
             ui.loop = !ui.loop;
             loopBtn.setAttribute('aria-pressed', ui.loop ? 'true' : 'false');
             loopBtn.classList.toggle('is-on', ui.loop);
-            if (!ui.loop) stopLoop();
+            if (ui.loop) playChosen();
+            else stopLoop();
         });
     }
 
     window.addEventListener('pagehide', () => {
         stopLoop();
+        if (strings) strings.stop();
         stopListening();
     });
 
     document.addEventListener('visibilitychange', () => {
         if (document.visibilityState !== 'hidden') return;
         stopLoop(); // mic.js ferma da se' le tracce
+        if (strings) strings.stop();
     });
 
     /* ---------------- stato iniziale ---------------- */
 
+    mountSelects(document);   // il <select> nativo diventa la pillola glass
+    mountInfos(document);     // la "i" apre il foglio
     if (instrument) instrument.value = ui.instrument;
     if (a4Input) a4Input.value = String(ui.a4);
-    if (a4Value) a4Value.textContent = ui.a4 + ' Hz';
+    setA4(ui.a4);
+    root.setAttribute('data-acc-instrument', ui.instrument);
     buildStrings();
+    markKeys();
     clearReading();
     setMode('reference');
     root.setAttribute('data-acc-mode', 'reference');
@@ -472,6 +546,9 @@ export function mountTuner() {
         freqs: () => stringFreqs,
         showPitch,
         clearReading,
+        setA4,
+        playChosen,
+        chosen,
         tracker: () => tracker,
         target: () => target
     };
