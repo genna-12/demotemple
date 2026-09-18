@@ -22,7 +22,7 @@
  * popoli da solo (vedi vendor() sotto, che li trova li' come ripiego).
  */
 
-const VERSION = 'tb-v13';
+const VERSION = 'tb-v14';
 const CACHE = 'toolbox-' + VERSION;
 const VENDOR_CACHE = 'toolbox-vendor';
 
@@ -65,6 +65,7 @@ const SHELL = [
     '/shared/analysis/bpm.js',
     '/shared/analysis/key.js',
     '/shared/analysis/loudness.js',
+    '/shared/tags.js',
 
     '/assets/brand/logo-arancione.png',
     '/assets/brand/logo-arancione-96.png',

@@ -57,7 +57,20 @@ export default {
 
         'dna-bad-file': 'Formato non letto',
         'dna-too-long': 'File troppo grande',
-        'dna-long-warning': "File lungo: l'analisi potrebbe metterci di più"
+        'dna-long-warning': "File lungo: l'analisi potrebbe metterci di più",
+
+        'dna-del-one': 'Elimina',
+        'dna-clear': 'Svuota storico',
+        'dna-clear-ask': 'Cancello tutto lo storico?',
+        'dna-clear-yes': 'Svuota',
+        'dna-clear-no': 'Annulla',
+        'dna-history-empty': 'Nessuna analisi ancora',
+
+        'dna-mic-denied': 'Permesso del microfono negato',
+        'dna-mic-none': 'Nessun microfono trovato',
+        'dna-mic-busy': 'Microfono già in uso',
+        'dna-mic-unsupported': 'Microfono non disponibile su questo browser',
+        'dna-mic-failed': 'Non è stato possibile usare il microfono'
     },
     en: {
         'dna-title': 'Track DNA',
@@ -108,6 +121,19 @@ export default {
 
         'dna-bad-file': 'Could not read this file',
         'dna-too-long': 'File too large',
-        'dna-long-warning': 'Long file: analysis may take a bit longer'
+        'dna-long-warning': 'Long file: analysis may take a bit longer',
+
+        'dna-del-one': 'Delete',
+        'dna-clear': 'Clear history',
+        'dna-clear-ask': 'Clear the whole history?',
+        'dna-clear-yes': 'Clear',
+        'dna-clear-no': 'Cancel',
+        'dna-history-empty': 'No analyses yet',
+
+        'dna-mic-denied': 'Microphone permission denied',
+        'dna-mic-none': 'No microphone found',
+        'dna-mic-busy': 'Microphone already in use',
+        'dna-mic-unsupported': 'Microphone not available in this browser',
+        'dna-mic-failed': 'Could not use the microphone'
     }
 };

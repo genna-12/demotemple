@@ -26,9 +26,39 @@
  *                     #dna-estimate (badge "stima", [hidden] se viene da file)
  *                     #dna-copy (copia il riepilogo)  #dna-again (nuova analisi)
  *   #dna-target     .tb-select con <select id="dna-target"> (spotify|apple|youtube|tidal)
- *   #dna-history    lista dello storico (vuota: la riempie il JS con
- *                     <li><button class="dna-history-item" data-dna-id="<id>">…</button></li>)
+ *   #dna-history    lista dello storico (vuota: la riempie il JS)
  *   #dna-status     .tb-status per errori e messaggi
+ *
+ * NOVITA' (feedback Genna) — markup atteso dal builder:
+ *   Storico fino a 200 voci, ognuna con il suo "elimina":
+ *     <li class="dna-history-row">
+ *       <button class="dna-history-item" data-dna-id="<id>">nome · BPM · key · LUFS</button>
+ *       <button class="dna-history-del tb-btn--icon" data-dna-del="<id>"
+ *               data-i18n-aria="dna-del-one" aria-label="Elimina">&times;</button></li>
+ *   Sopra o sotto la lista, sempre nel markup statico:
+ *     <button type="button" id="dna-clear" class="tb-btn tb-btn--ghost" hidden
+ *             data-i18n="dna-clear">Svuota storico</button>
+ *     <div id="dna-clear-confirm" class="dna-clear-confirm" hidden>
+ *       <span data-i18n="dna-clear-ask">Cancello tutto lo storico?</span>
+ *       <button type="button" id="dna-clear-yes" class="tb-btn" data-i18n="dna-clear-yes">Svuota</button>
+ *       <button type="button" id="dna-clear-no" class="tb-btn tb-btn--ghost" data-i18n="dna-clear-no">Annulla</button>
+ *     </div>
+ *   Tag del file (shared/tags.js), dentro #dna-result, sopra i numeri:
+ *     <div id="dna-tags" class="dna-tags" hidden>
+ *       <img id="dna-cover" class="dna-cover" alt="" hidden>
+ *       <span id="dna-title"></span><span id="dna-artist"></span><span id="dna-album"></span>
+ *       <span id="dna-year"></span></div>
+ *   Le voci dello storico si riaprono senza rianalizzare: il record salvato
+ *   contiene SOLO metadati (nome, titolo, artista, album, anno, bpm, key,
+ *   camelot, lufs, tp, lra, durata, sample rate, canali, data). Nessun
+ *   campione audio e nessuna copertina finiscono in IndexedDB.
+ *
+ * Chiavi i18n in piu': dna-del-one, dna-clear, dna-clear-ask, dna-clear-yes,
+ *   dna-clear-no, dna-history-empty. I messaggi del microfono sono
+ *   CONDIVISI (shared/i18n-common.js, li usa anche l'accordatore):
+ *   mic-denied e mic-unavailable ci sono gia', servono mic-none
+ *   ("Nessun microfono collegato"), mic-busy ("Il microfono e' in uso da
+ *   un'altra applicazione") e mic-failed ("Impossibile usare il microfono").
  * Chiavi i18n usate da questo file (oltre a quelle del markup, spec 13 §3):
  *   dna-phase-decode / -loudness / -rhythm / -key   fasi della barra
  *   dna-conf-high / -mid / -low                     confidenza in parole
@@ -55,6 +85,7 @@ import { prefs, put, list, del } from '/shared/storage.js';
 import { fold } from '/shared/analysis/bpm.js';
 import { compatibleWith } from '/shared/analysis/key.js';
 import { gainToTarget, TARGETS } from '/shared/analysis/loudness.js';
+import { readTags, coverBlob } from '/shared/tags.js';
 
 const TOOL = 'dna';
 const WORKER_URL = '/dna/dna-worker.js';
@@ -63,7 +94,7 @@ const MAX_MINUTES = 15;
 const WARN_MINUTES = 8;       // oltre, su iPhone la decodifica puo' non farcela
 const REC_MIN = 10;
 const REC_MAX = 20;
-const HISTORY = 10;
+const HISTORY = 200;   // solo metadati: 200 voci pesano pochi KB
 
 const fmt = (v, digits) => {
     try {
@@ -111,6 +142,10 @@ export function mountDna() {
     const copyBtn = document.getElementById('dna-copy');
     const againBtn = document.getElementById('dna-again');
     const foldBox = document.getElementById('dna-bpm-alt');
+    const clearBtn = document.getElementById('dna-clear');
+    const clearConfirm = document.getElementById('dna-clear-confirm');
+    const tagsBox = document.getElementById('dna-tags');
+    const coverImg = document.getElementById('dna-cover');
 
     const out = (id) => document.getElementById(id);
 
@@ -124,6 +159,8 @@ export function mountDna() {
 
     let worker = null;
     let cancelled = false;
+    let starting = false;       // guardia del tasto "Registra" (si azzera SEMPRE)
+    let coverUrl = null;        // object URL della copertina mostrata
     let recording = null;   // { stop(), started, timer, raf }
 
     /* ---------------- stati ---------------- */
@@ -202,7 +239,7 @@ export function mountDna() {
 
     /* ---------------- analisi ---------------- */
 
-    async function analyse(buffer, { source = 'file', name = '' } = {}) {
+    async function analyse(buffer, { source = 'file', name = '', tags = null } = {}) {
         cancelled = false;
         ui.source = source;
         ui.name = name;
@@ -240,6 +277,10 @@ export function mountDna() {
         const result = {
             name,
             source,
+            title: (tags && tags.title) || '',
+            artist: (tags && tags.artist) || '',
+            album: (tags && tags.album) || '',
+            year: (tags && tags.year) || '',
             seconds,
             sampleRate,
             channels,
@@ -256,16 +297,35 @@ export function mountDna() {
             at: new Date().toISOString()
         };
         stopWorker();
-        showResult(result);
-        saveHistory(result);
+        showResult(result, { cover: tags && tags.cover });
+        saveHistory(result);   // salva i metadati, non la copertina
         return result;
     }
 
     /* ---------------- risultato ---------------- */
 
-    function showResult(result) {
+    /** Titolo, artista, album, anno e copertina del file (se ci sono). */
+    function showTags(tags, cover) {
+        if (coverUrl) { URL.revokeObjectURL(coverUrl); coverUrl = null; }
+        const has = !!(tags && (tags.title || tags.artist || tags.album || tags.year));
+        if (tagsBox) tagsBox.hidden = !has && !cover;
+        const set = (id, text) => { const el = out(id); if (el) el.textContent = text || ''; };
+        set('dna-title', tags && tags.title);
+        set('dna-artist', tags && tags.artist);
+        set('dna-album', tags && tags.album);
+        set('dna-year', tags && tags.year);
+        if (!coverImg) return;
+        const blob = cover ? coverBlob(cover) : null;
+        if (!blob) { coverImg.hidden = true; coverImg.removeAttribute('src'); return; }
+        coverUrl = URL.createObjectURL(blob);   // la copertina si mostra, non si salva
+        coverImg.src = coverUrl;
+        coverImg.hidden = false;
+    }
+
+    function showResult(result, { cover = null } = {}) {
         ui.result = result;
         setState('result');
+        showTags(result, cover);
         const set = (id, text) => { const el = out(id); if (el) el.textContent = text; };
         set('dna-bpm', result.bpm ? fmt(result.bpm, 0) : '—');
         const conf = out('dna-bpm-conf');
@@ -321,9 +381,34 @@ export function mountDna() {
 
     /* ---------------- storico ---------------- */
 
+    /** Nello storico va SOLO questo: numeri e testo, mai audio ne' copertine. */
+    function historyRecord(result) {
+        return {
+            at: result.at,
+            name: result.name,
+            source: result.source,
+            title: result.title || '',
+            artist: result.artist || '',
+            album: result.album || '',
+            year: result.year || '',
+            seconds: result.seconds,
+            sampleRate: result.sampleRate,
+            channels: result.channels,
+            bpm: result.bpm,
+            bpmConfidence: result.bpmConfidence,
+            tonic: result.tonic,
+            mode: result.mode,
+            camelot: result.camelot,
+            keyConfidence: result.keyConfidence,
+            lufs: result.lufs,
+            truePeak: result.truePeak,
+            lra: result.lra
+        };
+    }
+
     async function saveHistory(result) {
         try {
-            await put(TOOL, result.at, result);
+            await put(TOOL, result.at, historyRecord(result));
             const all = await list(TOOL);
             const extra = all.slice(0, Math.max(0, all.length - HISTORY));
             await Promise.all(extra.map((rec) => del(TOOL, rec.id)));
@@ -331,22 +416,57 @@ export function mountDna() {
         } catch (e) { /* IndexedDB non disponibile: si vive senza storico */ }
     }
 
+    async function removeHistory(id) {
+        try {
+            await del(TOOL, id);
+            renderHistory();
+        } catch (e) { /* niente da fare */ }
+    }
+
+    async function clearHistory() {
+        try {
+            const all = await list(TOOL);
+            await Promise.all(all.map((rec) => del(TOOL, rec.id)));
+        } catch (e) { /* niente da fare */ }
+        if (clearConfirm) clearConfirm.hidden = true;
+        renderHistory();
+    }
+
+    function historyLabel(r) {
+        const name = [r.artist, r.title].filter(Boolean).join(' - ') || r.name;
+        return [name, r.bpm ? fmt(r.bpm, 0) + ' BPM' : '', r.camelot,
+            isFinite(r.lufs) ? fmt(r.lufs, 1) + ' LUFS' : ''].filter(Boolean).join(' · ');
+    }
+
     async function renderHistory() {
         if (!historyBox) return;
         let all = [];
         try { all = await list(TOOL); } catch (e) { return; }
         historyBox.textContent = '';
-        all.slice(-HISTORY).reverse().forEach((rec) => {
+        const recent = all.slice(-HISTORY).reverse();
+        if (clearBtn) clearBtn.hidden = recent.length === 0;
+        if (clearConfirm && !recent.length) clearConfirm.hidden = true;
+        recent.forEach((rec) => {
             const r = rec.value || rec;
+            const id = rec.id || r.at;
             const li = document.createElement('li');
+            li.className = 'dna-history-row';
             const btn = document.createElement('button');
             btn.type = 'button';
             btn.className = 'dna-history-item';
-            btn.setAttribute('data-dna-id', rec.id || r.at);
-            btn.textContent = [r.name, r.bpm ? fmt(r.bpm, 0) + ' BPM' : '', r.camelot,
-                isFinite(r.lufs) ? fmt(r.lufs, 1) + ' LUFS' : ''].filter(Boolean).join(' · ');
+            btn.setAttribute('data-dna-id', id);
+            btn.textContent = historyLabel(r);
+            /* riapre il risultato salvato: nessuna nuova analisi */
             btn.addEventListener('click', () => showResult(r));
-            li.appendChild(btn);
+            const rm = document.createElement('button');
+            rm.type = 'button';
+            rm.className = 'dna-history-del tb-btn--icon';
+            rm.setAttribute('data-dna-del', String(id));
+            rm.setAttribute('data-i18n-aria', 'dna-del-one');
+            rm.setAttribute('aria-label', t('dna-del-one'));
+            rm.textContent = '\u00d7';
+            rm.addEventListener('click', (e) => { e.stopPropagation(); removeHistory(id); });
+            li.append(btn, rm);
             historyBox.appendChild(li);
         });
     }
@@ -358,10 +478,12 @@ export function mountDna() {
         try {
             setState('working');
             setPhase('decode', 2);
+            /* i tag si leggono dai soli byte di testa, prima della decodifica */
+            const tags = await readTags(file);
             const buffer = await decode(file);
             if (buffer.duration > MAX_MINUTES * 60) { fail('dna-too-long'); return; }
             if (buffer.duration > WARN_MINUTES * 60) setStatus(statusOut, { kind: 'idle', key: 'dna-long-warning' });
-            await analyse(buffer, { source: 'file', name: file.name });
+            await analyse(buffer, { source: 'file', name: file.name, tags });
         } catch (e) {
             fail('dna-bad-file');
         }
@@ -393,13 +515,35 @@ export function mountDna() {
 
     /* ---------------- ingresso: microfono ---------------- */
 
+    /* Ogni motivo per cui il microfono non parte ha il suo messaggio: se
+       il tasto "Registra" non facesse nulla, non si capirebbe perche'.
+       La mappa sta in mic.js, cosi' e' la stessa in tutti gli strumenti. */
+    const micError = (err) => mic.errorKey(err);
+
+    /* anche gli errori che arrivano da un'altra strada (stream perso,
+       dispositivo staccato) devono comparire nel pannello */
+    mic.onStateChange((state, info) => {
+        if (!info || info.reason !== 'error') return;
+        if (ui.state !== 'recording') return;
+        setStatus(statusOut, { kind: 'denied', key: mic.errorKey(info.code) });
+    });
+
     function startRecording() {
+        if (starting || recording) return;
+        starting = true;
         let ctx;
         try {
             unlock().catch(() => {});
             ctx = getContext();
-        } catch (e) { fail('audio-resume-msg'); return; }
+        } catch (e) { starting = false; fail('audio-resume-msg'); return; }
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            starting = false;
+            setState('recording');
+            setStatus(statusOut, { kind: 'denied', key: 'mic-unavailable' });
+            return;
+        }
         mic.acquire().then((stream) => {
+            starting = false;
             setState('recording');
             /* livello: AnalyserNode, niente ScriptProcessor (deprecato) */
             const source = mic.source(ctx);
@@ -413,12 +557,27 @@ export function mountDna() {
                quel che passa dall'AnalyserNode (ripiego) */
             const chunks = [];
             let recorder = null;
-            if (typeof MediaRecorder === 'function') {
+            const mimeOk = typeof MediaRecorder === 'function'
+                && (!MediaRecorder.isTypeSupported
+                    || ['audio/webm', 'audio/mp4', 'audio/ogg', ''].some((m) => !m || MediaRecorder.isTypeSupported(m)));
+            if (mimeOk) {
                 try {
                     recorder = new MediaRecorder(stream);
                     recorder.ondataavailable = (e) => { if (e.data && e.data.size) chunks.push(e.data); };
                     recorder.start();
                 } catch (e) { recorder = null; }
+            }
+            /* nessun MediaRecorder utilizzabile: si registra il PCM a mano */
+            let pcm = null;
+            if (!recorder) {
+                const node = ctx.createScriptProcessor ? ctx.createScriptProcessor(4096, 1, 1) : null;
+                if (node) {
+                    const parts = [];
+                    node.onaudioprocess = (e) => parts.push(Float32Array.from(e.inputBuffer.getChannelData(0)));
+                    source.connect(node);
+                    node.connect(sink);
+                    pcm = { node, parts, rate: ctx.sampleRate };
+                }
             }
             const data = new Float32Array(analyser.fftSize);
             const started = Date.now();
@@ -441,8 +600,8 @@ export function mountDna() {
                 started,
                 raf: null,
                 recorder,
+                pcm,
                 async finish() {
-                    try { source.disconnect(); analyser.disconnect(); sink.disconnect(); } catch (e) { /* gia' scollegati */ }
                     let blob = null;
                     if (recorder && recorder.state !== 'inactive') {
                         blob = await new Promise((resolve) => {
@@ -450,14 +609,26 @@ export function mountDna() {
                             recorder.stop();
                         });
                     }
+                    let raw = null;
+                    if (pcm) {
+                        pcm.node.onaudioprocess = null;
+                        try { pcm.node.disconnect(); } catch (e) { /* gia' scollegato */ }
+                        const total = pcm.parts.reduce((a, c) => a + c.length, 0);
+                        const mono = new Float32Array(total);
+                        let o = 0;
+                        pcm.parts.forEach((c) => { mono.set(c, o); o += c.length; });
+                        raw = { mono, rate: pcm.rate };
+                    }
+                    try { source.disconnect(); analyser.disconnect(); sink.disconnect(); } catch (e) { /* gia' scollegati */ }
                     mic.release();
-                    return blob;
+                    return { blob, raw };
                 }
             };
             recording.raf = window.requestAnimationFrame(tick);
-        }, () => {
-            setState('empty');
-            setStatus(statusOut, { kind: 'denied', key: 'mic-denied' });
+        }, (err) => {
+            starting = false;   // senza questo il tasto restava muto per sempre
+            setState('recording');
+            setStatus(statusOut, { kind: 'denied', key: micError(err) });
             if (consentBox) mic.renderConsent(consentBox, { onAllow: startRecording });
         });
     }
@@ -467,11 +638,23 @@ export function mountDna() {
         if (recording.raf) window.cancelAnimationFrame(recording.raf);
         const current = recording;
         recording = null;
-        const blob = await current.finish();
-        if (!blob || !blob.size) { setState('empty'); return; }
+        starting = false;
+        const { blob, raw } = await current.finish();
         try {
-            const buffer = await decode(blob);
-            await analyse(buffer, { source: 'mic', name: t('dna-mic-name') });
+            if (blob && blob.size) {
+                const buffer = await decode(blob);
+                await analyse(buffer, { source: 'mic', name: t('dna-mic-name') });
+                return;
+            }
+            if (raw && raw.mono.length) {
+                const ctx = getContext();
+                const buffer = ctx.createBuffer(1, raw.mono.length, raw.rate);
+                buffer.getChannelData(0).set(raw.mono);
+                await analyse(buffer, { source: 'mic', name: t('dna-mic-name') });
+                return;
+            }
+            setState('recording');
+            setStatus(statusOut, { kind: 'error', key: 'mic-failed' });
         } catch (e) {
             fail('dna-bad-file');
         }
@@ -479,8 +662,26 @@ export function mountDna() {
 
     if (recordBtn) {
         recordBtn.addEventListener('click', () => {
-            if (mic.state() === 'granted') startRecording();
-            else if (consentBox) mic.renderConsent(consentBox, { onAllow: startRecording });
+            /* si entra SUBITO nello stato registrazione: il riquadro del
+               consenso deve vedersi, altrimenti sembra che non succeda nulla */
+            setState('recording');
+            if (consentBox) consentBox.textContent = '';
+            /* niente API del microfono (http, browser dentro un'app): si dice */
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                setStatus(statusOut, { kind: 'denied', key: 'mic-unavailable' });
+                if (consentBox) mic.renderConsent(consentBox, { onAllow: startRecording });
+                return;
+            }
+            if (mic.state() === 'denied') {
+                setStatus(statusOut, { kind: 'denied', key: 'mic-denied' });
+                if (consentBox) mic.renderConsent(consentBox, { onAllow: startRecording });
+                return;
+            }
+            if (mic.granted()) {
+                startRecording();   // dentro il gesto: getUserMedia puo' partire
+                return;
+            }
+            if (consentBox) mic.renderConsent(consentBox, { onAllow: startRecording });
             else startRecording();
         });
     }
@@ -496,6 +697,14 @@ export function mountDna() {
         });
     }
     if (againBtn) againBtn.addEventListener('click', () => setState('empty'));
+    /* svuota tutto: conferma nella pagina, mai il confirm() del browser */
+    if (clearBtn && clearConfirm) {
+        clearBtn.addEventListener('click', () => { clearConfirm.hidden = false; });
+        const yes = document.getElementById('dna-clear-yes');
+        const no = document.getElementById('dna-clear-no');
+        if (yes) yes.addEventListener('click', clearHistory);
+        if (no) no.addEventListener('click', () => { clearConfirm.hidden = true; });
+    }
     if (foldBox) {
         foldBox.addEventListener('click', (e) => {
             const b = e.target.closest('[data-dna-fold]');
@@ -544,9 +753,15 @@ export function mountDna() {
         ui,
         analyse,
         showResult,
+        showTags,
+        renderHistory,
+        removeHistory,
+        clearHistory,
+        historyRecord,
+        startRecording,
+        micError,
         summary,
         setState,
-        renderHistory,
         fromFile,
         stopWorker
     };

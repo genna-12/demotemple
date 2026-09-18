@@ -49,17 +49,44 @@ function setConsent(on) {
     } catch (e) { /* storage bloccato: il consenso vale solo per questa visita */ }
 }
 
-function emit(reason) {
-    const info = { active: !!stream, reason };
+function emit(reason, code) {
+    const info = { active: !!stream, reason, code: code || null };
     listeners.forEach((cb) => {
         try { cb(current, info); } catch (e) { console.warn('[mic] listener fallito', e); }
     });
 }
 
-function setState(s, reason) {
+function setState(s, reason, code) {
     const changed = s !== current;
     current = s;
-    if (changed || reason) emit(reason || 'state');
+    if (changed || reason) emit(reason || 'state', code);
+}
+
+/* Perche' il microfono non parte: ogni codice ha la sua frase. Le chiavi
+   stanno in shared/i18n-common.js e le usano tutti gli strumenti. */
+const ERROR_KEYS = {
+    NotAllowedError: 'mic-denied',
+    PermissionDeniedError: 'mic-denied',
+    SecurityError: 'mic-unavailable',
+    NotSupportedError: 'mic-unavailable',
+    NotFoundError: 'mic-none',
+    DevicesNotFoundError: 'mic-none',
+    OverconstrainedError: 'mic-none',
+    NotReadableError: 'mic-busy',
+    TrackStartError: 'mic-busy',
+    AbortError: 'mic-busy'
+};
+
+let lastCode = null;
+
+/** Chiave i18n del messaggio da mostrare per un codice di errore. */
+export function errorKey(code) {
+    return ERROR_KEYS[code && code.name ? code.name : code] || 'mic-failed';
+}
+
+/** Codice dell'ultimo errore (null se l'ultima richiesta e' andata bene). */
+export function lastError() {
+    return lastCode;
 }
 
 /* Permissions API (non su tutti i browser): allinea lo stato senza chiedere nulla. */
@@ -125,11 +152,18 @@ function open(opts) {
                 emit('ended');
             };
         });
-        setState('granted');
+        /* con `reason` l'evento parte anche se lo stato era gia' 'granted':
+           serve all'indicatore nella barra, che segue lo STREAM, non il permesso */
+        lastCode = null;
+        setState('granted', 'acquired');
         return s;
     }, (err) => {
         pending = null;
-        if (err && (err.name === 'NotAllowedError' || err.name === 'SecurityError')) setState('denied');
+        lastCode = (err && err.name) || 'Error';
+        /* qualunque sia il motivo, chi ascolta viene avvisato col codice:
+           senza questo un NotFoundError restava un pannello muto */
+        if (err && (err.name === 'NotAllowedError' || err.name === 'SecurityError')) setState('denied', 'error', lastCode);
+        else setState(current, 'error', lastCode);
         throw err;
     });
     return pending;
@@ -137,7 +171,22 @@ function open(opts) {
 
 export function state() {
     ensureInit();
+    /* "non disponibile" puo' essere stato deciso prima che il browser
+       esponesse mediaDevices (pagina aperta in un browser interno, poi
+       riaperta): se ora c'e', si ricontrolla invece di restare bloccati */
+    if (current === 'unavailable' && supported()) setState(hasConsent() ? 'granted' : 'unasked');
     return current;
+}
+
+/** C'e' uno stream aperto adesso? Lo chiede l'indicatore nella barra. */
+export function isActive() {
+    return !!stream;
+}
+
+/** Il consenso e' gia' stato dato (anche se ora non si sta registrando)? */
+export function granted() {
+    const s = state();
+    return s === 'granted' || (hasConsent() && s !== 'denied' && s !== 'unavailable');
 }
 
 export function renderConsent(container, { onAllow } = {}) {
@@ -183,10 +232,12 @@ export function renderConsent(container, { onAllow } = {}) {
 export function acquire(opts = {}) {
     ensureInit();
     if (!supported()) {
-        setState('unavailable');
+        lastCode = 'NotSupportedError';
+        setState('unavailable', 'error', lastCode);
         return Promise.reject(new DOMException('Microfono non disponibile', 'NotSupportedError'));
     }
     if (!hasConsent()) {
+        /* non e' un errore del dispositivo: manca il tocco su "Attiva" */
         return Promise.reject(new DOMException('Consenso al microfono mancante', 'NotAllowedError'));
     }
     hookPage();

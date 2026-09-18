@@ -43,10 +43,23 @@
             <span class="tb-menu-toggle-line"></span>
             <span class="tb-menu-toggle-line"></span>
         </button>
+        <!-- CONTRATTO shared/nav.js: fratello di .tb-menu-toggle, [hidden]
+             di default, nav.js toglie [hidden] mentre uno stream del
+             microfono e' attivo in QUALSIASI strumento (mic.onStateChange). -->
+        <span id="tb-mic-live" class="tb-mic-live" hidden role="status"
+            data-i18n-aria="mic-live-aria" aria-label="Microfono attivo">
+            <svg aria-hidden="true"><use href="#tb-icon-mic"></use></svg>
+        </span>
     </header>
 
     <!-- CONTRATTO shared/nav.js: vedi il commento in index.html vicino a #tb-menu. -->
     <svg class="tb-sprite" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg">
+        <symbol id="tb-icon-mic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"></path>
+            <path d="M19 11a7 7 0 0 1-14 0"></path>
+            <path d="M12 18v4"></path>
+            <path d="M9 22h6"></path>
+        </symbol>
         <symbol id="tb-icon-metronomo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M8 20h8"></path>
             <path d="M9 20 11 5h2l2 15"></path>
@@ -143,6 +156,13 @@
                     <p class="tb-menu-manual" data-pwa-when="manual" hidden data-i18n="pwa-manual">Usa il menu del
                         browser: Installa app oppure Aggiungi alla schermata Home.</p>
                 </div>
+                <!-- CONTRATTO shared/nav.js: [hidden] finche' il consenso al
+                     microfono non c'e' (mic.granted()), in qualunque
+                     strumento sia stato dato; "Revoca" chiama mic.revoke(). -->
+                <div id="tb-mic-row" class="tb-mic-row" hidden>
+                    <span id="tb-mic-state" data-i18n="mic-state-granted">Microfono: consentito</span>
+                    <button type="button" id="tb-mic-revoke" class="tb-btn tb-btn--ghost" data-i18n="mic-revoke">Revoca</button>
+                </div>
                 <div class="tb-menu-foot-row">
                     <div class="tb-lang-switch" role="group" aria-label="Lingua / Language">
                         <button type="button" data-lang="it" aria-pressed="true">IT</button>
@@ -185,12 +205,26 @@
                     <p class="dna-formats" data-i18n="dna-formats">MP3, WAV, M4A, AAC, OGG, FLAC — fino a 15 minuti</p>
                 </div>
 
-                <!-- Vuoto: dna.js lo riempie con <li><button class="dna-history-item"
-                     data-dna-id="...">nome · BPM · key · LUFS</button></li> per
-                     record, spec 13 §4 "storico". -->
+                <!-- Vuoto: dna.js lo riempie con <li class="dna-history-row">
+                     <button class="dna-history-item" data-dna-id="...">nome ·
+                     BPM · key · LUFS</button><button class="dna-history-del
+                     tb-btn--icon" data-dna-del="...">&times;</button></li> per
+                     record, fino a 200 (spec 13 §4 + NOVITA' in testa a
+                     dna.js), o col testo di dna-history-empty se non ce n'e'
+                     ancora nessuno. -->
                 <div class="dna-history-wrap">
-                    <h2 class="dna-history-title" data-i18n="dna-recent">Recenti</h2>
+                    <div class="dna-history-head">
+                        <h2 class="dna-history-title" data-i18n="dna-recent">Recenti</h2>
+                        <button type="button" id="dna-clear" class="tb-btn tb-btn--ghost" hidden data-i18n="dna-clear">Svuota storico</button>
+                    </div>
                     <ul id="dna-history" class="dna-history"></ul>
+                    <!-- Conferma inline (niente confirm() del browser, stesso
+                         principio dell'accordatura personalizzata). -->
+                    <div id="dna-clear-confirm" class="dna-clear-confirm" hidden>
+                        <span data-i18n="dna-clear-ask">Cancello tutto lo storico?</span>
+                        <button type="button" id="dna-clear-yes" class="tb-btn" data-i18n="dna-clear-yes">Svuota</button>
+                        <button type="button" id="dna-clear-no" class="tb-btn tb-btn--ghost" data-i18n="dna-clear-no">Annulla</button>
+                    </div>
                 </div>
             </div>
 
@@ -233,6 +267,24 @@
 
             <!-- ---------- Stato 4: risultato ---------- -->
             <div id="dna-result" class="dna-result" hidden>
+                <!-- Tag del file (shared/tags.js), in cima ai numeri
+                     (CONTRATTO dna.js, feedback Genna): [hidden] di default,
+                     dna.js li mostra solo quando il file ha dei tag. La
+                     copertina resta sempre nel wrap 56x56: l'icona sotto fa
+                     da sfondo/fallback, #dna-cover ci si sovrappone solo
+                     quando dna.js le toglie [hidden] e le da' una src. -->
+                <div id="dna-tags" class="dna-tags" hidden>
+                    <span class="dna-cover-wrap">
+                        <svg class="dna-cover-fallback" aria-hidden="true" focusable="false"><use href="#tb-icon-dna"></use></svg>
+                        <img id="dna-cover" class="dna-cover" alt="" hidden>
+                    </span>
+                    <div class="dna-tags-text">
+                        <span id="dna-title" class="dna-tags-title"></span>
+                        <span id="dna-artist" class="dna-tags-artist"></span>
+                        <span class="dna-tags-sub"><span id="dna-album"></span><span id="dna-year"></span></span>
+                    </div>
+                </div>
+
                 <span id="dna-estimate" class="tb-pill dna-badge" data-i18n="dna-estimate" hidden>Stima dal microfono</span>
 
                 <!-- BPM: tb-segment x2/:2 visibile solo con ottava ambigua

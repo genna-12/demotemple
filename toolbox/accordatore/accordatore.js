@@ -495,9 +495,11 @@ export function mountTuner() {
             startFrames();
             renderConsent();
             micStatus();
-        }, () => {
-            micStatus();
+        }, (err) => {
+            /* qualunque rifiuto ha il suo messaggio (mappa in mic.js) */
+            setStatus(status, { kind: 'denied', key: mic.errorKey(err) });
             renderConsent();
+            renderMicOff();
         });
     }
 
@@ -514,6 +516,13 @@ export function mountTuner() {
             if (tracker) tracker.rebuild();
             renderMicOff();
             micStatus();
+            return;
+        }
+        if (reason === 'error') {
+            clearReading();
+            setStatus(status, { kind: 'denied', key: mic.errorKey(info.code) });
+            renderConsent();
+            renderMicOff();
             return;
         }
         if (reason === 'lost' || reason === 'ended' || reason === 'suspended') {

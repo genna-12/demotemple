@@ -45,10 +45,23 @@
             <span class="tb-menu-toggle-line"></span>
             <span class="tb-menu-toggle-line"></span>
         </button>
+        <!-- CONTRATTO shared/nav.js: fratello di .tb-menu-toggle, [hidden]
+             di default, nav.js toglie [hidden] mentre uno stream del
+             microfono e' attivo in QUALSIASI strumento (mic.onStateChange). -->
+        <span id="tb-mic-live" class="tb-mic-live" hidden role="status"
+            data-i18n-aria="mic-live-aria" aria-label="Microfono attivo">
+            <svg aria-hidden="true"><use href="#tb-icon-mic"></use></svg>
+        </span>
     </header>
 
     <!-- CONTRATTO shared/nav.js: vedi il commento in index.html vicino a #tb-menu. -->
     <svg class="tb-sprite" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg">
+        <symbol id="tb-icon-mic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"></path>
+            <path d="M19 11a7 7 0 0 1-14 0"></path>
+            <path d="M12 18v4"></path>
+            <path d="M9 22h6"></path>
+        </symbol>
         <symbol id="tb-icon-metronomo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M8 20h8"></path>
             <path d="M9 20 11 5h2l2 15"></path>
@@ -144,6 +157,13 @@
                     </details>
                     <p class="tb-menu-manual" data-pwa-when="manual" hidden data-i18n="pwa-manual">Usa il menu del
                         browser: Installa app oppure Aggiungi alla schermata Home.</p>
+                </div>
+                <!-- CONTRATTO shared/nav.js: [hidden] finche' il consenso al
+                     microfono non c'e' (mic.granted()), in qualunque
+                     strumento sia stato dato; "Revoca" chiama mic.revoke(). -->
+                <div id="tb-mic-row" class="tb-mic-row" hidden>
+                    <span id="tb-mic-state" data-i18n="mic-state-granted">Microfono: consentito</span>
+                    <button type="button" id="tb-mic-revoke" class="tb-btn tb-btn--ghost" data-i18n="mic-revoke">Revoca</button>
                 </div>
                 <div class="tb-menu-foot-row">
                     <div class="tb-lang-switch" role="group" aria-label="Lingua / Language">

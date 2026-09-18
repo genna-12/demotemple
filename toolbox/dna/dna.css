@@ -124,13 +124,30 @@
     text-align: center;
 }
 
-.dna-history-title {
+.dna-history-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-2);
     margin: 0 0 6px;
+}
+
+.dna-history-title {
+    margin: 0;
     font-size: 0.7rem;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 1px;
     color: var(--text-muted);
+}
+
+/* "Svuota storico" (feedback Genna): compare solo quando c'e' almeno una
+   voce (dna.js toglie [hidden]), piu' piccolo del solito per stare in riga
+   con il titolo "Recenti". */
+#dna-clear {
+    min-height: 32px;
+    padding: 0 var(--sp-3);
+    font-size: 0.68rem;
 }
 
 .dna-history {
@@ -142,9 +159,18 @@
     padding: 0;
 }
 
+/* Una voce = riga con il risultato (grande, cliccabile) + il suo elimina
+   (feedback Genna, NOVITA' in testa a dna.js): <li class="dna-history-row">. */
+.dna-history-row {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
 .dna-history-item {
     display: block;
-    width: 100%;
+    flex: 1;
+    min-width: 0;
     min-height: var(--tap);
     padding: 0 var(--sp-3);
     border-radius: var(--r-sm);
@@ -157,6 +183,49 @@
     text-overflow: ellipsis;
     white-space: nowrap;
     font-variant-numeric: tabular-nums;
+}
+
+/* Niente .tb-btn nel contratto (dna.js): solo .tb-btn--icon per l'area di
+   tocco 44px, cromatura minima (una "x" muta, non un secondo bottone
+   pieno accanto a ogni riga). */
+.dna-history-del {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-muted);
+    font-size: 1.1rem;
+    line-height: 1;
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .dna-history-del:hover {
+        color: var(--accent-orange);
+    }
+}
+
+/* Conferma inline di "Svuota storico" (niente confirm() del browser, stesso
+   principio di .acc-custom-confirm nell'accordatore). */
+.dna-clear-confirm {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--sp-2);
+    margin-top: 6px;
+    padding: var(--sp-3);
+    border-radius: var(--r-md);
+    background: var(--surface-1);
+    font-size: 0.85rem;
+    color: var(--text-primary);
+}
+
+.dna-clear-confirm[hidden] {
+    display: none;
+}
+
+.dna-clear-confirm span {
+    flex: 1;
+    min-width: 140px;
 }
 
 @media (hover: hover) and (pointer: fine) {
@@ -280,6 +349,93 @@
     display: flex;
     flex-direction: column;
     gap: 10px;
+}
+
+/* Titolo/artista/album/cover (shared/tags.js, feedback Genna), in cima ai
+   numeri: [hidden] finche' dna.js non trova dei tag nel file. */
+.dna-tags {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.dna-tags[hidden] {
+    display: none;
+}
+
+/* La copertina resta 56x56 arrotondata anche senza artwork (fallback
+   icona, spec: "cover 56px arrotondata --r-md, fallback icona"): l'icona
+   sta sempre nel wrap, #dna-cover le si sovrappone solo quando dna.js le
+   toglie [hidden] e le da' una src. */
+.dna-cover-wrap {
+    position: relative;
+    flex-shrink: 0;
+    width: 56px;
+    height: 56px;
+    border-radius: var(--r-md);
+    overflow: hidden;
+    background: var(--surface-1);
+    border: 1px solid var(--glass-border);
+}
+
+.dna-cover-fallback {
+    position: absolute;
+    inset: 0;
+    margin: auto;
+    width: 22px;
+    height: 22px;
+    color: var(--text-muted);
+}
+
+.dna-cover {
+    position: relative;
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* .dna-cover imposta display:block: stessa insidia di .dna-badge sotto. */
+.dna-cover[hidden] {
+    display: none;
+}
+
+.dna-tags-text {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+}
+
+.dna-tags-title,
+.dna-tags-artist {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.dna-tags-title {
+    font-weight: 700;
+    font-size: 0.92rem;
+    color: var(--text-primary);
+}
+
+.dna-tags-artist {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
+
+.dna-tags-sub {
+    display: flex;
+    gap: 6px;
+    font-size: 0.7rem;
+    color: var(--text-muted);
+}
+
+/* Un tag mancante (album/anno, a volte artista) lascia lo span vuoto:
+   dna.js scrive solo quelli che il file ha, qui si collassano da soli. */
+.dna-tags span:empty {
+    display: none;
 }
 
 .dna-badge {

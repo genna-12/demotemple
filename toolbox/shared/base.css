@@ -253,6 +253,49 @@ button {
     transform: translateY(0) rotate(-45deg);
 }
 
+/* --- INDICATORE MICROFONO `tb-mic-live` (feedback Genna): fisso, a sinistra
+   dell'hamburger, stesso centro verticale (58px/45px sotto 768px, come
+   .tb-logo/.tb-menu-toggle sopra). [hidden] di default: nav.js lo toglie
+   mentre uno stream e' attivo in qualsiasi strumento. Pallino arancione in
+   overlay sull'icona (spec: "pallino arancione + icona mic", 24px). */
+.tb-mic-live {
+    position: fixed;
+    top: calc(46px + var(--tb-safe-t));
+    right: calc(82px + var(--tb-safe-r));
+    z-index: 10015;
+    width: 24px;
+    height: 24px;
+    color: var(--accent-orange);
+}
+
+.tb-mic-live[hidden] {
+    display: none;
+}
+
+.tb-mic-live svg {
+    width: 100%;
+    height: 100%;
+}
+
+.tb-mic-live::after {
+    content: '';
+    position: absolute;
+    top: -1px;
+    right: -1px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--accent-orange);
+    box-shadow: 0 0 0 2px var(--bg-color);
+}
+
+@media (max-width: 768px) {
+    .tb-mic-live {
+        top: calc(33px + var(--tb-safe-t));
+        right: calc(72px + var(--tb-safe-r));
+    }
+}
+
 /* --- INTRO `tb-intro` (ritocco Genna: ESATTAMENTE come #intro-layer della
    vetrina, home.js righe 1-40 e style.css righe 237-305): solo dashboard,
    una volta a sessione. Sta SEMPRE nel markup (niente [hidden], come
@@ -536,6 +579,30 @@ a.tb-menu-link[aria-current="page"] {
     flex-direction: column;
     align-items: stretch;
     gap: 4px;
+}
+
+/* Riga permesso microfono (feedback Genna): [hidden] finche' il consenso
+   non c'e' (mic.granted()), qualunque strumento l'abbia chiesto; "Revoca"
+   e' shared/nav.js che chiama mic.revoke(). Sopra la riga lingua, stesso
+   .tb-menu-foot. */
+.tb-mic-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-2);
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
+
+.tb-mic-row[hidden] {
+    display: none;
+}
+
+.tb-mic-row .tb-btn {
+    flex-shrink: 0;
+    min-height: 36px;
+    padding: 0 var(--sp-3);
+    font-size: 0.72rem;
 }
 
 /* Lingua e "Sito dello studio" sulla stessa riga (criterio 3). */

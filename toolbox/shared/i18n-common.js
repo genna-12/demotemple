@@ -69,12 +69,20 @@ export default {
         'pwa-manual': 'Usa il menu del browser: Installa app oppure Aggiungi alla schermata Home.',
 
         'mic-unavailable': 'Il microfono non è disponibile su questo browser.',
+        'mic-none': 'Nessun microfono trovato su questo dispositivo.',
+        'mic-busy': "Il microfono è già in uso da un'altra app.",
+        'mic-failed': 'Impossibile usare il microfono. Riprova.',
         'mic-denied': 'Il permesso per il microfono è stato negato. Puoi riattivarlo dalle impostazioni del browser.',
         'mic-retry': 'Riprova',
         'mic-start': 'Attiva il microfono',
         'mic-consent-title': 'Serve il microfono',
         'mic-consent-text': 'Questo strumento usa il microfono del dispositivo solo mentre lo usi tu: l’audio resta nel browser e non viene inviato da nessuna parte. Puoi revocare il consenso quando vuoi.',
         'mic-consent-allow': 'Attiva il microfono',
+
+        'mic-live-aria': 'Microfono attivo',
+        'mic-state-granted': 'Microfono: consentito',
+        'mic-state-unasked': 'Microfono: non richiesto',
+        'mic-revoke': 'Revoca',
 
         'pwa-update': 'Nuova versione disponibile.',
         'pwa-update-action': 'Aggiorna',
@@ -146,12 +154,20 @@ export default {
         'pwa-manual': 'Use your browser menu: Install app or Add to Home Screen.',
 
         'mic-unavailable': 'The microphone isn’t available in this browser.',
+        'mic-none': 'No microphone was found on this device.',
+        'mic-busy': 'The microphone is already in use by another app.',
+        'mic-failed': "Couldn't use the microphone. Try again.",
         'mic-denied': 'Microphone access was denied. You can re-enable it from your browser settings.',
         'mic-retry': 'Try again',
         'mic-start': 'Turn on the microphone',
         'mic-consent-title': 'Microphone needed',
         'mic-consent-text': 'This tool uses your device’s microphone only while you’re using it: the audio stays in the browser and is never sent anywhere. You can withdraw consent whenever you like.',
         'mic-consent-allow': 'Turn on the microphone',
+
+        'mic-live-aria': 'Microphone active',
+        'mic-state-granted': 'Microphone: allowed',
+        'mic-state-unasked': 'Microphone: not requested',
+        'mic-revoke': 'Revoke',
 
         'pwa-update': 'New version available.',
         'pwa-update-action': 'Update',

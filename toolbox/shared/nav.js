@@ -38,8 +38,24 @@
 //   - <html> ha la classe `tb-menu-open` a menu aperto. Logo e hamburger sono
 //     `position: fixed`, quindi restano al loro posto col body bloccato.
 //
+// INDICATORE DEL MICROFONO (feedback Genna). Markup atteso, gia' nelle pagine:
+//   accanto all'hamburger, fratello di .tb-menu-toggle:
+//     <span id="tb-mic-live" class="tb-mic-live" hidden role="status"
+//           data-i18n-aria="mic-live-aria" aria-label="Microfono in uso">
+//       <svg aria-hidden="true"><use href="#tb-icon-mic"></use></svg></span>
+//   nel menu, nella .tb-menu-foot vicino alla lingua:
+//     <div id="tb-mic-row" class="tb-mic-row" hidden>
+//       <span id="tb-mic-state" data-i18n="mic-state-granted">Microfono: consentito</span>
+//       <button type="button" id="tb-mic-revoke" class="tb-btn tb-btn--ghost"
+//               data-i18n="mic-revoke">Revoca</button></div>
+//   nav.js toglie [hidden] da #tb-mic-live mentre uno stream e' attivo in
+//   QUALSIASI strumento (mic.onStateChange) e da #tb-mic-row solo quando il
+//   consenso c'e'; "Revoca" chiama mic.revoke() e ferma le tracce.
+//   Sprite: serve il simbolo #tb-icon-mic.
+//
 // CHIAVI i18n USATE QUI: bar-logo-aria, bar-menu-open, bar-menu-close, menu-all,
-//   fam-<id> e tool-<slug> (da tools.js), pill-soon.
+//   fam-<id> e tool-<slug> (da tools.js), pill-soon, mic-live-aria,
+//   mic-state-granted, mic-state-unasked, mic-revoke.
 //
 // L'installazione NON e' gestita qui: il blocco nel menu (#tb-menu-install,
 // #tb-menu-ios, .tb-menu-manual dentro .tb-menu-install-group) e' passato a
@@ -52,6 +68,7 @@
 import { t, lang, setLang, apply, onChange } from './i18n.js';
 import { TOOLS, FAMILIES } from './tools.js';
 import { FOCUSABLE, focusables, createScrollLock, createInert } from './focus.js';
+import * as mic from './mic.js';
 
 const MENU_ID = 'tb-menu';
 const SVG_NS = 'http://www.w3.org/2000/svg';
@@ -360,6 +377,33 @@ export function mountBar({ page = 'home', titleKey, current } = {}) {
     langBtns.forEach((b) => b.addEventListener('click', () => setLang(b.getAttribute('data-lang'))));
     onChange(renderLang);
     renderLang();
+
+    /* ---- microfono: indicatore nella barra e riga nel menu ---- */
+    const micLive = document.getElementById('tb-mic-live');
+    const micRow = document.getElementById('tb-mic-row');
+    const micState = document.getElementById('tb-mic-state');
+    const micRevoke = document.getElementById('tb-mic-revoke');
+
+    function renderMic() {
+        const active = mic.isActive();
+        const ok = mic.granted();
+        if (micLive) micLive.hidden = !active;
+        if (micRow) micRow.hidden = !ok;
+        if (micState) {
+            const key = ok ? 'mic-state-granted' : 'mic-state-unasked';
+            micState.setAttribute('data-i18n', key);
+            micState.textContent = t(key);
+        }
+    }
+
+    if (micRevoke) {
+        micRevoke.addEventListener('click', () => {
+            mic.revoke();   // ferma le tracce e cancella il consenso
+            renderMic();
+        });
+    }
+    mic.onStateChange(renderMic);
+    renderMic();
 
     apply(document); // logo/hamburger sono radici a se': si traduce tutto il documento
     setToggle(false);
