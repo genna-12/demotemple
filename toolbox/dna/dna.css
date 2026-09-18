@@ -247,15 +247,102 @@
     width: 100%;
 }
 
-.dna-countdown-wrap {
+/* Ascolto "alla Shazam" (feedback Genna): il logo e' il bottone, gli
+   anelli sono decorativi (aria-hidden, il vero stato e' aria-pressed sul
+   bottone + l'etichetta sotto). CONTRATTO dna.js: --dna-pulse (0..1, gia'
+   smussata) su #dna-shazam-btn per il "respiro"; un <span class="dna-ring">
+   per colpo dentro #dna-rings, tolto dopo ~900ms. */
+.dna-shazam {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 12px 0;
+}
+
+.dna-rings {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+}
+
+.dna-ring {
+    position: absolute;
+    width: 140px;
+    height: 140px;
+    border-radius: 50%;
+    border: 2px solid var(--accent-orange);
+    opacity: 0.6;
+    animation: dna-ring-out 0.9s ease-out forwards;
+}
+
+@keyframes dna-ring-out {
+    from { transform: scale(1); opacity: 0.6; }
+    to { transform: scale(1.8); opacity: 0; }
+}
+
+.dna-shazam-btn {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+    min-width: var(--tap);
+    min-height: var(--tap);
+    padding: 8px;
+}
+
+.dna-shazam-logo {
+    width: 140px;
+    height: 140px;
+    border-radius: 50%;
+    /* Glow morbido arancione (spec: "glow arancione morbido"), sempre
+       acceso ma piu' intenso quando pulsa (transform sotto). */
+    filter: drop-shadow(0 0 18px rgba(207, 92, 54, 0.55)) drop-shadow(0 0 40px rgba(207, 92, 54, 0.28));
+    transform: scale(calc(1 + var(--dna-pulse, 0) * 0.18));
+    transition: transform 0.12s ease-out;
+}
+
+.dna-shazam-label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    transition: color var(--dur-fast) ease;
+}
+
+.dna-shazam.is-listening .dna-shazam-label {
+    color: var(--accent-orange);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    /* "reduced-motion -> solo opacita'": niente scala del logo ne' anelli
+       che si espandono, il respiro resta leggibile solo come opacita'. */
+    .dna-shazam-logo {
+        transform: none;
+        transition: opacity var(--dur-med) ease;
+        opacity: calc(0.8 + var(--dna-pulse, 0) * 0.2);
+    }
+    .dna-ring {
+        display: none;
+    }
+}
+
+/* Countdown/stato: piccolo, sotto il logo (spec: "niente piu' protagonista
+   della schermata", ora lo e' il logo che pulsa). */
+.dna-recording-status {
     display: flex;
     align-items: baseline;
+    justify-content: center;
     gap: 4px;
 }
 
 .dna-countdown {
     font-family: var(--font-title);
-    font-size: 4rem;
+    font-size: 1.3rem;
     font-weight: 700;
     line-height: 1;
     color: var(--text-primary);
@@ -263,34 +350,9 @@
 }
 
 .dna-countdown-unit {
-    font-size: 1.1rem;
+    font-size: 0.85rem;
     font-weight: 600;
     color: var(--text-muted);
-}
-
-.dna-level-track {
-    width: 100%;
-    max-width: 280px;
-    height: 10px;
-    border-radius: var(--r-pill);
-    background: var(--track);
-    overflow: hidden;
-}
-
-/* CONTRATTO dna.js: nessun style="" (vietato dalla CSP), il livello si posa
-   con level.style.setProperty('--dna-level', 'NN%'), stesso principio di
-   --tb-fill sui tb-range. Da fermo (silenzio) resta a 0. */
-.dna-level {
-    height: 100%;
-    width: var(--dna-level, 0%);
-    background: var(--grad-accent);
-    transition: width 0.08s linear;
-}
-
-@media (prefers-reduced-motion: reduce) {
-    .dna-level {
-        transition: none;
-    }
 }
 
 /* --- Stato 3: analisi --- */
@@ -525,38 +587,91 @@
     display: none;
 }
 
+/* Etichetta "Target" accanto al select (feedback Genna): dna.js ci scrive
+   "Target Spotify: -14 LUFS" (dna-target-label), qui solo l'affiancamento. */
 .dna-target-row {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2);
     margin-bottom: 4px;
+}
+
+.dna-target-row .tb-select {
+    flex: 1;
+}
+
+.dna-target-label {
+    flex-shrink: 0;
+    max-width: 40%;
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-align: right;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .dna-lufs-row {
     display: flex;
     align-items: center;
-    gap: 10px;
 }
 
+/* Valore grande (feedback Genna, "-14 LUFS grande"): stesso trattamento di
+   .dna-card-value, --sm gia' lo riduce quanto basta per stare in riga con
+   il resto della card. */
+
+/* Barra con marcatore mobile del target (feedback Genna): CONTRATTO dna.js
+   scrive QUI --dna-lufs (posizione del valore) e --dna-target (posizione
+   del marcatore) come percentuali, .dna-lufs-fill/.dna-lufs-marker le
+   ereditano (le proprieta' custom passano ai figli di loro). overflow
+   visible perche' il marcatore sporge leggermente sopra/sotto la traccia. */
 .dna-lufs-track {
-    flex: 1;
+    position: relative;
     height: 8px;
+    margin-top: 6px;
     border-radius: var(--r-pill);
     background: var(--track);
-    overflow: hidden;
+    overflow: visible;
 }
 
-/* CONTRATTO dna.js: --dna-lufs in % via style.setProperty, stesso principio
-   di --dna-level/--dna-pct qui sopra. */
 .dna-lufs-fill {
-    height: 100%;
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
     width: var(--dna-lufs, 50%);
     background: var(--grad-accent);
+    overflow: hidden;
     transition: width var(--dur-med) ease;
 }
 
+/* Riga bianca sottile: dove dovrebbe stare il loudness per essere "in
+   target" sulla piattaforma scelta. */
+.dna-lufs-marker {
+    position: absolute;
+    top: -3px;
+    bottom: -3px;
+    left: var(--dna-target, 50%);
+    width: 2px;
+    border-radius: 1px;
+    background: #ffffff;
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.4);
+    transform: translateX(-50%);
+    transition: left var(--dur-med) ease;
+}
+
 .dna-advice {
-    margin: 2px 0 0;
+    margin: 6px 0 0;
     font-size: 0.8rem;
     font-weight: 600;
     color: var(--text-primary);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .dna-lufs-fill,
+    .dna-lufs-marker {
+        transition: none;
+    }
 }
 
 .dna-sub-row {
@@ -593,6 +708,30 @@
     font-size: 0.78rem;
     color: var(--text-primary);
     font-variant-numeric: tabular-nums;
+}
+
+/* Disclaimer dal microfono (feedback Genna): due righe tb-status (il
+   puntino colorato e il resto vengono da li', qui solo l'affiancamento con
+   la "i"). .tb-status imposta display:inline-flex: senza queste due righe
+   [hidden] non basterebbe (stessa insidia vista sopra per .dna-badge). */
+.dna-mic-disclaimer {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2);
+    margin-top: 4px;
+}
+
+.dna-mic-texts {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.dna-mic-note[hidden],
+.dna-uncertain[hidden],
+.dna-mic-disclaimer[hidden] {
+    display: none;
 }
 
 .dna-result-actions {

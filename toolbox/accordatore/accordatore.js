@@ -458,12 +458,16 @@ export function mountTuner() {
 
     function renderConsent() {
         if (!consentBox) return;
-        if (ui.mode !== 'listen') { consentBox.textContent = ''; return; }
-        if (mic.state() === 'granted' && tracker && tracker.running()) {
+        if (ui.mode !== 'listen') { consentBox.textContent = ''; consentBox.hidden = true; return; }
+        /* col permesso dato il riquadro non serve piu': prima restava a
+           schermo finche' non si cambiava pagina */
+        if (mic.granted() && mic.state() !== 'denied') {
             consentBox.textContent = '';
+            consentBox.hidden = true;
             renderMicOff();
             return;
         }
+        consentBox.hidden = false;
         mic.renderConsent(consentBox, { onAllow: startListening });
         renderMicOff();
         if (mic.state() === 'unavailable' && isInApp()) {
@@ -493,7 +497,7 @@ export function mountTuner() {
         setStatus(status, { kind: 'busy', key: 'acc-listening' });
         tracker.start().then(() => {
             startFrames();
-            renderConsent();
+            renderConsent();   // il permesso c'e': via il riquadro
             micStatus();
         }, (err) => {
             /* qualunque rifiuto ha il suo messaggio (mappa in mic.js) */

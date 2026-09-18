@@ -235,18 +235,34 @@
                      stesso meccanismo dell'accordatore in ascolto). -->
                 <div id="dna-consent" class="dna-consent"></div>
 
-                <div class="dna-countdown-wrap">
+                <!-- Ascolto "alla Shazam" (feedback Genna, CONTRATTO in testa a
+                     dna.js): niente piu' pulsante "Registra" qui dentro, il
+                     tap e' sul logo. #dna-shazam-btn e' un button vero (140px
+                     ma con l'intera area >=44px), aria-pressed segue
+                     is-listening; dna.js scrive --dna-pulse su di esso per il
+                     "respiro" col livello del microfono e riempie/svuota
+                     #dna-rings con uno <span class="dna-ring"> per colpo. -->
+                <div id="dna-shazam" class="dna-shazam">
+                    <div id="dna-rings" class="dna-rings" aria-hidden="true"></div>
+                    <button type="button" id="dna-shazam-btn" class="dna-shazam-btn" aria-pressed="false">
+                        <img class="dna-shazam-logo" src="/assets/brand/logo-arancione.png" alt="" width="140" height="140">
+                        <span id="dna-shazam-label" class="dna-shazam-label" data-i18n="dna-press">Premi per iniziare</span>
+                    </button>
+                </div>
+
+                <!-- Via di fuga prima dei 10s minimi, quando #dna-stop e'
+                     ancora disabled (feedback Genna): [hidden] di default,
+                     dna.js la toglie nello stato ascolto. -->
+                <button type="button" id="dna-listen-cancel" class="tb-btn tb-btn--ghost" hidden data-i18n="dna-cancel">Annulla</button>
+
+                <div class="dna-recording-status">
                     <span id="dna-countdown" class="dna-countdown">20</span>
                     <span class="dna-countdown-unit" aria-hidden="true">s</span>
                 </div>
 
-                <div class="dna-level-track" role="img" data-i18n-aria="dna-level-aria" aria-label="Livello del microfono">
-                    <div id="dna-level" class="dna-level"></div>
-                </div>
-
                 <!-- Attivo dopo 10 s (spec 13 §3): disabled di default, dna.js lo
                      abilita al passare della soglia. -->
-                <button type="button" id="dna-stop" class="tb-btn tb-btn--primary" disabled data-i18n="dna-stop">Ferma</button>
+                <button type="button" id="dna-stop" class="tb-btn tb-btn--ghost" disabled data-i18n="dna-stop">Ferma</button>
             </div>
 
             <!-- ---------- Stato 3: analisi ---------- -->
@@ -354,13 +370,22 @@
                                 </button>
                             </div>
                         </div>
+                        <!-- dna.js ci scrive "Target Spotify: -14 LUFS"
+                             (CONTRATTO in testa a dna.js, chiave
+                             dna-target-label). -->
+                        <span id="dna-target-label" class="dna-target-label"></span>
                     </div>
 
                     <div class="dna-lufs-row">
                         <span id="dna-lufs" class="dna-card-value dna-card-value--sm">—</span>
-                        <div class="dna-lufs-track" aria-hidden="true">
-                            <div id="dna-lufs-bar" class="dna-lufs-fill"></div>
-                        </div>
+                    </div>
+                    <!-- CONTRATTO dna.js: --dna-lufs (posizione del valore) e
+                         --dna-target (posizione del marcatore) qui sopra,
+                         entrambe in percentuale; .dna-lufs-fill e
+                         .dna-lufs-marker le leggono per ereditarieta'. -->
+                    <div id="dna-lufs-bar" class="dna-lufs-track" aria-hidden="true">
+                        <div class="dna-lufs-fill"></div>
+                        <div class="dna-lufs-marker"></div>
                     </div>
                     <p id="dna-advice" class="dna-advice" aria-live="polite"></p>
 
@@ -380,6 +405,24 @@
                     <li><span data-i18n="dna-rate-label">Campionamento</span><span id="dna-rate"></span></li>
                     <li><span data-i18n="dna-channels-label">Canali</span><span id="dna-channels"></span></li>
                 </ul>
+
+                <!-- Disclaimer dal microfono (feedback Genna, CONTRATTO in
+                     testa a dna.js): due righe in stile tb-status,
+                     [hidden] di default, dna.js le mostra secondo il caso
+                     (stima generica e/o risultato incerto); la "i" apre
+                     #dna-mic-info con la spiegazione lunga, sempre nel
+                     markup (costa nulla se irrilevante, come .acc-a4 nel
+                     tuner). -->
+                <div class="dna-mic-disclaimer">
+                    <div class="dna-mic-texts">
+                        <p id="dna-mic-note" class="dna-mic-note tb-status tb-status--idle" hidden data-i18n="dna-mic-note">Stima dal microfono: un buon punto di partenza, non sostituisce il file audio.</p>
+                        <p id="dna-uncertain" class="dna-uncertain tb-status tb-status--idle" hidden data-i18n="dna-uncertain">Il risultato non è del tutto certo: verificalo a orecchio.</p>
+                    </div>
+                    <button type="button" class="tb-info" aria-haspopup="dialog" aria-expanded="false"
+                        aria-controls="dna-mic-info" data-i18n-aria="info-aria" aria-label="Che cos'è">
+                        <span class="tb-info-glyph" aria-hidden="true">i</span>
+                    </button>
+                </div>
 
                 <div class="dna-result-actions">
                     <button type="button" id="dna-copy" class="tb-btn" data-i18n="dna-copy">Copia</button>
@@ -411,6 +454,19 @@
                 <span data-i18n="footer-designed">Designed by Genna</span>
             </p>
         </footer>
+    </div>
+
+    <!-- Foglio del disclaimer microfono (spec 03 §2/§6, contratto
+         .tb-info/.tb-sheet in shared/components.css): fuori da .tb-shell,
+         come #acc-a4-info nell'accordatore. sheet.js apre/chiude
+         togliendo/mettendo [hidden] + .is-open. -->
+    <div class="tb-sheet-scrim" id="dna-mic-info-scrim" hidden></div>
+    <div class="tb-sheet" id="dna-mic-info" role="dialog" aria-modal="true" aria-labelledby="dna-mic-info-title" hidden>
+        <div class="tb-sheet-head">
+            <h2 id="dna-mic-info-title" data-i18n="dna-mic-info-title">Stima dal microfono</h2>
+            <button type="button" class="tb-sheet-close" data-i18n-aria="sheet-close" aria-label="Chiudi">&times;</button>
+        </div>
+        <div class="tb-sheet-body" data-i18n="dna-mic-info-text">La registrazione dal microfono capta anche l'ambiente e la qualità di chi riproduce il brano: BPM e tonalità restano affidabili nella maggior parte dei casi, ma il loudness (LUFS/picco reale) misurato così non è utilizzabile per la distribuzione. Per quei valori usa sempre il file audio originale.</div>
     </div>
 
     <script type="module" src="/dna/dna.js"></script>

@@ -22,7 +22,7 @@
  * popoli da solo (vedi vendor() sotto, che li trova li' come ripiego).
  */
 
-const VERSION = 'tb-v14';
+const VERSION = 'tb-v15';
 const CACHE = 'toolbox-' + VERSION;
 const VENDOR_CACHE = 'toolbox-vendor';
 
@@ -41,6 +41,7 @@ const SHELL = [
     '/shared/mic.js',
     '/shared/pitch.js',
     '/shared/pitch-worklet.js',
+    '/shared/capture-worklet.js',
     '/shared/strings.js',
     '/vendor/pitchy@4.1.0/pitchy.js',
     '/vendor/pitchy@4.1.0/fft.js',

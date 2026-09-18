@@ -11,6 +11,9 @@
  *   { type: 'analyse', channels: [ArrayBuffer...], sampleRate, a4 }
  * In uscita:
  *   { type: 'phase', phase, pct }   { type: 'result', result }   { type: 'error', message }
+ * Il risultato porta sempre `rms` (dBFS) e `silent`: sotto -60 dBFS di RMS
+ * o -50 LUFS non si calcolano ne' BPM ne' tonalita' (sarebbero inventati)
+ * e la pagina mostra "Nessun suono rilevato".
  *
  * Il downmix e la decimazione stanno qui: la pagina non rifa' un secondo
  * render con OfflineAudioContext (costava piu' dell'analisi). Si filtra
@@ -26,7 +29,16 @@ import { analyseLoudness } from '/shared/analysis/loudness.js';
 
 const BPM_WINDOW = 120;   // s al centro del brano: bastano per il ritmo
 const CHROMA_HOP_FAST = 2048;
+const MIC_CHROMA_SIZE = 8192;  // dal microfono serve piu' risoluzione
+const MIC_SKIP = 0.5;          // s: i primi mezzo secondo sono sempre sporchi
 const DENORMAL = 1e-25;
+/* Sotto queste soglie non c'e' musica, c'e' il fruscio del convertitore:
+   analizzarlo darebbe un BPM e una tonalita' inventati (feedback Genna,
+   rumore a -90 dBFS che tornava "128 BPM / Do maggiore"). */
+const SILENT_DBFS = -60;
+const SILENT_LUFS = -50;
+const EMPTY_BPM = { bpm: 0, confidence: 0, alternatives: [] };
+const EMPTY_KEY = { tonic: '', mode: 'major', camelot: '', confidence: 0 };
 
 /** Passa-basso a due poli (Butterworth), in place, con guardia denormali. */
 function lowpass(data, sampleRate, cutoff) {
@@ -76,6 +88,25 @@ export function downmixDecimate(channels, sampleRate) {
     return { mono: out, rate };
 }
 
+/** RMS integrato di tutti i canali, in dBFS (-Infinity sul silenzio vero). */
+export function rmsDbfs(channels) {
+    let sum = 0;
+    let n = 0;
+    for (let c = 0; c < channels.length; c++) {
+        const ch = channels[c];
+        for (let i = 0; i < ch.length; i++) sum += ch[i] * ch[i];
+        n += ch.length;
+    }
+    if (!n) return -Infinity;
+    const rms = Math.sqrt(sum / n);
+    return rms > 0 ? 20 * Math.log10(rms) : -Infinity;
+}
+
+/** Livello troppo basso per dire qualcosa: la forma `!(a > b)` copre NaN. */
+export function isSilent(rms, lufs) {
+    return !(rms > SILENT_DBFS) || !(lufs > SILENT_LUFS);
+}
+
 /** I 120 s centrali: il ritmo non cambia, il conto si dimezza. */
 export function centralWindow(mono, rate, seconds = BPM_WINDOW) {
     const want = Math.round(seconds * rate);
@@ -85,9 +116,15 @@ export function centralWindow(mono, rate, seconds = BPM_WINDOW) {
 }
 
 /** Ritmo e tonalita' dal mono: un solo STFT per l'inviluppo. */
-export function runRhythmAndKey(mono, sampleRate, { a4 = 440, onPhase = null } = {}) {
+export function runRhythmAndKey(mono, sampleRate, { a4 = 440, onPhase = null, mic = false } = {}) {
     const say = (phase, pct) => { if (onPhase) onPhase(phase, pct); };
     say('rhythm', 0);
+    if (mic) {
+        /* il microfono parte con un colpo di gain e col rumore della stanza:
+           mezzo secondo si butta, e il chroma vuole una finestra piu' lunga */
+        const skip = Math.min(mono.length, Math.round(MIC_SKIP * sampleRate));
+        if (mono.length - skip > sampleRate) mono = mono.subarray(skip);
+    }
     /* il ritmo si misura sui 120 s centrali, con l'hop fitto che serve a
        distinguere 174 da 175; la tonalita' sull'intero brano ma con una
        finestra lunga e passo largo, dove conta la frequenza non il tempo */
@@ -97,26 +134,33 @@ export function runRhythmAndKey(mono, sampleRate, { a4 = 440, onPhase = null } =
     say('rhythm', 50);
     const bpm = bpmFromEnvelope(env, fps);
     say('key', 60);
-    const frames = mono.length >= CHROMA_SIZE
-        ? 1 + Math.floor((mono.length - CHROMA_SIZE) / CHROMA_HOP_FAST)
-        : 0;
+    const size = mic ? MIC_CHROMA_SIZE : CHROMA_SIZE;
+    const hop = mic ? MIC_CHROMA_SIZE / 4 : CHROMA_HOP_FAST;
+    const frames = mono.length >= size ? 1 + Math.floor((mono.length - size) / hop) : 0;
     const weights = new Float32Array(frames).fill(1);
-    const key = keyFromChroma(chromaOf(mono, sampleRate, { a4, hop: CHROMA_HOP_FAST, weights }));
+    const key = keyFromChroma(chromaOf(mono, sampleRate, { a4, size, hop, weights }));
     say('key', 100);
     return { bpm, key };
 }
 
 /** Tutto in una volta: e' il messaggio che manda la pagina. */
-export function runAnalysis(channels, sampleRate, { a4 = 440, onPhase = null } = {}) {
+export function runAnalysis(channels, sampleRate, { a4 = 440, onPhase = null, mic = false } = {}) {
     const say = (phase, pct) => { if (onPhase) onPhase(phase, pct); };
     say('loudness', 0);
     const loudness = analyseLoudness(channels, sampleRate);
+    const rms = rmsDbfs(channels);
     say('loudness', 100);
+    /* niente segnale: si dice, non si inventa un BPM */
+    if (isSilent(rms, loudness.lufs)) {
+        channels.length = 0;
+        say('key', 100);
+        return { loudness, rms, silent: true, bpm: EMPTY_BPM, key: EMPTY_KEY, monoRate: sampleRate };
+    }
     say('rhythm', 0);
     const { mono, rate } = downmixDecimate(channels, sampleRate);
     channels.length = 0; // i canali nativi non servono piu'
-    const { bpm, key } = runRhythmAndKey(mono, rate, { a4, onPhase });
-    return { loudness, bpm, key, monoRate: rate };
+    const { bpm, key } = runRhythmAndKey(mono, rate, { a4, onPhase, mic });
+    return { loudness, rms, silent: false, bpm, key, monoRate: rate };
 }
 
 /** Loudness e true peak sui canali nativi (mai sul downmix). */
@@ -137,7 +181,7 @@ if (typeof self !== 'undefined' && typeof window === 'undefined' && typeof self.
                 const channels = msg.channels.map((c) => new Float32Array(c));
                 self.postMessage({
                     type: 'result',
-                    result: runAnalysis(channels, msg.sampleRate, { a4: msg.a4, onPhase: phase })
+                    result: runAnalysis(channels, msg.sampleRate, { a4: msg.a4, mic: !!msg.mic, onPhase: phase })
                 });
                 return;
             }

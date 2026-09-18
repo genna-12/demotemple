@@ -56,6 +56,7 @@ export default {
         'dna-again': 'Analizza un altro',
 
         'dna-bad-file': 'Formato non letto',
+        'dna-silent': 'Nessun suono rilevato',
         'dna-too-long': 'File troppo grande',
         'dna-long-warning': "File lungo: l'analisi potrebbe metterci di più",
 
@@ -70,7 +71,16 @@ export default {
         'dna-mic-none': 'Nessun microfono trovato',
         'dna-mic-busy': 'Microfono già in uso',
         'dna-mic-unsupported': 'Microfono non disponibile su questo browser',
-        'dna-mic-failed': 'Non è stato possibile usare il microfono'
+        'dna-mic-failed': 'Non è stato possibile usare il microfono',
+
+        'dna-press': 'Premi per iniziare',
+        'dna-listening': 'In ascolto…',
+        'dna-almost': 'Quasi fatto…',
+        'dna-uncertain': 'Il risultato non è del tutto certo: verificalo a orecchio.',
+        'dna-mic-note': 'Stima dal microfono: un buon punto di partenza, non sostituisce il file audio.',
+        'dna-mic-info-title': 'Stima dal microfono',
+        'dna-mic-info-text': "La registrazione dal microfono capta anche l'ambiente e la qualità di chi riproduce il brano: BPM e tonalità restano affidabili nella maggior parte dei casi, ma il loudness (LUFS/picco reale) misurato così non è utilizzabile per la distribuzione. Per quei valori usa sempre il file audio originale.",
+        'dna-target-label': 'Target {platform}: {lufs} LUFS'
     },
     en: {
         'dna-title': 'Track DNA',
@@ -120,6 +130,7 @@ export default {
         'dna-again': 'Analyse another',
 
         'dna-bad-file': 'Could not read this file',
+        'dna-silent': 'No sound detected',
         'dna-too-long': 'File too large',
         'dna-long-warning': 'Long file: analysis may take a bit longer',
 
@@ -134,6 +145,15 @@ export default {
         'dna-mic-none': 'No microphone found',
         'dna-mic-busy': 'Microphone already in use',
         'dna-mic-unsupported': 'Microphone not available in this browser',
-        'dna-mic-failed': 'Could not use the microphone'
+        'dna-mic-failed': 'Could not use the microphone',
+
+        'dna-press': 'Tap to start',
+        'dna-listening': 'Listening…',
+        'dna-almost': 'Almost there…',
+        'dna-uncertain': "The result isn't fully certain: double-check it by ear.",
+        'dna-mic-note': "Microphone estimate: a good starting point, not a substitute for the audio file.",
+        'dna-mic-info-title': 'Microphone estimate',
+        'dna-mic-info-text': "A microphone recording also picks up the room and the quality of whatever is playing the track: BPM and key stay reliable in most cases, but loudness (LUFS/true peak) measured this way isn't usable for distribution. For those values, always use the original audio file.",
+        'dna-target-label': 'Target {platform}: {lufs} LUFS'
     }
 };

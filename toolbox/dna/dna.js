@@ -53,12 +53,67 @@
  *   camelot, lufs, tp, lra, durata, sample rate, canali, data). Nessun
  *   campione audio e nessuna copertina finiscono in IndexedDB.
  *
+ * ASCOLTO "alla Shazam" (feedback Genna) — markup atteso dal builder,
+ * dentro lo stato registrazione (#dna-recording), al posto del countdown:
+ *   <div id="dna-shazam" class="dna-shazam">
+ *     <button type="button" id="dna-shazam-btn" class="dna-shazam-btn" aria-pressed="false">
+ *       <img class="dna-shazam-logo" src="/assets/brand/logo-arancione.png" alt=""
+ *            width="140" height="140">
+ *       <span id="dna-shazam-label" class="dna-shazam-label"
+ *             data-i18n="dna-press">Premi per iniziare</span>
+ *     </button>
+ *     <div id="dna-rings" class="dna-rings" aria-hidden="true"></div>
+ *   </div>
+ *   - mentre ascolta, #dna-shazam ha la classe `is-listening` e il bottone
+ *     `aria-pressed="true"`; l'etichetta passa a dna-listening e poi a
+ *     dna-almost (analisi in corso).
+ *   - il logo "respira" con la musica: dna.js scrive su #dna-shazam-btn la
+ *     variabile `--dna-pulse` (0..1, gia' smussata). In CSS basta
+ *     `transform: scale(calc(1 + var(--dna-pulse) * 0.18))`.
+ *   - a ogni colpo dna.js aggiunge dentro #dna-rings uno
+ *     <span class="dna-ring"></span> e lo toglie dopo ~900 ms: l'anello che
+ *     si espande e sfuma sta tutto nel CSS (animazione su .dna-ring).
+ *   - il tocco successivo sul logo ferma e analizza; #dna-countdown, se c'e',
+ *     continua a mostrare i secondi che restano.
+ *   - ANNULLA (feedback Genna) — serve nel markup, dentro #dna-recording,
+ *     sotto il logo: <button type="button" id="dna-listen-cancel"
+ *     class="tb-btn tb-btn--ghost" data-i18n="dna-cancel">Annulla</button>
+ *     (id NUOVO: #dna-cancel e' gia' preso dallo stato analisi e un id non
+ *     si ripete). Ferma le tracce e torna allo stato vuoto SENZA analizzare;
+ *     "ferma e analizza" resta il secondo tocco sul logo (e #dna-stop).
+ *     Va bene anche un [data-dna-listen-cancel] su un altro elemento.
+ *   - l'ascolto si ferma da solo quando due analisi di fila concordano
+ *     (BPM con confidenza >= 0,6 e tonalita' >= 0,55), al massimo a 25 s:
+ *     in quel caso il risultato porta l'avviso #dna-uncertain.
+ * RISULTATO DAL MICROFONO:
+ *   <p id="dna-mic-note" class="dna-mic-note" hidden data-i18n="dna-mic-note">...</p>
+ *   <p id="dna-uncertain" class="dna-uncertain" hidden data-i18n="dna-uncertain">...</p>
+ *   e una "i" (.tb-info + .tb-sheet #dna-mic-info) con la spiegazione lunga.
+ *   I tre elementi stanno dentro .dna-mic-disclaimer: per un risultato da
+ *   FILE il disclaimer non c'entra nulla, quindi dna.js nasconde tutto il
+ *   contenitore (la "i" compresa). Serve la regola gemella di quella gia'
+ *   in dna.css: `.dna-mic-disclaimer[hidden] { display: none }` (il
+ *   contenitore e' display:flex, [hidden] da solo non basta).
+ * NIENTE SEGNALE:
+ *   sotto -60 dBFS di RMS o -50 LUFS il Worker torna { silent: true } e la
+ *   pagina mostra l'errore `dna-silent` ("Nessun suono rilevato") senza
+ *   BPM ne' tonalita'. Dopo i 25 s di ascolto senza conferma il risultato
+ *   e' SEMPRE marcato incerto e le etichette di confidenza scendono.
+ * LOUDNESS E PIATTAFORMA:
+ *   <span id="dna-target-label" class="dna-target-label"></span> accanto al
+ *   select: dna.js ci scrive "Target Spotify: -14 LUFS"; sulla barra
+ *   #dna-lufs-bar scrive `--dna-lufs` (posizione del valore) e
+ *   `--dna-target` (posizione del marcatore), entrambe in percentuale.
+ *
  * Chiavi i18n in piu': dna-del-one, dna-clear, dna-clear-ask, dna-clear-yes,
  *   dna-clear-no, dna-history-empty. I messaggi del microfono sono
  *   CONDIVISI (shared/i18n-common.js, li usa anche l'accordatore):
  *   mic-denied e mic-unavailable ci sono gia', servono mic-none
  *   ("Nessun microfono collegato"), mic-busy ("Il microfono e' in uso da
  *   un'altra applicazione") e mic-failed ("Impossibile usare il microfono").
+ *   Per l'ascolto: dna-press, dna-listening, dna-almost, dna-uncertain,
+ *   dna-mic-note, dna-mic-info-title, dna-mic-info-text, dna-target-label
+ *   ("Target {platform}: {lufs} LUFS").
  * Chiavi i18n usate da questo file (oltre a quelle del markup, spec 13 §3):
  *   dna-phase-decode / -loudness / -rhythm / -key   fasi della barra
  *   dna-conf-high / -mid / -low                     confidenza in parole
@@ -66,6 +121,7 @@
  *   dna-on-target / dna-turn-up / dna-turn-down     consiglio sul target
  *   dna-copied / dna-copy-manual                    esito della copia
  *   dna-bad-file / dna-too-long / dna-long-warning  errori e avviso oltre 8 min
+ *   dna-silent                                      "Nessun suono rilevato"
  *   dna-mic-name                                    nome del record registrato
  * Piu' quelle gia' condivise: mic-denied, audio-resume-msg.
  */
@@ -79,7 +135,7 @@ import { initPwa } from '/shared/pwa.js';
 import { mountSelects } from '/shared/select.js';
 import { mountInfos } from '/shared/sheet.js';
 import { mountRanges } from '/shared/range.js';
-import { getContext, unlock, decode, needsGesture } from '/shared/audio.js';
+import { getContext, unlock, decode, needsGesture, addWorklet } from '/shared/audio.js';
 import * as mic from '/shared/mic.js';
 import { prefs, put, list, del } from '/shared/storage.js';
 import { fold } from '/shared/analysis/bpm.js';
@@ -89,11 +145,21 @@ import { readTags, coverBlob } from '/shared/tags.js';
 
 const TOOL = 'dna';
 const WORKER_URL = '/dna/dna-worker.js';
+const CAPTURE_URL = '/shared/capture-worklet.js';
+const CAPTURE_BLOCK = 4096;   // campioni per messaggio dal worklet
 const BLOCK_SECONDS = 30;     // i canali nativi viaggiano a blocchi
 const MAX_MINUTES = 15;
 const WARN_MINUTES = 8;       // oltre, su iPhone la decodifica puo' non farcela
 const REC_MIN = 10;
 const REC_MAX = 20;
+const LISTEN_FIRST = 8;       // s: primo tentativo di analisi
+const LISTEN_EVERY = 4;       // s fra un tentativo e il successivo
+const LISTEN_MAX = 25;        // s: oltre, si mostra quel che si e' capito
+const BPM_SURE = 0.6;
+const KEY_SURE = 0.55;
+const RING_MS = 900;          // quanto vive un anello
+const PULSE_EASE = 0.25;      // quanto insegue il livello (0-1)
+const ONSET_GAP = 180;        // ms minimi fra due anelli
 const HISTORY = 200;   // solo metadati: 200 voci pesano pochi KB
 
 const fmt = (v, digits) => {
@@ -104,7 +170,14 @@ const fmt = (v, digits) => {
     }
 };
 
-const confidenceKey = (c) => (c >= 0.6 ? 'dna-conf-high' : c >= 0.3 ? 'dna-conf-mid' : 'dna-conf-low');
+/* Un risultato "incerto" (ascolto finito a tempo scaduto senza conferma)
+   non puo' esibire una confidenza alta: le etichette scendono di un
+   gradino, i numeri restano quelli veri. */
+const UNSURE_SCALE = 0.5;
+const confidenceKey = (c, unsure) => {
+    const v = (Number(c) || 0) * (unsure ? UNSURE_SCALE : 1);
+    return v >= 0.6 ? 'dna-conf-high' : v >= 0.3 ? 'dna-conf-mid' : 'dna-conf-low';
+};
 
 /** Copia i canali nativi a blocchi: si spedisce e si libera, uno alla volta. */
 export function channelBlocks(buffer, seconds = BLOCK_SECONDS) {
@@ -145,6 +218,18 @@ export function mountDna() {
     const clearBtn = document.getElementById('dna-clear');
     const clearConfirm = document.getElementById('dna-clear-confirm');
     const tagsBox = document.getElementById('dna-tags');
+    const shazam = document.getElementById('dna-shazam');
+    const shazamBtn = document.getElementById('dna-shazam-btn');
+    const shazamLabel = document.getElementById('dna-shazam-label');
+    const ringsBox = document.getElementById('dna-rings');
+    const micNote = document.getElementById('dna-mic-note');
+    const uncertain = document.getElementById('dna-uncertain');
+    /* il disclaimer e la sua "i" sono un blocco solo: da file spariscono insieme */
+    const disclaimer = (micNote && micNote.closest('.dna-mic-disclaimer'))
+        || document.querySelector('.dna-mic-disclaimer');
+    const listenCancel = document.getElementById('dna-listen-cancel')
+        || document.querySelector('[data-dna-listen-cancel]');
+    const targetLabel = document.getElementById('dna-target-label');
     const coverImg = document.getElementById('dna-cover');
 
     const out = (id) => document.getElementById(id);
@@ -160,8 +245,8 @@ export function mountDna() {
     let worker = null;
     let cancelled = false;
     let starting = false;       // guardia del tasto "Registra" (si azzera SEMPRE)
+    let listening = null;       // ascolto in corso (stile Shazam)
     let coverUrl = null;        // object URL della copertina mostrata
-    let recording = null;   // { stop(), started, timer, raf }
 
     /* ---------------- stati ---------------- */
 
@@ -239,7 +324,7 @@ export function mountDna() {
 
     /* ---------------- analisi ---------------- */
 
-    async function analyse(buffer, { source = 'file', name = '', tags = null } = {}) {
+    async function analyse(buffer, { source = 'file', name = '', tags = null, mic: fromMic = false, uncertain: notSure = false } = {}) {
         cancelled = false;
         ui.source = source;
         ui.name = name;
@@ -264,7 +349,7 @@ export function mountDna() {
         setPhase('loudness', 15);
         const phases = { loudness: [15, 45], rhythm: [45, 80], key: [80, 100] };
         const data = await ask(
-            { type: 'analyse', channels: buffers, sampleRate, a4 },
+            { type: 'analyse', channels: buffers, sampleRate, a4, mic: fromMic },
             buffers,
             (p, pct) => {
                 const range = phases[p] || phases.rhythm;
@@ -273,6 +358,8 @@ export function mountDna() {
         );
         copies.length = 0;
         if (cancelled) return null;
+        /* rumore di fondo e silenzio: nessun numero, un messaggio chiaro */
+        if (data.silent) { stopWorker(); fail('dna-silent'); return null; }
 
         const result = {
             name,
@@ -294,6 +381,7 @@ export function mountDna() {
             lufs: data.loudness.lufs,
             truePeak: data.loudness.truePeak,
             lra: data.loudness.lra,
+            uncertain: !!notSure,
             at: new Date().toISOString()
         };
         stopWorker();
@@ -328,10 +416,11 @@ export function mountDna() {
         showTags(result, cover);
         const set = (id, text) => { const el = out(id); if (el) el.textContent = text; };
         set('dna-bpm', result.bpm ? fmt(result.bpm, 0) : '—');
+        const unsure = !!result.uncertain;
         const conf = out('dna-bpm-conf');
         if (conf) {
-            conf.setAttribute('data-i18n', confidenceKey(result.bpmConfidence));
-            conf.textContent = t(confidenceKey(result.bpmConfidence));
+            conf.setAttribute('data-i18n', confidenceKey(result.bpmConfidence, unsure));
+            conf.textContent = t(confidenceKey(result.bpmConfidence, unsure));
         }
         if (foldBox) foldBox.hidden = !(result.bpmAlternatives && result.bpmAlternatives.length);
         set('dna-key', result.tonic ? result.tonic + ' ' + t(result.mode === 'minor' ? 'dna-minor' : 'dna-major') : '—');
@@ -339,8 +428,8 @@ export function mountDna() {
         set('dna-key-compat', compatibleWith(result.camelot).join(' · '));
         const keyConf = out('dna-key-conf');
         if (keyConf) {
-            keyConf.setAttribute('data-i18n', confidenceKey(result.keyConfidence * 3));
-            keyConf.textContent = t(confidenceKey(result.keyConfidence * 3));
+            keyConf.setAttribute('data-i18n', confidenceKey(result.keyConfidence * 3, unsure));
+            keyConf.textContent = t(confidenceKey(result.keyConfidence * 3, unsure));
         }
         set('dna-lufs', isFinite(result.lufs) ? fmt(result.lufs, 1) + ' LUFS' : '—');
         set('dna-tp', isFinite(result.truePeak) ? fmt(result.truePeak, 1) + ' dBTP' : '—');
@@ -348,12 +437,36 @@ export function mountDna() {
         set('dna-duration', fmt(Math.floor(result.seconds / 60), 0) + ':' + String(Math.round(result.seconds % 60)).padStart(2, '0'));
         set('dna-rate', fmt(result.sampleRate / 1000, 1) + ' kHz');
         set('dna-channels', String(result.channels));
+        const fromMic = result.source === 'mic';
         const badge = out('dna-estimate');
-        if (badge) badge.hidden = result.source !== 'mic';
+        if (badge) badge.hidden = !fromMic;
+        /* dal microfono la stima puo' sbagliare: si dice, e si spiega. Da
+           file non c'entra nulla: via il disclaimer, via anche la "i". */
+        if (micNote) micNote.hidden = !fromMic;
+        if (uncertain) uncertain.hidden = !unsure;
+        if (disclaimer) disclaimer.hidden = !fromMic && !unsure;
         renderAdvice();
     }
 
+    /* -30..0 LUFS sulla barra: comodo per leggere a colpo d'occhio */
+    const barPos = (lufs) => Math.max(0, Math.min(100, (lufs + 30) / 30 * 100));
+
+    function renderTargetLabel() {
+        if (!targetLabel) return;
+        const t0 = TARGETS[ui.target] || TARGETS.spotify;
+        /* il nome della piattaforma e' quello scritto nel select: non serve
+           una chiave per "Spotify" */
+        const option = targetSelect ? targetSelect.querySelector('option[value="' + ui.target + '"]') : null;
+        const name = option ? option.textContent.trim() : ui.target;
+        const lufs = fmt(t0.lufs, 0);
+        const text = t('dna-target-label', { platform: name, lufs });
+        targetLabel.textContent = text === 'dna-target-label' ? 'Target ' + name + ': ' + lufs + ' LUFS' : text;
+        const bar = out('dna-lufs-bar');
+        if (bar) bar.style.setProperty('--dna-target', barPos(t0.lufs).toFixed(1) + '%');
+    }
+
     function renderAdvice() {
+        renderTargetLabel();
         const el = out('dna-advice');
         if (!el || !ui.result) return;
         const g = gainToTarget(ui.result.lufs, ui.target);
@@ -361,7 +474,7 @@ export function mountDna() {
             ? t('dna-on-target')
             : t(g.direction === 'up' ? 'dna-turn-up' : 'dna-turn-down') + ' ' + fmt(Math.abs(g.diff), 1) + ' dB';
         const bar = out('dna-lufs-bar');
-        if (bar) bar.style.setProperty('--dna-lufs', Math.max(0, Math.min(100, (ui.result.lufs + 30) / 30 * 100)) + '%');
+        if (bar) bar.style.setProperty('--dna-lufs', barPos(ui.result.lufs).toFixed(1) + '%');
     }
 
     /** Riepilogo testuale da incollare dove serve. */
@@ -528,8 +641,57 @@ export function mountDna() {
         setStatus(statusOut, { kind: 'denied', key: mic.errorKey(info.code) });
     });
 
-    function startRecording() {
-        if (starting || recording) return;
+    /** Il riquadro del consenso si vede solo finche' serve. */
+    function showConsent(show) {
+        if (!consentBox) return;
+        if (show) {
+            consentBox.hidden = false;
+            mic.renderConsent(consentBox, { onAllow: startListening });
+            return;
+        }
+        /* dato il permesso, il riquadro sparisce: prima restava li' */
+        consentBox.textContent = '';
+        consentBox.hidden = true;
+    }
+
+    function setListenLabel(key) {
+        if (!shazamLabel) return;
+        shazamLabel.setAttribute('data-i18n', key);
+        shazamLabel.textContent = t(key);
+    }
+
+    function setListening(on) {
+        if (shazam) shazam.classList.toggle('is-listening', on);
+        if (shazamBtn) shazamBtn.setAttribute('aria-pressed', on ? 'true' : 'false');
+        if (listenCancel) listenCancel.hidden = !on;
+        if (!on && shazamBtn) shazamBtn.style.removeProperty('--dna-pulse');
+        if (ringsBox && !on) ringsBox.textContent = '';
+    }
+
+    /** Un anello che si espande a ogni colpo (l'animazione sta nel CSS). */
+    function ring() {
+        if (!ringsBox) return;
+        const el = document.createElement('span');
+        el.className = 'dna-ring';
+        ringsBox.appendChild(el);
+        setTimeout(() => el.remove(), RING_MS);
+    }
+
+    /* Due analisi di fila che dicono la stessa cosa, con confidenze alte:
+       piu' di cosi' non si impara restando in ascolto. */
+    function agrees(prev, cur) {
+        if (!prev || !cur) return false;
+        if (!(cur.bpm.confidence >= BPM_SURE) || !(cur.key.confidence >= KEY_SURE)) return false;
+        if (prev.key.tonic !== cur.key.tonic || prev.key.mode !== cur.key.mode) return false;
+        const a = prev.bpm.bpm;
+        const b = cur.bpm.bpm;
+        return a > 0 && b > 0 && Math.abs(Math.log2(a / b)) < 0.03;
+    }
+
+    /* ---------------- ascolto "alla Shazam" ---------------- */
+
+    function startListening() {
+        if (starting || listening) return;
         starting = true;
         let ctx;
         try {
@@ -538,154 +700,299 @@ export function mountDna() {
         } catch (e) { starting = false; fail('audio-resume-msg'); return; }
         if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
             starting = false;
-            setState('recording');
             setStatus(statusOut, { kind: 'denied', key: 'mic-unavailable' });
+            showConsent(true);
             return;
         }
-        mic.acquire().then((stream) => {
+        /* musica, non voce: niente cancellazione, niente riduzione rumore,
+           niente guadagno automatico (falsano livello e intonazione) */
+        mic.acquire({ echoCancellation: false, noiseSuppression: false, autoGainControl: false }).then(() => {
             starting = false;
-            setState('recording');
-            /* livello: AnalyserNode, niente ScriptProcessor (deprecato) */
-            const source = mic.source(ctx);
-            const analyser = ctx.createAnalyser();
-            analyser.fftSize = 1024;
-            const sink = ctx.createGain();
-            sink.gain.value = 0;
-            source.connect(analyser).connect(sink).connect(ctx.destination);
-
-            /* cattura: MediaRecorder dove c'e', altrimenti si registra
-               quel che passa dall'AnalyserNode (ripiego) */
-            const chunks = [];
-            let recorder = null;
-            const mimeOk = typeof MediaRecorder === 'function'
-                && (!MediaRecorder.isTypeSupported
-                    || ['audio/webm', 'audio/mp4', 'audio/ogg', ''].some((m) => !m || MediaRecorder.isTypeSupported(m)));
-            if (mimeOk) {
-                try {
-                    recorder = new MediaRecorder(stream);
-                    recorder.ondataavailable = (e) => { if (e.data && e.data.size) chunks.push(e.data); };
-                    recorder.start();
-                } catch (e) { recorder = null; }
-            }
-            /* nessun MediaRecorder utilizzabile: si registra il PCM a mano */
-            let pcm = null;
-            if (!recorder) {
-                const node = ctx.createScriptProcessor ? ctx.createScriptProcessor(4096, 1, 1) : null;
-                if (node) {
-                    const parts = [];
-                    node.onaudioprocess = (e) => parts.push(Float32Array.from(e.inputBuffer.getChannelData(0)));
-                    source.connect(node);
-                    node.connect(sink);
-                    pcm = { node, parts, rate: ctx.sampleRate };
-                }
-            }
-            const data = new Float32Array(analyser.fftSize);
-            const started = Date.now();
-            const tick = () => {
-                if (!recording) return;
-                const elapsed = (Date.now() - started) / 1000;
-                if (countdown) countdown.textContent = String(Math.max(0, Math.ceil(REC_MAX - elapsed)));
-                if (stopBtn) stopBtn.disabled = elapsed < REC_MIN;
-                if (analyser.getFloatTimeDomainData) {
-                    analyser.getFloatTimeDomainData(data);
-                    let sum = 0;
-                    for (let i = 0; i < data.length; i++) sum += data[i] * data[i];
-                    const rms = Math.sqrt(sum / data.length);
-                    if (level) level.style.setProperty('--dna-level', Math.min(100, rms * 300).toFixed(1) + '%');
-                }
-                if (elapsed >= REC_MAX) { stopRecording(); return; }
-                recording.raf = window.requestAnimationFrame(tick);
-            };
-            recording = {
-                started,
-                raf: null,
-                recorder,
-                pcm,
-                async finish() {
-                    let blob = null;
-                    if (recorder && recorder.state !== 'inactive') {
-                        blob = await new Promise((resolve) => {
-                            recorder.onstop = () => resolve(new Blob(chunks, { type: recorder.mimeType || 'audio/webm' }));
-                            recorder.stop();
-                        });
-                    }
-                    let raw = null;
-                    if (pcm) {
-                        pcm.node.onaudioprocess = null;
-                        try { pcm.node.disconnect(); } catch (e) { /* gia' scollegato */ }
-                        const total = pcm.parts.reduce((a, c) => a + c.length, 0);
-                        const mono = new Float32Array(total);
-                        let o = 0;
-                        pcm.parts.forEach((c) => { mono.set(c, o); o += c.length; });
-                        raw = { mono, rate: pcm.rate };
-                    }
-                    try { source.disconnect(); analyser.disconnect(); sink.disconnect(); } catch (e) { /* gia' scollegati */ }
-                    mic.release();
-                    return { blob, raw };
-                }
-            };
-            recording.raf = window.requestAnimationFrame(tick);
+            showConsent(false);
+            setStatus(statusOut, { kind: 'idle', key: '' });
+            if (statusOut) statusOut.textContent = '';
+            beginCapture(ctx);
         }, (err) => {
-            starting = false;   // senza questo il tasto restava muto per sempre
-            setState('recording');
+            starting = false;
             setStatus(statusOut, { kind: 'denied', key: micError(err) });
-            if (consentBox) mic.renderConsent(consentBox, { onAllow: startRecording });
+            showConsent(true);
         });
     }
 
-    async function stopRecording() {
-        if (!recording) return;
-        if (recording.raf) window.cancelAnimationFrame(recording.raf);
-        const current = recording;
-        recording = null;
-        starting = false;
-        const { blob, raw } = await current.finish();
+    /**
+     * Cattura PCM dell'ascolto. Prima scelta: AudioWorklet
+     * (shared/capture-worklet.js), che non stampa piu' in console
+     * "ScriptProcessorNode is deprecated". Il ScriptProcessor resta SOLO
+     * come ripiego se addModule fallisce (iOS vecchi).
+     * Il worklet si carica in pochi ms mentre l'ascolto e' gia' partito:
+     * la prima analisi arriva comunque a 8 s.
+     */
+    function attachCapture(state) {
+        const { ctx, source, sink, parts } = state;
+        const plug = (node) => {
+            if (!node) return;
+            if (listening !== state) { try { node.disconnect(); } catch (e) { /* mai collegato */ } return; }
+            state.node = node;
+            try { source.connect(node); node.connect(sink); } catch (e) { state.node = null; }
+        };
+        const fallback = () => {
+            if (!ctx.createScriptProcessor) return;
+            const node = ctx.createScriptProcessor(CAPTURE_BLOCK, 1, 1);
+            node.onaudioprocess = (e) => parts.push(Float32Array.from(e.inputBuffer.getChannelData(0)));
+            plug(node);
+        };
+        let ready;
+        try { ready = addWorklet(CAPTURE_URL); } catch (e) { ready = Promise.resolve(false); }
+        Promise.resolve(ready).then((okWorklet) => {
+            if (listening !== state) return;
+            if (!okWorklet || typeof AudioWorkletNode === 'undefined') { fallback(); return; }
+            let node;
+            try {
+                node = new AudioWorkletNode(ctx, 'tt-capture', {
+                    numberOfInputs: 1,
+                    numberOfOutputs: 1,
+                    outputChannelCount: [1],
+                    processorOptions: { size: CAPTURE_BLOCK }
+                });
+            } catch (e) { fallback(); return; }
+            node.port.onmessage = (e) => {
+                const msg = e.data;
+                if (!msg || msg.type !== 'block' || !msg.samples) return;
+                parts.push(msg.samples);   // gia' trasferito: nessuna copia
+            };
+            plug(node);
+        }, () => { if (listening === state) fallback(); });
+    }
+
+    function beginCapture(ctx) {
+        const source = mic.source(ctx);
+        const analyser = ctx.createAnalyser();
+        analyser.fftSize = 1024;
+        analyser.smoothingTimeConstant = 0.6;
+        const sink = ctx.createGain();
+        sink.gain.value = 0;
+        source.connect(analyser).connect(sink).connect(ctx.destination);
+        const parts = [];
+        const time = new Float32Array(analyser.fftSize);
+        const spectrum = new Float32Array(analyser.frequencyBinCount);
+        const prevSpectrum = new Float32Array(analyser.frequencyBinCount);
+        listening = {
+            ctx,
+            source,
+            analyser,
+            sink,
+            node: null,   // lo attacca attachCapture() appena il worklet e' pronto
+            parts,
+            rate: ctx.sampleRate,   // SEMPRE quello vero del contesto
+            started: Date.now(),
+            raf: null,
+            pulse: 0,
+            lastRing: 0,
+            nextAt: LISTEN_FIRST,
+            prev: null,
+            busy: false
+        };
+        setListening(true);
+        setListenLabel('dna-listening');
+        attachCapture(listening);
+        const tick = () => {
+            if (!listening) return;
+            const elapsed = (Date.now() - listening.started) / 1000;
+            if (countdown) countdown.textContent = String(Math.max(0, Math.ceil(LISTEN_MAX - elapsed)));
+            /* livello: il logo respira col volume */
+            if (analyser.getFloatTimeDomainData) {
+                analyser.getFloatTimeDomainData(time);
+                let sum = 0;
+                for (let i = 0; i < time.length; i++) sum += time[i] * time[i];
+                const rms = Math.sqrt(sum / time.length);
+                const target = Math.min(1, rms * 6);
+                listening.pulse += (target - listening.pulse) * PULSE_EASE;
+                if (shazamBtn) shazamBtn.style.setProperty('--dna-pulse', listening.pulse.toFixed(3));
+                if (level) level.style.setProperty('--dna-level', (listening.pulse * 100).toFixed(1) + '%');
+            }
+            /* colpi: salto positivo dello spettro rispetto al frame prima */
+            if (analyser.getFloatFrequencyData) {
+                analyser.getFloatFrequencyData(spectrum);
+                let flux = 0;
+                for (let i = 0; i < spectrum.length; i++) {
+                    const v = isFinite(spectrum[i]) ? spectrum[i] : -140;
+                    const d = v - prevSpectrum[i];
+                    if (d > 0) flux += d;
+                    prevSpectrum[i] = v;
+                }
+                const now = Date.now();
+                if (flux > 220 && now - listening.lastRing > ONSET_GAP) {
+                    listening.lastRing = now;
+                    ring();
+                }
+            }
+            if (elapsed >= listening.nextAt && !listening.busy) {
+                listening.nextAt = elapsed + LISTEN_EVERY;
+                tryAnalysis();
+            }
+            if (elapsed >= LISTEN_MAX) { stopListening({ uncertain: true }); return; }
+            listening.raf = window.requestAnimationFrame(tick);
+        };
+        listening.raf = window.requestAnimationFrame(tick);
+    }
+
+    /** Copia quel che si e' catturato finora, in un pezzo solo. */
+    function captured() {
+        if (!listening) return new Float32Array(0);
+        const total = listening.parts.reduce((a, c) => a + c.length, 0);
+        const mono = new Float32Array(total);
+        let o = 0;
+        listening.parts.forEach((c) => { mono.set(c, o); o += c.length; });
+        return mono;
+    }
+
+    /* Analisi progressiva: ogni pochi secondi si prova, e appena due
+       tentativi di fila concordano si smette di ascoltare. */
+    async function tryAnalysis() {
+        if (!listening || listening.busy) return;
+        const mono = captured();
+        if (mono.length < listening.rate * 4) return;
+        listening.busy = true;
+        setListenLabel('dna-almost');
+        const a4 = Number(prefs.get('shared', 'a4', 440)) || 440;
+        const rate = listening.rate;
         try {
-            if (blob && blob.size) {
-                const buffer = await decode(blob);
-                await analyse(buffer, { source: 'mic', name: t('dna-mic-name') });
-                return;
-            }
-            if (raw && raw.mono.length) {
-                const ctx = getContext();
-                const buffer = ctx.createBuffer(1, raw.mono.length, raw.rate);
-                buffer.getChannelData(0).set(raw.mono);
-                await analyse(buffer, { source: 'mic', name: t('dna-mic-name') });
-                return;
-            }
-            setState('recording');
-            setStatus(statusOut, { kind: 'error', key: 'mic-failed' });
+            const data = await ask(
+                { type: 'analyse', channels: [mono.buffer], sampleRate: rate, a4, mic: true },
+                [mono.buffer],
+                null
+            );
+            if (!listening) return;
+            /* stanza muta: non si conta come tentativo, si continua ad ascoltare */
+            if (data.silent) { listening.prev = null; listening.last = null; setListenLabel('dna-listening'); return; }
+            const sure = agrees(listening.prev, data);
+            listening.prev = data;
+            listening.last = data;
+            if (sure) { stopListening({ data }); return; }
+            setListenLabel('dna-listening');
         } catch (e) {
-            fail('dna-bad-file');
+            setListenLabel('dna-listening');
+        } finally {
+            if (listening) listening.busy = false;
         }
     }
 
+    /** Stacca tutto e libera il microfono; torna lo stato che c'era. */
+    function teardownListening() {
+        const state = listening;
+        if (!state) return null;
+        listening = null;
+        if (state.raf) window.cancelAnimationFrame(state.raf);
+        if (state.node) {
+            if (state.node.port) { try { state.node.port.postMessage('stop'); } catch (e) { /* gia' chiuso */ } }
+            state.node.onaudioprocess = null;
+            try { state.node.disconnect(); } catch (e) { /* gia' scollegato */ }
+        }
+        try { state.source.disconnect(); state.analyser.disconnect(); state.sink.disconnect(); } catch (e) { /* gia' scollegati */ }
+        mic.release();   // le tracce si fermano qui: la spia del browser si spegne
+        setListening(false);
+        setListenLabel('dna-press');
+        return state;
+    }
+
+    /** "Annulla" durante l'ascolto: si ferma tutto e non si analizza nulla. */
+    function cancelListening() {
+        if (!listening) return;
+        teardownListening();
+        if (statusOut) statusOut.textContent = '';
+        setState('empty');
+    }
+
+    /** Chiude l'ascolto e mostra quel che si e' capito. */
+    function stopListening({ data = null, uncertain: notSure = false } = {}) {
+        const state = teardownListening();
+        if (!state) return;
+        const seconds = (Date.now() - state.started) / 1000;
+        const found = data || state.last;
+        if (found) {
+            finishListening(found, { seconds, rate: state.rate, uncertain: notSure || !agrees(state.prev, found) });
+            return;
+        }
+        /* niente di analizzabile: si analizza comunque quel che c'e' */
+        const mono = new Float32Array(state.parts.reduce((a, c) => a + c.length, 0));
+        let o = 0;
+        state.parts.forEach((c) => { mono.set(c, o); o += c.length; });
+        if (!mono.length) { setState('empty'); return; }
+        const ctx = state.ctx;
+        const buffer = ctx.createBuffer(1, mono.length, state.rate);
+        buffer.getChannelData(0).set(mono);
+        /* si e' arrivati qui senza conferma: il risultato nasce incerto */
+        analyse(buffer, { source: 'mic', name: t('dna-mic-name'), mic: true, uncertain: true });
+    }
+
+    /** Dal risultato del worker alla scheda, senza rianalizzare. */
+    function finishListening(data, { seconds, rate, uncertain: notSure }) {
+        const result = {
+            name: t('dna-mic-name'),
+            source: 'mic',
+            title: '',
+            artist: '',
+            album: '',
+            year: '',
+            seconds,
+            sampleRate: rate,
+            channels: 1,
+            bpm: data.bpm.bpm,
+            bpmConfidence: data.bpm.confidence,
+            bpmAlternatives: data.bpm.alternatives,
+            tonic: data.key.tonic,
+            mode: data.key.mode,
+            camelot: data.key.camelot,
+            keyConfidence: data.key.confidence,
+            lufs: data.loudness.lufs,
+            truePeak: data.loudness.truePeak,
+            lra: data.loudness.lra,
+            uncertain: !!notSure,
+            at: new Date().toISOString()
+        };
+        stopWorker();
+        showResult(result);
+        saveHistory(result);
+    }
+
+    /* "Registra" dallo stato vuoto: porta alla schermata di ascolto e, se
+       il permesso c'e' gia', parte subito (siamo dentro il gesto). */
     if (recordBtn) {
         recordBtn.addEventListener('click', () => {
-            /* si entra SUBITO nello stato registrazione: il riquadro del
-               consenso deve vedersi, altrimenti sembra che non succeda nulla */
             setState('recording');
-            if (consentBox) consentBox.textContent = '';
-            /* niente API del microfono (http, browser dentro un'app): si dice */
+            setListenLabel('dna-press');
+            if (statusOut) statusOut.textContent = '';
             if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
                 setStatus(statusOut, { kind: 'denied', key: 'mic-unavailable' });
-                if (consentBox) mic.renderConsent(consentBox, { onAllow: startRecording });
+                showConsent(true);
                 return;
             }
             if (mic.state() === 'denied') {
                 setStatus(statusOut, { kind: 'denied', key: 'mic-denied' });
-                if (consentBox) mic.renderConsent(consentBox, { onAllow: startRecording });
+                showConsent(true);
                 return;
             }
             if (mic.granted()) {
-                startRecording();   // dentro il gesto: getUserMedia puo' partire
+                showConsent(false);
+                startListening();
                 return;
             }
-            if (consentBox) mic.renderConsent(consentBox, { onAllow: startRecording });
-            else startRecording();
+            showConsent(true);
         });
     }
-    if (stopBtn) stopBtn.addEventListener('click', stopRecording);
+
+    /* Il logo: primo tocco ascolta, secondo ferma. */
+    if (shazamBtn) {
+        shazamBtn.addEventListener('click', () => {
+            if (listening) { stopListening({}); return; }   // secondo tocco: basta
+            if (mic.granted()) startListening();
+            else showConsent(true);
+        });
+    }
+
+    if (stopBtn) stopBtn.addEventListener('click', () => stopListening({}));
+    /* "Annulla" sotto il logo: si esce dall'ascolto senza analizzare nulla */
+    if (listenCancel) listenCancel.addEventListener('click', cancelListening);
 
     /* ---------------- comandi del risultato ---------------- */
 
@@ -717,7 +1024,7 @@ export function mountDna() {
     if (targetSelect) {
         targetSelect.addEventListener('change', () => {
             ui.target = TARGETS[targetSelect.value] ? targetSelect.value : 'spotify';
-            prefs.set(TOOL, 'target', ui.target);
+            prefs.set(TOOL, 'target', ui.target);   // la piattaforma si ricorda
             renderAdvice();
         });
     }
@@ -736,7 +1043,8 @@ export function mountDna() {
     window.addEventListener('pagehide', () => {
         cancelled = true;
         stopWorker();
-        if (recording) { if (recording.raf) window.cancelAnimationFrame(recording.raf); recording.finish(); recording = null; }
+        /* si esce dalla pagina: si libera il microfono, non si analizza */
+        teardownListening();
     });
 
     /* ---------------- stato iniziale ---------------- */
@@ -758,7 +1066,11 @@ export function mountDna() {
         removeHistory,
         clearHistory,
         historyRecord,
-        startRecording,
+        startListening,
+        stopListening,
+        cancelListening,
+        showConsent,
+        agrees,
         micError,
         summary,
         setState,
