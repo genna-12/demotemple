@@ -59,6 +59,16 @@ export default {
         'calc-release-soft': 'Morbido',
         'calc-release-hard': 'Deciso',
 
+        'calc-intro-delay': 'Trova i tempi di delay e riverbero a tempo col brano.',
+        'calc-intro-note': 'Converti una nota in frequenza per lavorare con l\'EQ.',
+        'calc-intro-sidechain': 'Imposta LFO e sidechain a tempo.',
+        'calc-info-delay-title': 'Delay e riverbero',
+        'calc-info-delay-text': 'Imposta il BPM del brano con la rotella, poi scegli se leggere i tempi in millisecondi o in Hz. Tocca una cella della tabella per copiarla: ad esempio a 120 BPM l\'ottavo puntato è 375 ms, il valore giusto per il delay time del tuo plugin. Le righe Pre-delay e Coda sotto servono per il riverbero: impostale nello stesso modo nel tuo plugin di riverbero.',
+        'calc-info-note-title': 'Nota e frequenza',
+        'calc-info-note-text': 'Scegli una nota e un\'ottava (o il senso inverso, da una frequenza in Hz) per sapere a quanti Hz corrisponde. Usa il risultato per centrare un filtro o un EQ su quella nota: ad esempio il La3 (A3) è vicino a 220 Hz, un buon punto di partenza per tagliare o esaltare quella frequenza in un mix.',
+        'calc-info-sidechain-title': 'Sidechain',
+        'calc-info-sidechain-text': 'Imposta il BPM del brano, poi scegli la suddivisione del tuo LFO o del sidechain (ad esempio 1/4 per un pompaggio a ogni battito). Copia il valore di rilascio morbido o deciso e incollalo nel tempo di rilascio del tuo compressore o del generatore di inviluppo: a 120 BPM un quarto morbido è 300 ms.',
+
         'calc-copied': 'Copiato',
         'calc-copy-manual': 'Copia a mano'
     },
@@ -111,6 +121,16 @@ export default {
         'calc-attack-range': '0.5–5 ms',
         'calc-release-soft': 'Soft',
         'calc-release-hard': 'Hard',
+
+        'calc-intro-delay': 'Find delay and reverb times that lock to the track.',
+        'calc-intro-note': 'Convert a note to a frequency to work with the EQ.',
+        'calc-intro-sidechain': 'Set LFO and sidechain timing to the beat.',
+        'calc-info-delay-title': 'Delay & reverb',
+        'calc-info-delay-text': 'Set the track\'s BPM with the wheel, then choose whether to read times in milliseconds or Hz. Tap a table cell to copy it: at 120 BPM, for example, a dotted eighth is 375 ms — the value to type into your delay plugin\'s time field. The Pre-delay and Decay rows below are for reverb: set them the same way in your reverb plugin.',
+        'calc-info-note-title': 'Note & frequency',
+        'calc-info-note-text': 'Pick a note and octave (or go the other way, from a frequency in Hz) to see what Hz it maps to. Use the result to centre a filter or an EQ band on that note: for example A3 sits near 220 Hz, a good starting point to cut or boost that frequency in a mix.',
+        'calc-info-sidechain-title': 'Sidechain',
+        'calc-info-sidechain-text': 'Set the track\'s BPM, then pick the division for your LFO or sidechain (for example 1/4 for a pump on every beat). Copy the soft or hard release value and paste it into your compressor\'s or envelope generator\'s release time: at 120 BPM a soft quarter is 300 ms.',
 
         'calc-copied': 'Copied',
         'calc-copy-manual': 'Copy it manually'

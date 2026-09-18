@@ -30,8 +30,9 @@
 //
 // CONTRATTO CSS (components.css): in modifica <html> ha la classe `tb-dash-editing`
 //   (i "-" sono anche [hidden] fuori dalla modifica, quindi il CSS non e' obbligatorio).
-//   Durante il trascinamento il <li> ha la classe `is-dragging` (dash.js imposta da se'
-//   transform/z-index/touch-action); il tile "preso" da tastiera ha `is-moving` sul <li>.
+//   Durante il trascinamento il <li> ha `is-dragging` (dash.js imposta transform e
+//   z-index) e le tile che si spostano hanno `is-moving`, che in CSS porta la
+//   transizione del FLIP: `.tb-tiles > li.is-moving { transition: transform 180ms }`.
 //
 // PERSISTENZA (storage.prefs, localStorage):
 //   prefs 'dash'/'order'  = [slug...] ordine completo (anche dei nascosti)
@@ -250,26 +251,120 @@ export function mountDash() {
         say('dash-moved', { tool: tool ? t(tool.key) : '', n: [...grid.children].indexOf(li) + 1 });
     }
 
-    /* ---------- riordino col dito (pointer events) ---------- */
+    /* ---------- riordino col dito (pointer events + FLIP) ----------
+       La tile trascinata segue il dito con `transform: translate`; le altre
+       si spostano con una transizione FLIP (si misura dove stavano, si
+       riordina il DOM, si riparte dalla posizione vecchia e si lascia
+       animare). Il DOM si riordina solo quando il puntatore supera la meta'
+       della tile vicina: senza questa isteresi le tile ballano. Durante il
+       trascinamento non si ri-disegna nulla. */
 
+    const FLIP_MS = 180;
     let drag = null;
 
-    function tilesUnder(x, y, self) {
-        self.style.setProperty('pointer-events', 'none');
-        const node = document.elementFromPoint ? document.elementFromPoint(x, y) : null;
-        self.style.removeProperty('pointer-events');
-        const li = node && node.closest ? node.closest('li') : null;
-        return li && li.parentElement === grid && li !== self ? li : null;
+    const reducedMotion = () => typeof window.matchMedia === 'function'
+        && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    /** Tile su cui il puntatore e' entrato oltre la meta': quella da scavalcare. */
+    function crossedTile(x, y) {
+        const items = [...grid.children];
+        const self = items.indexOf(drag.li);
+        for (let k = 0; k < items.length; k++) {
+            const other = items[k];
+            if (other === drag.li) continue;
+            const r = other.getBoundingClientRect();
+            if (x < r.left || x > r.right || y < r.top || y > r.bottom) continue;
+            const cx = r.left + r.width / 2;
+            const cy = r.top + r.height / 2;
+            const after = k > self;
+            const dragRect = drag.li.getBoundingClientRect();
+            const sameRow = Math.abs(r.top - dragRect.top) < r.height / 2;
+            /* >= e <=: fermarsi ESATTAMENTE sul centro conta come superato,
+               altrimenti un dito preciso resta a meta' senza riordinare */
+            const passed = sameRow ? (after ? x >= cx : x <= cx) : (after ? y >= cy : y <= cy);
+            if (passed) return { other, after };
+        }
+        return null;
+    }
+
+    /** Sposta il nodo e anima le altre tile dalla vecchia posizione alla nuova. */
+    function flipTo(other, after) {
+        const items = [...grid.children];
+        const before = new Map(items.map((n) => [n, n.getBoundingClientRect()]));
+        if (after) grid.insertBefore(drag.li, other.nextSibling);
+        else grid.insertBefore(drag.li, other);
+        const animate = !reducedMotion();
+        items.forEach((n) => {
+            if (n === drag.li) return;
+            const was = before.get(n);
+            const now = n.getBoundingClientRect();
+            const dx = was.left - now.left;
+            const dy = was.top - now.top;
+            if (!dx && !dy) return;
+            /* FLIP: si rimette la tile dov'era (senza transizione), si forza
+               il calcolo dello stile e solo dopo si toglie lo spostamento:
+               cosi' il browser ha due stati diversi da interpolare. Con il
+               solo requestAnimationFrame i due valori finivano nello stesso
+               frame e il salto era istantaneo. */
+            n.classList.remove('is-moving');
+            n.style.setProperty('transition', 'none');
+            n.style.setProperty('transform', 'translate(' + dx + 'px,' + dy + 'px)');
+            void n.offsetWidth; // reflow: fissa la posizione di partenza
+            if (!animate) {
+                n.style.removeProperty('transition');
+                n.style.removeProperty('transform');
+                return;
+            }
+            n.classList.add('is-moving'); // la transizione sta nel CSS
+            n.style.removeProperty('transition');
+            n.style.setProperty('transform', 'translate(0px,0px)');
+            const done = (e) => {
+                if (e && e.target !== n) return;
+                n.removeEventListener('transitionend', done);
+                n.classList.remove('is-moving');
+                n.style.removeProperty('transform');
+            };
+            n.addEventListener('transitionend', done);
+        });
+        /* la tile trascinata non deve saltare: si sposta l'origine del dito */
+        const was = before.get(drag.li);
+        const now = drag.li.getBoundingClientRect();
+        drag.x0 += now.left - was.left;
+        drag.y0 += now.top - was.top;
+    }
+
+    /** Ripulisce le tile ferme; a quelle che stanno ancora scivolando si
+        lascia finire la transizione (ci pensa il loro `transitionend`,
+        piu' una rete di sicurezza col tempo del FLIP). */
+    function settleFlip(li) {
+        [...grid.children].forEach((n) => {
+            if (n === li) return;
+            if (!n.classList.contains('is-moving')) {
+                n.style.removeProperty('transition');
+                n.style.removeProperty('transform');
+                return;
+            }
+            setTimeout(() => {
+                if (!n.classList.contains('is-moving')) return;
+                n.classList.remove('is-moving');
+                n.style.removeProperty('transform');
+            }, FLIP_MS + 120);
+        });
     }
 
     grid.addEventListener('pointerdown', (e) => {
         if (!editing || e.button !== 0) return;
         if (e.target.closest && e.target.closest('.tb-tile-remove')) return;
         /* spec 03 §5: solo la maniglia trascina */
-        if (!e.target.closest || !e.target.closest('.tb-tile-grip')) return;
-        const li = e.target.closest('li');
+        const grip = e.target.closest && e.target.closest('.tb-tile-grip');
+        if (!grip) return;
+        const li = grip.closest('li');
         if (!li || li.parentElement !== grid) return;
-        drag = { li, id: e.pointerId, x0: e.clientX, y0: e.clientY, dx: 0, dy: 0, active: false };
+        drag = { li, grip, id: e.pointerId, x0: e.clientX, y0: e.clientY, active: false };
+        if (grip.setPointerCapture) {
+            try { grip.setPointerCapture(e.pointerId); } catch (err) { /* niente capture */ }
+        }
+        e.preventDefault(); // niente selezione del testo, niente scroll
     });
 
     grid.addEventListener('pointermove', (e) => {
@@ -281,35 +376,47 @@ export function mountDash() {
             drag.active = true;
             drag.li.classList.add('is-dragging');
             drag.li.style.setProperty('z-index', '5');
-            if (drag.li.setPointerCapture) {
-                try { drag.li.setPointerCapture(e.pointerId); } catch (err) { /* niente capture */ }
-            }
+            drag.li.style.setProperty('transition', 'none'); // segue il dito, non insegue
         }
         e.preventDefault();
         drag.li.style.setProperty('transform', 'translate(' + dx + 'px,' + dy + 'px)');
-        const over = tilesUnder(e.clientX, e.clientY, drag.li);
-        if (!over) return;
-        const before = drag.li.getBoundingClientRect();
-        const items = [...grid.children];
-        if (items.indexOf(over) > items.indexOf(drag.li)) grid.insertBefore(drag.li, over.nextSibling);
-        else grid.insertBefore(drag.li, over);
-        /* il tile deve restare sotto il dito: si corregge l'origine dello spostamento */
-        drag.li.style.setProperty('transform', 'translate(0px,0px)');
-        const after = drag.li.getBoundingClientRect();
-        drag.x0 += after.left - before.left;
-        drag.y0 += after.top - before.top;
+        const hit = crossedTile(e.clientX, e.clientY);
+        if (!hit) return;
+        flipTo(hit.other, hit.after);
         drag.li.style.setProperty('transform',
             'translate(' + (e.clientX - drag.x0) + 'px,' + (e.clientY - drag.y0) + 'px)');
     });
 
-    function endDrag() {
+    function finishDrag(li) {
+        li.classList.remove('is-dragging');
+        li.classList.remove('is-moving');
+        li.style.removeProperty('transform');
+        li.style.removeProperty('transition');
+        li.style.removeProperty('z-index');
+    }
+
+    function endDrag(e) {
         if (!drag) return;
+        if (e && e.pointerId !== undefined && e.pointerId !== drag.id) return;
         const { li, active } = drag;
         drag = null;
-        li.classList.remove('is-dragging');
-        li.style.removeProperty('transform');
-        li.style.removeProperty('z-index');
-        if (!active) return;
+        settleFlip(li);
+        if (!active) { finishDrag(li); return; }
+        /* rilascio: la tile scivola nel suo posto invece di saltarci */
+        if (reducedMotion()) {
+            finishDrag(li);
+        } else {
+            void li.offsetWidth; // la posizione attuale e' il punto di partenza
+            li.classList.add('is-moving');
+            li.style.removeProperty('transition');
+            li.style.setProperty('transform', 'translate(0px,0px)');
+            const done = () => {
+                li.removeEventListener('transitionend', done);
+                finishDrag(li);
+            };
+            li.addEventListener('transitionend', done);
+            setTimeout(done, FLIP_MS + 120); // ripiego se la transizione non parte
+        }
         commitDom();
         const tool = bySlug(li.getAttribute('data-slug'));
         say('dash-moved', { tool: tool ? t(tool.key) : '', n: [...grid.children].indexOf(li) + 1 });

@@ -25,6 +25,7 @@ import { createPitchTracker, noteInfo, noteToHz, nearestIndex } from '/shared/pi
 import { createStringVoices, voiceFor } from '/shared/strings.js';
 import { mountSelects } from '/shared/select.js';
 import { mountInfos } from '/shared/sheet.js';
+import { mountRanges } from '/shared/range.js';
 
 const TOOL = 'accordatore';
 const A4_MIN = 415;
@@ -526,6 +527,7 @@ export function mountTuner() {
 
     /* ---------------- stato iniziale ---------------- */
 
+    mountRanges(document);    // il cursore dell'A4 si colora fino al valore
     mountSelects(document);   // il <select> nativo diventa la pillola glass
     mountInfos(document);     // la "i" apre il foglio
     if (instrument) instrument.value = ui.instrument;

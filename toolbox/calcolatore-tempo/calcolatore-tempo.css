@@ -59,6 +59,20 @@
     gap: 10px;
 }
 
+/* Riga breve + "i" in testa a ogni scheda (feedback Genna, punto 3: "Genna
+   non capisce a cosa serve"). */
+.calc-intro-row {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2);
+}
+
+.calc-intro {
+    flex: 1;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
+
 .calc[data-calc-tab="delay"] #calc-panel-note,
 .calc[data-calc-tab="delay"] #calc-panel-sidechain,
 .calc[data-calc-tab="note"] #calc-panel-delay,

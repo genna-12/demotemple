@@ -145,10 +145,16 @@
     /* Set componenti tb-* (spec 03 §1): raggi, spaziature, area di tocco
        minima, gradiente/ombre dei bottoni pieni, superfici e traccia dei
        controlli, durate delle transizioni. I componenti in components.css
-       usano SOLO questi token (piu' --accent-*/--text-*/--glass-* qui
+       usano SOLO questi token (piu' --accent-, --text- e --glass- qui
        sopra): nessun colore scritto a mano li' dentro. */
+    /* Raggi (feedback Genna, "stile Instagram 2026"): pillole piene per i
+       controlli interattivi (--r-pill), scala crescente per superfici via
+       via piu' grandi. Mai sotto 12px (--r-sm) tranne i tick della rotella
+       (grafici, non un componente). */
     --r-pill: 999px;
-    --r-lg: 22px;
+    --r-xl: 28px;
+    --r-lg: 24px;
+    --r-pop: 20px;
     --r-md: 16px;
     --r-sm: 12px;
     --sp-1: 4px;

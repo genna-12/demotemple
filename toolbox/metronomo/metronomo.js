@@ -23,6 +23,7 @@ import { initPwa } from '/shared/pwa.js';
 import { getContext, unlock, needsGesture, onStateChange } from '/shared/audio.js';
 import { createScheduler } from '/shared/scheduler.js';
 import { createBpmControl } from '/shared/bpm-control.js';
+import { mountRanges } from '/shared/range.js';
 import { prefs } from '/shared/storage.js';
 
 const TOOL = 'metronomo';
@@ -715,6 +716,7 @@ export function mountMetronome() {
     });
 
     /* ---- stato iniziale ---- */
+    mountRanges(document); // il cursore del volume si colora fino al valore
     renderBpm();
     markGroup(metersBox, 'data-met-meter', ui.meter);
     markGroup(subsBox, 'data-met-sub', ui.subdiv);

@@ -381,7 +381,7 @@ html.tb-no-intro .tb-intro {
     right: max(12px, var(--tb-safe-r));
     max-height: calc(100vh - 90px - var(--tb-safe-t));
     max-height: calc(100dvh - 90px - var(--tb-safe-t));
-    border-radius: 20px;
+    border-radius: var(--r-pop);
     padding: 16px max(16px, var(--tb-safe-l)) calc(16px + var(--tb-safe-b));
     background: var(--glass-bg);
     backdrop-filter: var(--glass-blur);
@@ -550,7 +550,7 @@ a.tb-menu-link[aria-current="page"] {
     display: inline-flex;
     flex-shrink: 0;
     border: 1px solid rgba(255, 255, 255, 0.15);
-    border-radius: 50px;
+    border-radius: var(--r-pill);
     overflow: hidden;
 }
 

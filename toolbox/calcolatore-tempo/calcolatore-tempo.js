@@ -28,6 +28,7 @@ import { initPwa } from '/shared/pwa.js';
 import { prefs } from '/shared/storage.js';
 import { mountSelects } from '/shared/select.js';
 import { mountInfos } from '/shared/sheet.js';
+import { mountRanges } from '/shared/range.js';
 import { createBpmControl } from '/shared/bpm-control.js';
 import { noteToHz, noteInfo } from '/shared/pitch.js';
 import {
@@ -353,6 +354,7 @@ export function mountCalculator() {
 
     /* ---------------- montaggio ---------------- */
 
+    mountRanges(document);
     mountSelects(document);
     mountInfos(document);
 

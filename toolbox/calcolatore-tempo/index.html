@@ -193,6 +193,19 @@
 
             <!-- ============ SCHEDA 1: Delay e riverbero ============ -->
             <section id="calc-panel-delay" class="calc-panel">
+                <!-- Riga breve + "i" (feedback Genna, punto 3): mountInfos()
+                     (shared/sheet.js, gia' chiamata da calcolatore-tempo.js
+                     per il foglio A4) accende anche questi bottoni da sola,
+                     senza aria-controls: usa data-sheet-title/-text per
+                     costruire il foglio al volo (contratto in sheet.js). -->
+                <div class="calc-intro-row">
+                    <p class="calc-intro" data-i18n="calc-intro-delay">Trova i tempi di delay e riverbero a tempo col brano.</p>
+                    <button type="button" class="tb-info" aria-haspopup="dialog" aria-expanded="false"
+                        data-sheet-title="calc-info-delay-title" data-sheet-text="calc-info-delay-text"
+                        data-i18n-aria="info-aria" aria-label="Che cos'è">
+                        <span class="tb-info-glyph" aria-hidden="true">i</span>
+                    </button>
+                </div>
                 <div class="calc-bpm-wrap">
                     <div id="calc-wheel" class="tb-wheel" role="slider" tabindex="0"
                         aria-valuemin="30" aria-valuemax="300" aria-valuenow="120" aria-valuetext="120 BPM"
@@ -290,6 +303,14 @@
 
             <!-- ============ SCHEDA 2: Nota e frequenza ============ -->
             <section id="calc-panel-note" class="calc-panel" hidden>
+                <div class="calc-intro-row">
+                    <p class="calc-intro" data-i18n="calc-intro-note">Converti una nota in frequenza per lavorare con l'EQ.</p>
+                    <button type="button" class="tb-info" aria-haspopup="dialog" aria-expanded="false"
+                        data-sheet-title="calc-info-note-title" data-sheet-text="calc-info-note-text"
+                        data-i18n-aria="info-aria" aria-label="Che cos'è">
+                        <span class="tb-info-glyph" aria-hidden="true">i</span>
+                    </button>
+                </div>
                 <div id="calc-dir" class="tb-segment" role="radiogroup" data-i18n-aria="calc-dir-aria" aria-label="Direzione">
                     <button type="button" class="tb-segment-btn" data-calc-dir="note-hz" role="radio" aria-checked="true" data-i18n="calc-dir-note-hz">Nota → Hz</button>
                     <button type="button" class="tb-segment-btn" data-calc-dir="hz-note" role="radio" aria-checked="false" data-i18n="calc-dir-hz-note">Hz → Nota</button>
@@ -384,6 +405,14 @@
 
             <!-- ============ SCHEDA 3: Sidechain ============ -->
             <section id="calc-panel-sidechain" class="calc-panel" hidden>
+                <div class="calc-intro-row">
+                    <p class="calc-intro" data-i18n="calc-intro-sidechain">Imposta LFO e sidechain a tempo.</p>
+                    <button type="button" class="tb-info" aria-haspopup="dialog" aria-expanded="false"
+                        data-sheet-title="calc-info-sidechain-title" data-sheet-text="calc-info-sidechain-text"
+                        data-i18n-aria="info-aria" aria-label="Che cos'è">
+                        <span class="tb-info-glyph" aria-hidden="true">i</span>
+                    </button>
+                </div>
                 <div class="calc-bpm-wrap">
                     <div id="calc-wheel-sc" class="tb-wheel" role="slider" tabindex="0"
                         aria-valuemin="30" aria-valuemax="300" aria-valuenow="120" aria-valuetext="120 BPM"

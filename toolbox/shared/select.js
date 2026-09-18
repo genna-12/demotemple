@@ -119,6 +119,11 @@ export function mountSelect(el) {
         trigger.setAttribute('aria-expanded', 'true');
         el.classList.add('is-open');
         place();
+        /* in versione foglio il CSS lo tiene fuori schermo (translateY(100%))
+           finche' non ha .is-open: senza questa classe su telefono il
+           pannello restava invisibile e sembrava che non si aprisse */
+        void panel.offsetWidth;
+        panel.classList.add('is-open');
         setActive(toEnd ? options.length - 1
             : Math.max(0, options.findIndex((o) => o.getAttribute('data-value') === native.value)));
         const cur = options[activeIndex];
@@ -130,6 +135,7 @@ export function mountSelect(el) {
         if (!open) return;
         open = false;
         panel.hidden = true;
+        panel.classList.remove('is-open');
         panel.removeAttribute('aria-activedescendant');
         trigger.setAttribute('aria-expanded', 'false');
         el.classList.remove('is-open');

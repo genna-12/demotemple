@@ -22,7 +22,7 @@
  * popoli da solo (vedi vendor() sotto, che li trova li' come ripiego).
  */
 
-const VERSION = 'tb-v10';
+const VERSION = 'tb-v11';
 const CACHE = 'toolbox-' + VERSION;
 const VENDOR_CACHE = 'toolbox-vendor';
 
@@ -50,6 +50,7 @@ const SHELL = [
     '/shared/storage.js',
     '/shared/ui.js',
     '/shared/pwa.js',
+    '/shared/range.js',
     '/shared/nav.js',
     '/shared/tools.js',
     '/shared/dash.js',

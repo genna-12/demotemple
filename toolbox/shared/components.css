@@ -115,6 +115,24 @@
     margin: 0 auto;
 }
 
+/* Riordino (dash.js): la tile trascinata segue il dito senza transizione,
+   le altre scivolano al nuovo posto con il FLIP. La transizione sta qui,
+   cosi' dash.js deve solo mettere e togliere la classe. */
+.tb-tiles > li.is-moving {
+    transition: transform 180ms var(--ease-cinematic);
+    will-change: transform;
+}
+
+.tb-tiles > li.is-dragging {
+    transition: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .tb-tiles > li.is-moving {
+        transition: none;
+    }
+}
+
 /* Ancora per il "-" (assoluto) e per dash.js durante il riordino. */
 .tb-tiles > li {
     position: relative;
@@ -141,6 +159,16 @@
     }
 }
 
+/* In Modifica il dito trascina, non seleziona: niente testo evidenziato
+   ne' menu "Copia" alla pressione lunga (feedback Genna da iPhone). */
+html.tb-dash-editing .tb-tiles,
+html.tb-dash-editing .tb-tile,
+html.tb-dash-editing .tb-tile-name {
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+}
+
 .tb-tile {
     position: relative;
     aspect-ratio: 1 / 1;
@@ -150,7 +178,7 @@
     justify-content: center;
     gap: 8px;
     padding: 10px 6px;
-    border-radius: 20px;
+    border-radius: var(--r-lg);
     border: 1px solid rgba(255, 255, 255, 0.1);
     background: rgba(255, 255, 255, 0.03);
     backdrop-filter: blur(20px);
@@ -159,6 +187,12 @@
     text-decoration: none;
     text-align: center;
     transition: border-color 0.3s ease, background 0.3s ease;
+}
+
+/* In Modifica la tile resta ferma (niente wiggle, feedback Genna): solo un
+   bordo tratteggiato sottile la segnala come riordinabile. */
+html.tb-dash-editing .tb-tile {
+    border-style: dashed;
 }
 
 .tb-tile-icon {
@@ -212,13 +246,14 @@ a.tb-tile:active {
     }
 }
 
-/* "-" per togliere un tile, solo in modifica. */
+/* "-" per togliere un tile, solo in modifica: piccolo, in alto a destra
+   (feedback Genna). */
 .tb-tile-remove {
     position: absolute;
     top: -6px;
     right: -6px;
-    width: 26px;
-    height: 26px;
+    width: 20px;
+    height: 20px;
     min-height: 0;
     border-radius: 50%;
     display: flex;
@@ -230,8 +265,8 @@ a.tb-tile:active {
 }
 
 .tb-tile-remove svg {
-    width: 14px;
-    height: 14px;
+    width: 11px;
+    height: 11px;
 }
 
 /* display:flex qui sopra ha la stessa specificita' di [hidden] dell'UA:
@@ -264,21 +299,24 @@ a.tb-tile:active {
 
 /* --- MANIGLIA TILE (spec 03 §5): solo in Modifica, trascinamento SOLO da
    qui (touch-action:none); il resto del <li> torna a pan-y (dash.js), cosi'
-   il dito scorre la pagina anche mentre una tile e' "presa" in Modifica. */
+   il dito scorre la pagina anche mentre una tile e' "presa" in Modifica.
+   Discreta (feedback Genna): nessun cerchio vetro "sparato li'", solo
+   l'icona a sei punti attenuata; l'area di tocco 44px resta ma
+   trasparente. */
 .tb-tile-grip {
     position: absolute;
-    top: -6px;
-    left: -6px;
+    top: 0;
+    left: 0;
     z-index: 2;
     width: var(--tap);
     height: var(--tap);
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 50%;
-    background: var(--glass-bg);
-    border: 1px solid var(--glass-border);
+    background: none;
+    border: none;
     color: var(--text-muted);
+    opacity: 0.6;
     touch-action: none;
     cursor: grab;
 }
@@ -324,7 +362,7 @@ a.tb-tile:active {
     align-items: center;
     min-height: 44px;
     padding: 0 18px;
-    border-radius: 50px;
+    border-radius: var(--r-pill);
     border: 1px solid rgba(255, 255, 255, 0.15);
     background: rgba(255, 255, 255, 0.04);
     font-size: 0.78rem;
@@ -366,7 +404,7 @@ a.tb-tile:active {
     padding: 20px;
     border: 1px solid var(--glass-border);
     border-top: 1px solid var(--glass-border-top);
-    border-radius: 20px;
+    border-radius: var(--r-pop);
     background: var(--glass-bg);
     backdrop-filter: var(--glass-blur);
     -webkit-backdrop-filter: var(--glass-blur);
@@ -480,7 +518,7 @@ a.tb-tile:active {
     flex-shrink: 0;
     display: inline-block;
     padding: 3px 10px;
-    border-radius: 50px;
+    border-radius: var(--r-pill);
     border: 1px solid rgba(255, 255, 255, 0.18);
     background: rgba(255, 255, 255, 0.04);
     font-size: 0.58rem;
@@ -767,7 +805,7 @@ a.tb-tile:active {
     overflow-y: auto;
     scrollbar-width: none;
     padding: var(--sp-2);
-    border-radius: var(--r-md);
+    border-radius: var(--r-pop);
     background: var(--glass-bg);
     backdrop-filter: var(--glass-blur);
     -webkit-backdrop-filter: var(--glass-blur);
@@ -787,6 +825,23 @@ a.tb-tile:active {
 .tb-select-panel.is-above {
     top: auto;
     bottom: calc(100% + var(--sp-2));
+}
+
+/* Bug (feedback Genna, punto 4): sotto 480px select.js aggiunge anche
+   .tb-sheet al pannello, ma .tb-select-panel e .tb-sheet hanno la stessa
+   specificita' (una classe): chi vince per ogni proprieta' dipende
+   dall'ordine nel file, e nessuna delle due regole tocca "top" dell'altra.
+   .tb-sheet vince su position (diventa fixed) ma il "top: calc(100% +
+   8px)" di .tb-select-panel resta: su un elemento fixed e' relativo al
+   viewport, quindi il pannello parte sotto lo schermo, e con "bottom: 0"
+   di .tb-sheet anche impostato la sua altezza risulta negativa (quindi
+   0): il foglio non si vede mai. Selettore composto (specificita' piu'
+   alta di entrambe, non dipende dall'ordine) per azzerare "top" e
+   confermare fixed/z-index quando i due si sommano. */
+.tb-select-panel.tb-sheet {
+    position: fixed;
+    top: auto;
+    z-index: 10031;
 }
 
 .tb-select-option {
@@ -941,16 +996,20 @@ a.tb-tile:active {
 .tb-number {
     width: 100%;
     min-height: var(--tap);
-    padding: 0 var(--sp-2);
-    border: none;
-    border-bottom: 2px solid var(--accent-orange);
-    background: transparent;
+    padding: 0 var(--sp-3);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--r-md);
+    background: var(--surface-1);
     color: var(--text-primary);
     font-family: var(--font-title);
     font-variant-numeric: tabular-nums;
     text-align: center;
     font-size: 1.6rem;
     font-weight: 700;
+}
+
+.tb-number:focus-visible {
+    border-color: var(--accent-orange);
 }
 
 .tb-number::-webkit-inner-spin-button,
@@ -973,6 +1032,7 @@ a.tb-tile:active {
     width: var(--tap);
     height: var(--tap);
     flex-shrink: 0;
+    border-radius: var(--r-pill);
 }
 
 .tb-info-glyph {
@@ -1024,7 +1084,7 @@ a.tb-tile:active {
     box-sizing: border-box;
     max-height: min(70vh, 520px);
     padding: var(--sp-4) var(--sp-4) calc(var(--sp-4) + var(--tb-safe-b));
-    border-radius: var(--r-lg) var(--r-lg) 0 0;
+    border-radius: var(--r-xl) var(--r-xl) 0 0;
     background: var(--glass-bg);
     backdrop-filter: var(--glass-blur);
     -webkit-backdrop-filter: var(--glass-blur);
@@ -1200,7 +1260,7 @@ a.tb-tile:active {
 .tb-wheel-face {
     position: absolute;
     inset: 0;
-    border-radius: 20px;
+    border-radius: var(--r-lg);
     background: var(--glass-bg);
     border-top: 1px solid var(--glass-border-top);
     -webkit-backdrop-filter: var(--glass-blur);
@@ -1252,10 +1312,18 @@ a.tb-tile:active {
     cursor: text;
 }
 
+/* Sovrascrive il campo "scatola" di .tb-number: qui e' il numero enorme
+   sopra la rotella, resta a sottolineatura (feedback Genna: il bordo
+   pieno e i 16px di .tb-number sono per i campi numerici normali, non
+   per questa lettura). border:none prima di border-bottom azzera anche i
+   lati che .tb-number ha impostato. */
 .tb-wheel-input {
     display: block;
     width: 7ch;
+    padding: 0;
+    border: none;
     border-bottom: 2px solid var(--accent-orange);
+    border-radius: 0;
     background: transparent;
     color: var(--text-primary);
     font-family: var(--font-title);
@@ -1393,7 +1461,7 @@ a.tb-tile:active {
     align-items: flex-start;
     gap: 14px;
     padding: 18px 20px;
-    border-radius: 16px;
+    border-radius: var(--r-lg);
     background: rgba(255, 255, 255, 0.04);
     border: 1px solid rgba(255, 255, 255, 0.1);
     backdrop-filter: blur(18px);
