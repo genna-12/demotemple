@@ -135,6 +135,112 @@ export function spectralFlux(signal, {
 }
 
 /**
+ * Passa-alto biquad (Butterworth, 2 poli) fuori posto: toglie il rumore di
+ * maneggiamento e l'offset continuo del microfono del telefono prima della
+ * FFT (ricerca 2026-09-19, punti 2 e 12). Torna un array NUOVO: il segnale
+ * originale serve ancora al loudness e al ritmo.
+ */
+export function highpass(signal, sampleRate, hz = 50) {
+    const out = new Float32Array(signal.length);
+    const w0 = 2 * Math.PI * hz / sampleRate;
+    const alpha = Math.sin(w0) / (2 * 0.7071);
+    const cw = Math.cos(w0);
+    const a0 = 1 + alpha;
+    const b0 = ((1 + cw) / 2) / a0;
+    const b1 = -(1 + cw) / a0;
+    const b2 = b0;
+    const a1 = (-2 * cw) / a0;
+    const a2 = (1 - alpha) / a0;
+    let z1 = 0;
+    let z2 = 0;
+    for (let i = 0; i < signal.length; i++) {
+        const x = signal[i];
+        const y = b0 * x + z1;
+        z1 = b1 * x - a1 * y + z2;
+        z2 = b2 * x - a2 * y;
+        if (z1 < 1e-25 && z1 > -1e-25) z1 = 0;
+        if (z2 < 1e-25 && z2 > -1e-25) z2 = 0;
+        out[i] = y;
+    }
+    return out;
+}
+
+/**
+ * Normalizza il picco a -1 dBFS (fuori posto). Il microfono del telefono
+ * registra piano e con l'AGC di mezzo: i livelli assoluti non dicono nulla,
+ * e senza questa normalizzazione le soglie sugli attacchi cambiano da una
+ * registrazione all'altra (ricerca, punti 11 e 12).
+ */
+export function normalizePeak(signal, target = 0.891) {
+    let peak = 0;
+    for (let i = 0; i < signal.length; i++) { const v = Math.abs(signal[i]); if (v > peak) peak = v; }
+    if (!(peak > 0)) return signal;
+    const g = target / peak;
+    if (g > 0.99 && g < 1.01) return signal;
+    const out = new Float32Array(signal.length);
+    for (let i = 0; i < signal.length; i++) out[i] = signal[i] * g;
+    return out;
+}
+
+/**
+ * Sbianca UN frame di magnitudini: divide per l'inviluppo locale (media
+ * mobile larga circa un'ottava in scala logaritmica) e comprime con
+ * log(1+x). Una risonanza di stanza alza un'intera banda e, senza questo,
+ * fa vincere sistematicamente il semitono che ci cade sopra: e' la causa
+ * piu' probabile dell'errore di tre semitoni da microfono (ricerca, punto 3).
+ * Scrive in `out` (stessa lunghezza di `mag`) e non alloca nulla.
+ */
+export function whitenSpectrum(mag, out, bins, octaveFrac = 1, mode = 'ratio') {
+    /* la larghezza della media cresce col bin: un'ottava sopra il bin i
+       finisce al bin 2i, quindi il raggio e' proporzionale a i */
+    const k = (Math.pow(2, octaveFrac / 2) - 1);
+    let sum = 0;
+    let from = 0;
+    let to = -1;
+    for (let i = 0; i < bins; i++) {
+        const radius = Math.max(1, Math.round(i * k));
+        const lo = Math.max(0, i - radius);
+        const hi = Math.min(bins - 1, i + radius);
+        /* finestra scorrevole: gli estremi si muovono sempre in avanti */
+        while (to < hi) { to++; sum += mag[to]; }
+        while (from < lo) { sum -= mag[from]; from++; }
+        const mean = sum / (to - from + 1);
+        if (!(mean > 1e-12)) { out[i] = 0; continue; }
+        const r = mag[i] / mean;
+        /* 'ratio' tiene la gerarchia fra parziali dentro l'ottava (serve:
+           senza, un'armonica debole pesa quanto la fondamentale), 'log'
+           schiaccia tutto ed e' utile solo per confronti */
+        out[i] = mode === 'none' ? Math.sqrt(mag[i]) : mode === 'log' ? Math.log(1 + r) : mode === 'sqrt' ? Math.sqrt(r) : r;
+    }
+    return out;
+}
+
+/**
+ * Picchi locali di un frame con interpolazione parabolica a 3 punti:
+ * -> quanti ne ha trovati; `freqs[j]` e `amps[j]` (array forniti da chi
+ * chiama, riusati a ogni frame) contengono frequenza esatta e ampiezza.
+ */
+export function pickPeaks(mag, bins, sampleRate, size, freqs, amps, { minHz = 0, maxHz = Infinity, floor = 0 } = {}) {
+    const binHz = sampleRate / size;
+    const lo = Math.max(1, Math.floor(minHz / binHz));
+    const hi = Math.min(bins - 2, Math.ceil(maxHz / binHz));
+    let count = 0;
+    for (let i = lo; i <= hi && count < freqs.length; i++) {
+        const b = mag[i];
+        if (b <= floor || b < mag[i - 1] || b < mag[i + 1]) continue;
+        const a = mag[i - 1];
+        const c = mag[i + 1];
+        const den = a - 2 * b + c;
+        const shift = den !== 0 ? 0.5 * (a - c) / den : 0;
+        const delta = Math.abs(shift) <= 1 ? shift : 0;
+        freqs[count] = (i + delta) * binHz;
+        amps[count] = b - 0.25 * (a - c) * delta;   // vertice della parabola
+        count++;
+    }
+    return count;
+}
+
+/**
  * Sbianca l'inviluppo: toglie la media mobile (0,5 s) e rettifica, cosi'
  * conta il profilo degli attacchi e non il volume del pezzo.
  */

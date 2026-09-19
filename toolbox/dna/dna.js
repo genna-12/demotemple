@@ -7,7 +7,7 @@
  * =====================================================================
  * CONTRATTO CON IL MARKUP (spec 13 §5; dove la spec tace, vale questo)
  * =====================================================================
- *   #dna            <main> con data-dna-state="empty|recording|working|result|error"
+ *   #dna            <main> con data-dna-state="empty|recording|working|result|none|error"
  *   #dna-drop       zona di rilascio (vuoto); dentro:
  *                     <input type="file" id="dna-file" accept="audio/*" class="sr-only">
  *                     <label for="dna-file" class="tb-btn tb-btn--primary">Scegli file</label>
@@ -15,7 +15,7 @@
  *   #dna-consent    contenitore per mic.renderConsent (vuoto)
  *   #dna-countdown  numero grande dei secondi di registrazione
  *   #dna-level      <div> con --dna-level in % (barra di livello, la scrive il JS)
- *   #dna-stop       "Ferma" (attivo dopo 10 s)
+ *   #dna-stop       TOLTO: non c'e' piu' un "ferma e analizza" a mano
  *   #dna-progress   [role="progressbar"] con --dna-pct; #dna-phase testo della fase
  *   #dna-cancel     "Annulla"
  *   #dna-result     card dei risultati; dentro gli id dei valori:
@@ -26,6 +26,7 @@
  *                     #dna-estimate (badge "stima", [hidden] se viene da file)
  *                     #dna-copy (copia il riepilogo)  #dna-again (nuova analisi)
  *   #dna-target     .tb-select con <select id="dna-target"> (spotify|apple|youtube|tidal)
+ *   #dna-none       stato "nessun risultato" (vedi sotto)
  *   #dna-history    lista dello storico (vuota: la riempie il JS)
  *   #dna-status     .tb-status per errori e messaggi
  *
@@ -73,18 +74,40 @@
  *   - a ogni colpo dna.js aggiunge dentro #dna-rings uno
  *     <span class="dna-ring"></span> e lo toglie dopo ~900 ms: l'anello che
  *     si espande e sfuma sta tutto nel CSS (animazione su .dna-ring).
- *   - il tocco successivo sul logo ferma e analizza; #dna-countdown, se c'e',
- *     continua a mostrare i secondi che restano.
- *   - ANNULLA (feedback Genna) — serve nel markup, dentro #dna-recording,
- *     sotto il logo: <button type="button" id="dna-listen-cancel"
- *     class="tb-btn tb-btn--ghost" data-i18n="dna-cancel">Annulla</button>
- *     (id NUOVO: #dna-cancel e' gia' preso dallo stato analisi e un id non
- *     si ripete). Ferma le tracce e torna allo stato vuoto SENZA analizzare;
- *     "ferma e analizza" resta il secondo tocco sul logo (e #dna-stop).
- *     Va bene anche un [data-dna-listen-cancel] su un altro elemento.
- *   - l'ascolto si ferma da solo quando due analisi di fila concordano
- *     (BPM con confidenza >= 0,6 e tonalita' >= 0,55), al massimo a 25 s:
- *     in quel caso il risultato porta l'avviso #dna-uncertain.
+ *
+ * FLUSSO DELL'ASCOLTO (feedback Genna, sostituisce quello di prima):
+ *   1. "Registra" (#dna-record) porta SOLO nella schermata del logo: niente
+ *      microfono, niente permesso, niente riquadro del consenso. Il logo e'
+ *      fermo e l'etichetta dice dna-press.
+ *   2. Il tocco SUL LOGO chiede il consenso se serve (#dna-consent) e, dato
+ *      il permesso, avvia cattura e animazione.
+ *   3. Il tocco successivo SUL LOGO annulla: ferma le tracce, torna alla
+ *      schermata del logo fermo e NON analizza nulla.
+ *   4. #dna-listen-cancel ("Annulla", sotto il logo) esce dallo strumento di
+ *      ascolto e torna allo stato vuoto. Va bene anche
+ *      [data-dna-listen-cancel] su un altro elemento.
+ *   5. NON esiste piu' "ferma e analizza" a mano: #dna-stop va TOLTO dal
+ *      markup (se resta, dna.js lo tiene nascosto).
+ *   La fine e' solo automatica:
+ *   - appena due analisi di fila concordano (stesso BPM a meno di 2 e
+ *     stessa tonalita', con confidenza BPM >= 0,35 e margine
+ *     della tonalita' >= 0,10, e almeno 8 battiti sentiti) si mostra il
+ *     risultato, di solito fra i 12 e i 16 s;
+ *   - a 25 s senza convergenza NON si mostra nessun valore: stato
+ *     "nessun risultato" (sotto);
+ *   - se il segnale e' sotto le soglie di silenzio, stesso stato con il
+ *     testo "Nessun suono rilevato".
+ *
+ * STATO "NESSUN RISULTATO" (nuovo, data-dna-state="none") — markup:
+ *   <div id="dna-none" class="dna-none" hidden>
+ *     <p id="dna-none-text" class="dna-none-text" data-i18n="dna-none-unsure">
+ *       Nessun risultato affidabile</p>
+ *     <p class="dna-none-hint" data-i18n="dna-none-hint">Avvicina il telefono
+ *       alla cassa, alza il volume e riprova.</p>
+ *     <button type="button" id="dna-retry" class="tb-btn tb-btn--primary"
+ *             data-i18n="dna-retry">Riprova</button></div>
+ *   dna.js scrive in #dna-none-text la chiave giusta (dna-none-unsure oppure
+ *   dna-none-silent) e #dna-retry riporta alla schermata del logo fermo.
  * RISULTATO DAL MICROFONO:
  *   <p id="dna-mic-note" class="dna-mic-note" hidden data-i18n="dna-mic-note">...</p>
  *   <p id="dna-uncertain" class="dna-uncertain" hidden data-i18n="dna-uncertain">...</p>
@@ -94,16 +117,35 @@
  *   contenitore (la "i" compresa). Serve la regola gemella di quella gia'
  *   in dna.css: `.dna-mic-disclaimer[hidden] { display: none }` (il
  *   contenitore e' display:flex, [hidden] da solo non basta).
+ *   Il testo della "i" sul microfono (dna-mic-info-text) va riscritto:
+ *   "BPM e tonalita' possono essere sbagliati, anche di molto: dal
+ *   microfono l'analisi e' una stima".
  * NIENTE SEGNALE:
- *   sotto -60 dBFS di RMS o -50 LUFS il Worker torna { silent: true } e la
- *   pagina mostra l'errore `dna-silent` ("Nessun suono rilevato") senza
- *   BPM ne' tonalita'. Dopo i 25 s di ascolto senza conferma il risultato
- *   e' SEMPRE marcato incerto e le etichette di confidenza scendono.
+ *   sotto -60 dBFS di RMS o -50 LUFS il Worker torna { silent: true }: da
+ *   file e' l'errore `dna-silent`, in ascolto e' lo stato "nessun risultato"
+ *   con il testo dna-none-silent. Mai un BPM inventato.
  * LOUDNESS E PIATTAFORMA:
  *   <span id="dna-target-label" class="dna-target-label"></span> accanto al
  *   select: dna.js ci scrive "Target Spotify: -14 LUFS"; sulla barra
  *   #dna-lufs-bar scrive `--dna-lufs` (posizione del valore) e
  *   `--dna-target` (posizione del marcatore), entrambe in percentuale.
+ *   La "i" che spiega LUFS/picco reale/normalizzazione e' SOLO markup:
+ *   <button class="tb-info" aria-haspopup="dialog" aria-expanded="false"
+ *           aria-controls="dna-lufs-info" data-i18n-aria="info-aria">…</button>
+ *   piu' il foglio <div class="tb-sheet" id="dna-lufs-info" role="dialog"
+ *   aria-modal="true" aria-labelledby="dna-lufs-info-title" hidden>…</div>
+ *   fuori da .tb-shell, come #dna-mic-info. dna.js chiama gia'
+ *   mountInfos(document) su TUTTE le .tb-info: non serve altro codice.
+ *
+ * STORICO RINOMINABILE (feedback Genna):
+ *   le righe le costruisce dna.js, al builder servono solo le classi
+ *   .dna-history-rename (matita, .tb-btn--icon) e .dna-history-input
+ *   (campo inline). Tocco sul nome o sulla matita -> campo di testo;
+ *   Invio o uscita dal campo salvano in IndexedDB, Esc annulla.
+ *   Le registrazioni nascono con il nome "Registrazione 18 set 21:34"
+ *   (chiave dna-rec-name, "Registrazione {when}"). Le voci vecchie che non
+ *   hanno tutti i campi vengono normalizzate in lettura: niente riga rotta
+ *   e niente eccezioni.
  *
  * Chiavi i18n in piu': dna-del-one, dna-clear, dna-clear-ask, dna-clear-yes,
  *   dna-clear-no, dna-history-empty. I messaggi del microfono sono
@@ -114,6 +156,10 @@
  *   Per l'ascolto: dna-press, dna-listening, dna-almost, dna-uncertain,
  *   dna-mic-note, dna-mic-info-title, dna-mic-info-text, dna-target-label
  *   ("Target {platform}: {lufs} LUFS").
+ *   Nuove (testi provvisori gia' in dna/i18n.js, da rivedere): dna-none-unsure,
+ *   dna-none-silent, dna-rec-name ("Registrazione {when}"), dna-rename.
+ *   Solo markup, da aggiungere: dna-none-hint, dna-retry, dna-lufs-info-title,
+ *   dna-lufs-info-text.
  * Chiavi i18n usate da questo file (oltre a quelle del markup, spec 13 §3):
  *   dna-phase-decode / -loudness / -rhythm / -key   fasi della barra
  *   dna-conf-high / -mid / -low                     confidenza in parole
@@ -137,7 +183,7 @@ import { mountInfos } from '/shared/sheet.js';
 import { mountRanges } from '/shared/range.js';
 import { getContext, unlock, decode, needsGesture, addWorklet } from '/shared/audio.js';
 import * as mic from '/shared/mic.js';
-import { prefs, put, list, del } from '/shared/storage.js';
+import { prefs, get, put, list, del } from '/shared/storage.js';
 import { fold } from '/shared/analysis/bpm.js';
 import { compatibleWith } from '/shared/analysis/key.js';
 import { gainToTarget, TARGETS } from '/shared/analysis/loudness.js';
@@ -155,8 +201,18 @@ const REC_MAX = 20;
 const LISTEN_FIRST = 8;       // s: primo tentativo di analisi
 const LISTEN_EVERY = 4;       // s fra un tentativo e il successivo
 const LISTEN_MAX = 25;        // s: oltre, si mostra quel che si e' capito
-const BPM_SURE = 0.6;
-const KEY_SURE = 0.55;
+/* Soglie misurate sul banco "da microfono" (stanza, cassa del telefono,
+   rumore rosa, riverbero, clipping) con le confidenze nuove:
+   - BPM: 0,45-0,70 quando e' giusto, 0,04-0,10 senza ritmo. A 0,35 passano
+     anche i 174 BPM da telefono e non passa il rumore.
+   - Tonalita': e' il margine fra la prima e la seconda ipotesi (0,12-0,33
+     quando e' giusta). Restare a 0,10 e' quello che tiene fuori i casi
+     sbagliati, che sul banco non superano mai 0,097.
+   Le etichette moltiplicano la confidenza della tonalita' per 3. */
+const BPM_SURE = 0.35;
+const KEY_SURE = 0.1;
+const BPM_SAME = 2;      // BPM uguale a meno di 2 fra due analisi di fila
+const MIN_BEATS = 8;     // battiti da aver sentito prima di fidarsi
 const RING_MS = 900;          // quanto vive un anello
 const PULSE_EASE = 0.25;      // quanto insegue il livello (0-1)
 const ONSET_GAP = 180;        // ms minimi fra due anelli
@@ -229,6 +285,8 @@ export function mountDna() {
         || document.querySelector('.dna-mic-disclaimer');
     const listenCancel = document.getElementById('dna-listen-cancel')
         || document.querySelector('[data-dna-listen-cancel]');
+    const noneText = document.getElementById('dna-none-text');
+    const retryBtn = document.getElementById('dna-retry');
     const targetLabel = document.getElementById('dna-target-label');
     const coverImg = document.getElementById('dna-cover');
 
@@ -246,6 +304,7 @@ export function mountDna() {
     let cancelled = false;
     let starting = false;       // guardia del tasto "Registra" (si azzera SEMPRE)
     let listening = null;       // ascolto in corso (stile Shazam)
+    let session = 0;            // numero della richiesta di ascolto in corso
     let coverUrl = null;        // object URL della copertina mostrata
 
     /* ---------------- stati ---------------- */
@@ -253,7 +312,7 @@ export function mountDna() {
     function setState(state) {
         ui.state = state;
         root.setAttribute('data-dna-state', state);
-        ['empty', 'recording', 'working', 'result', 'error'].forEach((name) => {
+        ['empty', 'recording', 'working', 'result', 'none', 'error'].forEach((name) => {
             const el = document.getElementById('dna-' + (name === 'empty' ? 'drop' : name === 'working' ? 'progress' : name));
             if (el && el.id !== 'dna-status') el.hidden = name !== state;
         });
@@ -499,6 +558,7 @@ export function mountDna() {
         return {
             at: result.at,
             name: result.name,
+            renamed: !!result.renamed,
             source: result.source,
             title: result.title || '',
             artist: result.artist || '',
@@ -545,10 +605,86 @@ export function mountDna() {
         renderHistory();
     }
 
+    /**
+     * Le voci salvate mesi fa possono non avere tutti i campi di oggi: si
+     * leggono lo stesso, con i valori di riserva. Nessuna riga rotta,
+     * nessuna eccezione durante il rendering.
+     */
+    function migrate(rec, id) {
+        const r = (rec && rec.value) || rec || {};
+        const num = (v, d) => (typeof v === 'number' && isFinite(v) ? v : d);
+        return {
+            at: r.at || id || '',
+            name: typeof r.name === 'string' ? r.name : '',
+            renamed: !!r.renamed,
+            source: r.source === 'mic' ? 'mic' : 'file',
+            title: r.title || '', artist: r.artist || '', album: r.album || '', year: r.year || '',
+            seconds: num(r.seconds, 0),
+            sampleRate: num(r.sampleRate, 0),
+            channels: num(r.channels, 1),
+            bpm: num(r.bpm, 0),
+            bpmConfidence: num(r.bpmConfidence, 0),
+            bpmAlternatives: Array.isArray(r.bpmAlternatives) ? r.bpmAlternatives : [],
+            tonic: r.tonic || '', mode: r.mode === 'minor' ? 'minor' : 'major', camelot: r.camelot || '',
+            keyConfidence: num(r.keyConfidence, 0),
+            lufs: num(r.lufs, NaN),
+            truePeak: num(r.truePeak, NaN),
+            lra: r.lra === null || r.lra === undefined ? null : num(r.lra, null),
+            uncertain: !!r.uncertain
+        };
+    }
+
+    /** Il nome scelto a mano vince sui tag del file. */
+    function historyName(r) {
+        if (r.renamed && r.name) return r.name;
+        return [r.artist, r.title].filter(Boolean).join(' - ') || r.name;
+    }
+
+    /** Numeri della riga, senza il nome (che sta nel suo <span>). */
+    function historyMeta(r) {
+        const parts = [r.bpm ? fmt(r.bpm, 0) + ' BPM' : '', r.camelot,
+            isFinite(r.lufs) ? fmt(r.lufs, 1) + ' LUFS' : ''].filter(Boolean);
+        return parts.length ? ' · ' + parts.join(' · ') : '';
+    }
+
     function historyLabel(r) {
-        const name = [r.artist, r.title].filter(Boolean).join(' - ') || r.name;
-        return [name, r.bpm ? fmt(r.bpm, 0) + ' BPM' : '', r.camelot,
-            isFinite(r.lufs) ? fmt(r.lufs, 1) + ' LUFS' : ''].filter(Boolean).join(' · ');
+        return historyName(r) + historyMeta(r);
+    }
+
+    /** Rinomina in linea: Invio o uscita dal campo salvano, Esc annulla. */
+    async function renameHistory(id, name) {
+        const value = String(name || '').trim().slice(0, 120);
+        if (!value) return;
+        try {
+            const prev = migrate(await get(TOOL, id), id);
+            await put(TOOL, id, { ...prev, name: value, renamed: true });
+        } catch (e) { /* IndexedDB non disponibile: il nome resta quello */ }
+        await renderHistory();
+    }
+
+    function startRename(li, btn, id, current) {
+        if (li.querySelector('.dna-history-input')) return;
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.className = 'dna-history-input';
+        input.value = current;
+        input.setAttribute('aria-label', t('dna-rename'));
+        let done = false;
+        const close = (save) => {
+            if (done) return;
+            done = true;
+            const value = input.value;
+            input.replaceWith(btn);
+            if (save) renameHistory(id, value);
+        };
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') { e.preventDefault(); close(true); }
+            else if (e.key === 'Escape') { e.preventDefault(); close(false); }
+        });
+        input.addEventListener('blur', () => close(true));
+        btn.replaceWith(input);
+        input.focus();
+        input.select();
     }
 
     async function renderHistory() {
@@ -560,17 +696,37 @@ export function mountDna() {
         if (clearBtn) clearBtn.hidden = recent.length === 0;
         if (clearConfirm && !recent.length) clearConfirm.hidden = true;
         recent.forEach((rec) => {
-            const r = rec.value || rec;
-            const id = rec.id || r.at;
+            const id = rec.id || (rec.value && rec.value.at) || '';
+            const r = migrate(rec, id);
             const li = document.createElement('li');
             li.className = 'dna-history-row';
             const btn = document.createElement('button');
             btn.type = 'button';
             btn.className = 'dna-history-item';
             btn.setAttribute('data-dna-id', id);
-            btn.textContent = historyLabel(r);
+            const nameEl = document.createElement('span');
+            nameEl.className = 'dna-history-name';
+            nameEl.textContent = historyName(r);
+            const metaEl = document.createElement('span');
+            metaEl.className = 'dna-history-meta';
+            metaEl.textContent = historyMeta(r);
+            btn.append(nameEl, metaEl);
             /* riapre il risultato salvato: nessuna nuova analisi */
             btn.addEventListener('click', () => showResult(r));
+            /* il tocco sul nome rinomina, non riapre (feedback Genna) */
+            nameEl.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                startRename(li, btn, id, historyName(r));
+            });
+            const pen = document.createElement('button');
+            pen.type = 'button';
+            pen.className = 'dna-history-rename tb-btn--icon';
+            pen.setAttribute('data-dna-rename', String(id));
+            pen.setAttribute('data-i18n-aria', 'dna-rename');
+            pen.setAttribute('aria-label', t('dna-rename'));
+            pen.textContent = '✎';
+            pen.addEventListener('click', (e) => { e.stopPropagation(); startRename(li, btn, id, historyName(r)); });
             const rm = document.createElement('button');
             rm.type = 'button';
             rm.className = 'dna-history-del tb-btn--icon';
@@ -579,7 +735,7 @@ export function mountDna() {
             rm.setAttribute('aria-label', t('dna-del-one'));
             rm.textContent = '\u00d7';
             rm.addEventListener('click', (e) => { e.stopPropagation(); removeHistory(id); });
-            li.append(btn, rm);
+            li.append(btn, pen, rm);
             historyBox.appendChild(li);
         });
     }
@@ -663,7 +819,6 @@ export function mountDna() {
     function setListening(on) {
         if (shazam) shazam.classList.toggle('is-listening', on);
         if (shazamBtn) shazamBtn.setAttribute('aria-pressed', on ? 'true' : 'false');
-        if (listenCancel) listenCancel.hidden = !on;
         if (!on && shazamBtn) shazamBtn.style.removeProperty('--dna-pulse');
         if (ringsBox && !on) ringsBox.textContent = '';
     }
@@ -681,11 +836,28 @@ export function mountDna() {
        piu' di cosi' non si impara restando in ascolto. */
     function agrees(prev, cur) {
         if (!prev || !cur) return false;
-        if (!(cur.bpm.confidence >= BPM_SURE) || !(cur.key.confidence >= KEY_SURE)) return false;
+        /* Basta che UNA delle due analisi sia sopra soglia: la prova che il
+           risultato tiene e' l'accordo fra le due, la soglia serve solo a
+           escludere chi non ha mai visto niente di solido. Su un giro lento
+           la confidenza della tonalita' oscilla da un tentativo all'altro
+           anche quando la risposta non cambia mai. */
+        if (!(Math.max(prev.bpm.confidence, cur.bpm.confidence) >= BPM_SURE)) return false;
+        if (!(Math.max(prev.key.confidence, cur.key.confidence) >= KEY_SURE)) return false;
         if (prev.key.tonic !== cur.key.tonic || prev.key.mode !== cur.key.mode) return false;
         const a = prev.bpm.bpm;
         const b = cur.bpm.bpm;
-        return a > 0 && b > 0 && Math.abs(Math.log2(a / b)) < 0.03;
+        return a > 0 && b > 0 && Math.abs(a - b) <= BPM_SAME;
+    }
+
+    /**
+     * Otto battiti sono il minimo per credere a un BPM, e otto battiti
+     * durano il doppio a 60 BPM che a 120: la finestra minima dipende dal
+     * BPM stimato, non e' un numero fisso di secondi (ricerca, punto 10).
+     */
+    function longEnough(data, seconds) {
+        const bpm = data && data.bpm ? data.bpm.bpm : 0;
+        if (!(bpm > 0)) return false;
+        return seconds >= MIN_BEATS * 60 / bpm;
     }
 
     /* ---------------- ascolto "alla Shazam" ---------------- */
@@ -706,14 +878,20 @@ export function mountDna() {
         }
         /* musica, non voce: niente cancellazione, niente riduzione rumore,
            niente guadagno automatico (falsano livello e intonazione) */
+        /* chi annulla mentre il permesso e' in volo cambia `session`: quella
+           richiesta non deve piu' far partire nulla, e il microfono che
+           arriva dopo va rilasciato subito (altrimenti resta acceso) */
+        const mine = ++session;
         mic.acquire({ echoCancellation: false, noiseSuppression: false, autoGainControl: false }).then(() => {
             starting = false;
+            if (mine !== session) { mic.release(); return; }
             showConsent(false);
             setStatus(statusOut, { kind: 'idle', key: '' });
             if (statusOut) statusOut.textContent = '';
             beginCapture(ctx);
         }, (err) => {
             starting = false;
+            if (mine !== session) return;
             setStatus(statusOut, { kind: 'denied', key: micError(err) });
             showConsent(true);
         });
@@ -790,7 +968,8 @@ export function mountDna() {
             lastRing: 0,
             nextAt: LISTEN_FIRST,
             prev: null,
-            busy: false
+            busy: false,
+            sawSound: false   // almeno un'analisi con del segnale dentro
         };
         setListening(true);
         setListenLabel('dna-listening');
@@ -830,7 +1009,8 @@ export function mountDna() {
                 listening.nextAt = elapsed + LISTEN_EVERY;
                 tryAnalysis();
             }
-            if (elapsed >= LISTEN_MAX) { stopListening({ uncertain: true }); return; }
+            /* 25 s senza convergenza: nessun valore, si dice com'e' andata */
+            if (elapsed >= LISTEN_MAX) { giveUp(listening.sawSound ? 'unsure' : 'silent'); return; }
             listening.raf = window.requestAnimationFrame(tick);
         };
         listening.raf = window.requestAnimationFrame(tick);
@@ -849,36 +1029,43 @@ export function mountDna() {
     /* Analisi progressiva: ogni pochi secondi si prova, e appena due
        tentativi di fila concordano si smette di ascoltare. */
     async function tryAnalysis() {
-        if (!listening || listening.busy) return;
+        /* `mine` e non `listening`: un'analisi lanciata da una sessione
+           annullata arriva comunque, e senza questo confronto finiva
+           addosso all'ascolto successivo (falso "c'e' del suono"). */
+        const mine = listening;
+        if (!mine || mine.busy) return;
         const mono = captured();
-        if (mono.length < listening.rate * 4) return;
-        listening.busy = true;
+        if (mono.length < mine.rate * 4) return;
+        mine.busy = true;
         setListenLabel('dna-almost');
         const a4 = Number(prefs.get('shared', 'a4', 440)) || 440;
-        const rate = listening.rate;
+        const rate = mine.rate;
         try {
             const data = await ask(
                 { type: 'analyse', channels: [mono.buffer], sampleRate: rate, a4, mic: true },
                 [mono.buffer],
                 null
             );
-            if (!listening) return;
+            if (listening !== mine) return;
             /* stanza muta: non si conta come tentativo, si continua ad ascoltare */
-            if (data.silent) { listening.prev = null; listening.last = null; setListenLabel('dna-listening'); return; }
-            const sure = agrees(listening.prev, data);
-            listening.prev = data;
-            listening.last = data;
+            if (data.silent) { mine.prev = null; mine.last = null; setListenLabel('dna-listening'); return; }
+            mine.sawSound = true;
+            const heard = (Date.now() - mine.started) / 1000;
+            const sure = agrees(mine.prev, data) && longEnough(data, heard);
+            mine.prev = data;
+            mine.last = data;
             if (sure) { stopListening({ data }); return; }
             setListenLabel('dna-listening');
         } catch (e) {
-            setListenLabel('dna-listening');
+            if (listening === mine) setListenLabel('dna-listening');
         } finally {
-            if (listening) listening.busy = false;
+            mine.busy = false;
         }
     }
 
     /** Stacca tutto e libera il microfono; torna lo stato che c'era. */
     function teardownListening() {
+        session++;   // qualunque richiesta in volo diventa vecchia
         const state = listening;
         if (!state) return null;
         listening = null;
@@ -895,40 +1082,62 @@ export function mountDna() {
         return state;
     }
 
-    /** "Annulla" durante l'ascolto: si ferma tutto e non si analizza nulla. */
-    function cancelListening() {
-        if (!listening) return;
-        teardownListening();
+    /**
+     * "Annulla": si ferma tutto e non si analizza nulla.
+     *   back = 'recording' -> il secondo tocco sul logo, si resta li' col
+     *   logo fermo; back = 'empty' -> il pulsante Annulla sotto il logo.
+     */
+    function cancelListening(back = 'empty') {
+        teardownListening();   // vale anche mentre si sta ancora chiedendo il permesso
+        starting = false;
         if (statusOut) statusOut.textContent = '';
-        setState('empty');
+        setState(back === 'recording' ? 'recording' : 'empty');
     }
 
-    /** Chiude l'ascolto e mostra quel che si e' capito. */
-    function stopListening({ data = null, uncertain: notSure = false } = {}) {
+    /**
+     * Fine dell'ascolto senza un risultato in cui credere: niente numeri
+     * inventati, si dice cosa e' successo e si offre "Riprova".
+     *   why = 'silent' (nessun suono) | 'unsure' (nessuna convergenza)
+     */
+    function giveUp(why) {
+        teardownListening();
+        const key = why === 'silent' ? 'dna-none-silent' : 'dna-none-unsure';
+        if (noneText) {
+            noneText.setAttribute('data-i18n', key);
+            noneText.textContent = t(key);
+        }
+        setState('none');
+        /* senza il markup del nuovo stato almeno il messaggio si vede */
+        if (!document.getElementById('dna-none')) setStatus(statusOut, { kind: 'error', key });
+    }
+
+    /** Fine dell'ascolto con la convergenza: il risultato si mostra subito. */
+    function stopListening({ data = null } = {}) {
         const state = teardownListening();
         if (!state) return;
-        const seconds = (Date.now() - state.started) / 1000;
-        const found = data || state.last;
-        if (found) {
-            finishListening(found, { seconds, rate: state.rate, uncertain: notSure || !agrees(state.prev, found) });
-            return;
+        /* nessun ripiego su `state.last`: senza due analisi concordi non si
+           mostra nessun numero (feedback Genna) */
+        if (!data) { giveUp(state.sawSound ? 'unsure' : 'silent'); return; }
+        finishListening(data, { seconds: (Date.now() - state.started) / 1000, rate: state.rate });
+    }
+
+    /** "Registrazione 18 set 21:34": un nome che dice quando, non cosa. */
+    function recordingName(date = new Date()) {
+        let when;
+        try {
+            when = new Intl.DateTimeFormat(lang(), { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }).format(date);
+        } catch (e) {
+            when = date.toLocaleString();
         }
-        /* niente di analizzabile: si analizza comunque quel che c'e' */
-        const mono = new Float32Array(state.parts.reduce((a, c) => a + c.length, 0));
-        let o = 0;
-        state.parts.forEach((c) => { mono.set(c, o); o += c.length; });
-        if (!mono.length) { setState('empty'); return; }
-        const ctx = state.ctx;
-        const buffer = ctx.createBuffer(1, mono.length, state.rate);
-        buffer.getChannelData(0).set(mono);
-        /* si e' arrivati qui senza conferma: il risultato nasce incerto */
-        analyse(buffer, { source: 'mic', name: t('dna-mic-name'), mic: true, uncertain: true });
+        when = when.replace(/,/g, '');
+        const text = t('dna-rec-name', { when });
+        return text === 'dna-rec-name' ? 'Registrazione ' + when : text;
     }
 
     /** Dal risultato del worker alla scheda, senza rianalizzare. */
-    function finishListening(data, { seconds, rate, uncertain: notSure }) {
+    function finishListening(data, { seconds, rate }) {
         const result = {
-            name: t('dna-mic-name'),
+            name: recordingName(),
             source: 'mic',
             title: '',
             artist: '',
@@ -947,7 +1156,7 @@ export function mountDna() {
             lufs: data.loudness.lufs,
             truePeak: data.loudness.truePeak,
             lra: data.loudness.lra,
-            uncertain: !!notSure,
+            uncertain: false,   // si arriva qui SOLO con due analisi concordi
             at: new Date().toISOString()
         };
         stopWorker();
@@ -955,13 +1164,26 @@ export function mountDna() {
         saveHistory(result);
     }
 
-    /* "Registra" dallo stato vuoto: porta alla schermata di ascolto e, se
-       il permesso c'e' gia', parte subito (siamo dentro il gesto). */
-    if (recordBtn) {
-        recordBtn.addEventListener('click', () => {
-            setState('recording');
-            setListenLabel('dna-press');
-            if (statusOut) statusOut.textContent = '';
+    /** Schermata del logo fermo: nessun microfono, nessun permesso. */
+    function showListenScreen() {
+        setState('recording');
+        setListening(false);
+        setListenLabel('dna-press');
+        showConsent(false);
+        /* la via d'uscita si vede sempre, anche prima di cominciare */
+        if (listenCancel) listenCancel.hidden = false;
+        if (statusOut) statusOut.textContent = '';
+    }
+
+    /* "Registra" NON accende nulla: porta solo alla schermata del logo
+       (feedback Genna). Il permesso si chiede al tocco sul logo. */
+    if (recordBtn) recordBtn.addEventListener('click', showListenScreen);
+
+    /* Il logo: primo tocco chiede il permesso (se serve) e ascolta, secondo
+       tocco annulla e resta qui. La fine "buona" e' solo automatica. */
+    if (shazamBtn) {
+        shazamBtn.addEventListener('click', () => {
+            if (listening || starting) { cancelListening('recording'); return; }
             if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
                 setStatus(statusOut, { kind: 'denied', key: 'mic-unavailable' });
                 showConsent(true);
@@ -972,27 +1194,20 @@ export function mountDna() {
                 showConsent(true);
                 return;
             }
-            if (mic.granted()) {
-                showConsent(false);
-                startListening();
-                return;
-            }
-            showConsent(true);
-        });
-    }
-
-    /* Il logo: primo tocco ascolta, secondo ferma. */
-    if (shazamBtn) {
-        shazamBtn.addEventListener('click', () => {
-            if (listening) { stopListening({}); return; }   // secondo tocco: basta
             if (mic.granted()) startListening();
             else showConsent(true);
         });
     }
 
-    if (stopBtn) stopBtn.addEventListener('click', () => stopListening({}));
-    /* "Annulla" sotto il logo: si esce dall'ascolto senza analizzare nulla */
-    if (listenCancel) listenCancel.addEventListener('click', cancelListening);
+    /* "Ferma e analizza" non esiste piu': se il markup vecchio ha ancora
+       #dna-stop, sparisce invece di mentire. */
+    if (stopBtn) stopBtn.hidden = true;
+    /* "Annulla" sotto il logo: si esce dall'ascolto e si torna allo stato vuoto */
+    if (listenCancel) {
+        listenCancel.addEventListener('click', () => cancelListening('empty'));
+    }
+    /* "Riprova" dopo un ascolto senza risultato: si torna al logo fermo */
+    if (retryBtn) retryBtn.addEventListener('click', showListenScreen);
 
     /* ---------------- comandi del risultato ---------------- */
 
@@ -1069,8 +1284,13 @@ export function mountDna() {
         startListening,
         stopListening,
         cancelListening,
+        showListenScreen,
+        renameHistory,
+        recordingName,
+        migrate,
         showConsent,
         agrees,
+        longEnough,
         micError,
         summary,
         setState,

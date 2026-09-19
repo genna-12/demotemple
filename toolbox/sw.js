@@ -22,7 +22,7 @@
  * popoli da solo (vedi vendor() sotto, che li trova li' come ripiego).
  */
 
-const VERSION = 'tb-v15';
+const VERSION = 'tb-v16';
 const CACHE = 'toolbox-' + VERSION;
 const VENDOR_CACHE = 'toolbox-vendor';
 

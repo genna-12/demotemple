@@ -60,7 +60,8 @@
 .dna-drop[hidden],
 .dna-recording[hidden],
 .dna-progress[hidden],
-.dna-result[hidden] {
+.dna-result[hidden],
+.dna-none[hidden] {
     display: none;
 }
 
@@ -198,8 +199,46 @@
     line-height: 1;
 }
 
+/* Storico rinominabile (feedback Genna, CONTRATTO in testa a dna.js): le
+   righe le costruisce dna.js, qui solo le classi. Matita = tb-btn--icon con
+   l'icona dello sprite gia' in pagina (#tb-icon-penna); il campo inline
+   sostituisce .dna-history-item al tocco, stessa "grammatica" di
+   .dna-history-item (bordo, superficie) ma attivo/editabile. */
+.dna-history-rename {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-muted);
+}
+
+.dna-history-rename svg {
+    width: 16px;
+    height: 16px;
+}
+
+.dna-history-input {
+    flex: 1;
+    min-width: 0;
+    min-height: var(--tap);
+    padding: 0 var(--sp-3);
+    border-radius: var(--r-sm);
+    border: 1px solid var(--accent-orange);
+    background: var(--surface-1);
+    color: var(--text-primary);
+    font-family: var(--font-text);
+    font-size: 0.78rem;
+    text-align: left;
+}
+
+.dna-history-input:focus-visible {
+    outline: none;
+    border-color: var(--accent-orange);
+}
+
 @media (hover: hover) and (pointer: fine) {
-    .dna-history-del:hover {
+    .dna-history-del:hover,
+    .dna-history-rename:hover {
         color: var(--accent-orange);
     }
 }
@@ -251,18 +290,27 @@
    anelli sono decorativi (aria-hidden, il vero stato e' aria-pressed sul
    bottone + l'etichetta sotto). CONTRATTO dna.js: --dna-pulse (0..1, gia'
    smussata) su #dna-shazam-btn per il "respiro"; un <span class="dna-ring">
-   per colpo dentro #dna-rings, tolto dopo ~900ms. */
+   per colpo dentro #dna-rings, tolto dopo ~900ms.
+   Logo e anelli devono avere lo stesso centro geometrico (feedback Genna):
+   #dna-shazam e' ora un riquadro fisso 140x140 (dimensioni pari a
+   .dna-shazam-logo), bottone e anelli vi stanno entrambi "inset:0" cosi'
+   si sovrappongono esattamente sullo stesso punto invece di dipendere
+   dall'altezza variabile del contenuto (etichetta compresa). L'etichetta
+   resta dentro il bottone nel markup (contratto dna.js) ma esce dal
+   riquadro degli anelli in CSS: posizionata sotto, fuori da "inset:0",
+   il margine in fondo qui sotto le riserva lo spazio senza allargare il
+   centro di bottone/anelli. */
 .dna-shazam {
     position: relative;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 12px 0;
+    width: 140px;
+    height: 140px;
+    margin: 12px auto 34px;
 }
 
 .dna-rings {
     position: absolute;
     inset: 0;
+    margin: auto;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -284,22 +332,26 @@
     to { transform: scale(1.8); opacity: 0; }
 }
 
+/* Bottone = tutto il riquadro (140x140, niente padding asimmetrico): l'area
+   di tocco e' gia' >= --tap da sola. inset:0 lo sovrappone esattamente al
+   riquadro di #dna-rings, stesso centro. */
 .dna-shazam-btn {
-    position: relative;
+    position: absolute;
+    inset: 0;
     z-index: 1;
     display: flex;
-    flex-direction: column;
     align-items: center;
-    gap: 14px;
-    min-width: var(--tap);
-    min-height: var(--tap);
-    padding: 8px;
+    justify-content: center;
+    width: 140px;
+    height: 140px;
+    padding: 0;
 }
 
 .dna-shazam-logo {
     width: 140px;
     height: 140px;
     border-radius: 50%;
+    display: block;
     /* Glow morbido arancione (spec: "glow arancione morbido"), sempre
        acceso ma piu' intenso quando pulsa (transform sotto). */
     filter: drop-shadow(0 0 18px rgba(207, 92, 54, 0.55)) drop-shadow(0 0 40px rgba(207, 92, 54, 0.28));
@@ -307,7 +359,19 @@
     transition: transform 0.12s ease-out;
 }
 
+/* Fuori dal riquadro degli anelli (feedback Genna): "position:absolute" la
+   toglie dal flusso del bottone, che resta un quadrato 140x140 centrato
+   sugli anelli; "top:100%" la aggancia subito sotto quel quadrato, dentro
+   il margine riservato in #dna-shazam qui sopra. */
 .dna-shazam-label {
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    margin-top: 14px;
+    width: max-content;
+    max-width: 240px;
+    text-align: center;
     font-size: 0.85rem;
     font-weight: 600;
     color: var(--text-muted);
@@ -404,6 +468,36 @@
     .dna-progress-fill {
         transition: none;
     }
+}
+
+/* --- Stato: nessun risultato (ascolto finito senza esito affidabile,
+   CONTRATTO dna.js, #dna-none) --- */
+.dna-none {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    padding: 32px 16px;
+    text-align: center;
+}
+
+.dna-none-text {
+    margin: 0;
+    font-family: var(--font-title);
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.dna-none-hint {
+    margin: 0;
+    max-width: 320px;
+    font-size: 0.82rem;
+    color: var(--text-muted);
+}
+
+#dna-retry {
+    margin-top: 4px;
 }
 
 /* --- Stato 4: risultato --- */
@@ -587,8 +681,35 @@
     display: none;
 }
 
+/* Intestazione "Loudness e target" sopra il blocco (feedback Genna): riga
+   breve + tb-info, stessa "grammatica" di .calc-intro-row nel calcolatore
+   tempo (titolo che si stringe, "i" a dimensione fissa). */
+.dna-lufs-head {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2);
+    margin-bottom: 2px;
+}
+
+.dna-lufs-title {
+    flex: 1;
+    min-width: 0;
+    font-size: 0.68rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text-muted);
+}
+
 /* Etichetta "Target" accanto al select (feedback Genna): dna.js ci scrive
-   "Target Spotify: -14 LUFS" (dna-target-label), qui solo l'affiancamento. */
+   "Target Spotify: -14 LUFS" (dna-target-label), qui solo l'affiancamento.
+   Bug overflow su mobile (feedback Genna): senza "min-width:0" un flex item
+   non scende mai sotto la larghezza "min-content" del suo contenuto (qui
+   .tb-select-value, che ha white-space:nowrap), quindi la riga sfondava il
+   contenitore invece di stringersi. Sotto 480px (stesso limite di
+   .tb-select-panel/.tb-sheet in components.css) la riga passa a due righe:
+   select intero sopra, etichetta sotto, cosi' non c'e' piu' nulla da far
+   stare in orizzontale. */
 .dna-target-row {
     display: flex;
     align-items: center;
@@ -598,18 +719,31 @@
 
 .dna-target-row .tb-select {
     flex: 1;
+    min-width: 0;
 }
 
 .dna-target-label {
     flex-shrink: 0;
+    min-width: 0;
     max-width: 40%;
     font-size: 0.72rem;
     font-weight: 600;
     color: var(--text-muted);
     text-align: right;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    overflow-wrap: anywhere;
+}
+
+@media (max-width: 479px) {
+    .dna-target-row {
+        display: grid;
+        grid-template-columns: 1fr;
+        row-gap: 4px;
+    }
+
+    .dna-target-label {
+        max-width: 100%;
+        text-align: left;
+    }
 }
 
 .dna-lufs-row {

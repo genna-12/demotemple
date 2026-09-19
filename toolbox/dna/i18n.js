@@ -34,6 +34,9 @@ export default {
         'dna-fold-double': 'Raddoppia',
 
         'dna-platform': 'Piattaforma',
+        'dna-lufs-title': 'Loudness e target',
+        'dna-lufs-info-title': 'Loudness e target',
+        'dna-lufs-info-text': "I LUFS misurano quanto un brano suona forte in media nel tempo, come lo sente l'orecchio; il picco reale (true peak, dBTP) è invece il valore assoluto più alto del segnale. Le piattaforme di streaming abbassano da sole i brani troppo forti fino al loro livello di riferimento: Spotify punta a −14 LUFS, Apple Music a −16 LUFS, YouTube a −14 LUFS e Tidal a −14 LUFS, tutte con un picco reale massimo di −1 dBTP. Se questo strumento consiglia di alzare di X dB, il brano è più piano del target: alzando il volume in fase di mastering ti avvicini al livello scelto dalla piattaforma. Se consiglia di abbassare di X dB, il brano è più forte del target e verrà comunque abbassato in streaming: conviene farlo prima, mantenendo il controllo sul suono finale.",
         'dna-on-target': 'In target',
         'dna-turn-up': 'Alza di',
         'dna-turn-down': 'Abbassa di',
@@ -57,6 +60,12 @@ export default {
 
         'dna-bad-file': 'Formato non letto',
         'dna-silent': 'Nessun suono rilevato',
+        'dna-none-unsure': 'Nessun risultato affidabile',
+        'dna-none-silent': 'Nessun suono rilevato',
+        'dna-none-hint': 'Avvicina il telefono alla cassa, alza il volume e riprova.',
+        'dna-retry': 'Riprova',
+        'dna-rec-name': 'Registrazione {when}',
+        'dna-rename': 'Rinomina',
         'dna-too-long': 'File troppo grande',
         'dna-long-warning': "File lungo: l'analisi potrebbe metterci di più",
 
@@ -73,13 +82,13 @@ export default {
         'dna-mic-unsupported': 'Microfono non disponibile su questo browser',
         'dna-mic-failed': 'Non è stato possibile usare il microfono',
 
-        'dna-press': 'Premi per iniziare',
-        'dna-listening': 'In ascolto…',
+        'dna-press': 'Tocca il logo per iniziare',
+        'dna-listening': 'In ascolto… tocca per annullare',
         'dna-almost': 'Quasi fatto…',
         'dna-uncertain': 'Il risultato non è del tutto certo: verificalo a orecchio.',
         'dna-mic-note': 'Stima dal microfono: un buon punto di partenza, non sostituisce il file audio.',
         'dna-mic-info-title': 'Stima dal microfono',
-        'dna-mic-info-text': "La registrazione dal microfono capta anche l'ambiente e la qualità di chi riproduce il brano: BPM e tonalità restano affidabili nella maggior parte dei casi, ma il loudness (LUFS/picco reale) misurato così non è utilizzabile per la distribuzione. Per quei valori usa sempre il file audio originale.",
+        'dna-mic-info-text': "BPM e tonalità possono essere sbagliati, anche di molto: dal microfono l'analisi è una stima. Per un risultato affidabile usa il file.",
         'dna-target-label': 'Target {platform}: {lufs} LUFS'
     },
     en: {
@@ -108,6 +117,9 @@ export default {
         'dna-fold-double': 'Double',
 
         'dna-platform': 'Platform',
+        'dna-lufs-title': 'Loudness and target',
+        'dna-lufs-info-title': 'Loudness and target',
+        'dna-lufs-info-text': "LUFS measures how loud a track sounds on average over time, the way the ear hears it; true peak (dBTP) is instead the highest absolute value of the signal. Streaming platforms turn down tracks that are too loud to their own reference level on their own: Spotify targets −14 LUFS, Apple Music −16 LUFS, YouTube −14 LUFS and Tidal −14 LUFS, all with a maximum true peak of −1 dBTP. If this tool suggests turning up by X dB, the track is quieter than the target: raising the level at mastering time brings it closer to what the platform expects. If it suggests turning down by X dB, the track is louder than the target and streaming will turn it down anyway: better to do it yourself first, keeping control over the final sound.",
         'dna-on-target': 'On target',
         'dna-turn-up': 'Turn up by',
         'dna-turn-down': 'Turn down by',
@@ -131,6 +143,12 @@ export default {
 
         'dna-bad-file': 'Could not read this file',
         'dna-silent': 'No sound detected',
+        'dna-none-unsure': 'No reliable result',
+        'dna-none-silent': 'No sound detected',
+        'dna-none-hint': 'Move the phone closer to the speaker, turn the volume up and try again.',
+        'dna-retry': 'Try again',
+        'dna-rec-name': 'Recording {when}',
+        'dna-rename': 'Rename',
         'dna-too-long': 'File too large',
         'dna-long-warning': 'Long file: analysis may take a bit longer',
 
@@ -147,13 +165,13 @@ export default {
         'dna-mic-unsupported': 'Microphone not available in this browser',
         'dna-mic-failed': 'Could not use the microphone',
 
-        'dna-press': 'Tap to start',
-        'dna-listening': 'Listening…',
+        'dna-press': 'Tap the logo to start',
+        'dna-listening': 'Listening… tap to cancel',
         'dna-almost': 'Almost there…',
         'dna-uncertain': "The result isn't fully certain: double-check it by ear.",
         'dna-mic-note': "Microphone estimate: a good starting point, not a substitute for the audio file.",
         'dna-mic-info-title': 'Microphone estimate',
-        'dna-mic-info-text': "A microphone recording also picks up the room and the quality of whatever is playing the track: BPM and key stay reliable in most cases, but loudness (LUFS/true peak) measured this way isn't usable for distribution. For those values, always use the original audio file.",
+        'dna-mic-info-text': "BPM and key can be wrong, sometimes by a lot: from the microphone the analysis is only an estimate. For a reliable result, use the file.",
         'dna-target-label': 'Target {platform}: {lufs} LUFS'
     }
 };

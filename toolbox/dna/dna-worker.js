@@ -15,6 +15,12 @@
  * o -50 LUFS non si calcolano ne' BPM ne' tonalita' (sarebbero inventati)
  * e la pagina mostra "Nessun suono rilevato".
  *
+ * Dal 19 settembre 2026 la tonalita' non esce piu' da un chroma globale ma
+ * da estimateKey(): HPCP con picchi interpolati, sbiancamento dello spettro
+ * e segmenti di 5 s che votano (shared/analysis/key.js). Il BPM ha in piu'
+ * la verifica di fase con il beat tracking DP. Il segnale entra sempre
+ * normalizzato di picco: dal microfono i livelli assoluti non dicono nulla.
+ *
  * Il downmix e la decimazione stanno qui: la pagina non rifa' un secondo
  * render con OfflineAudioContext (costava piu' dell'analisi). Si filtra
  * sopra la nuova Nyquist e si tiene un campione ogni due: 44,1 kHz ->
@@ -22,9 +28,9 @@
  * frequenza vera, non un 22050 dato per buono.
  */
 
-import { spectralFlux, whiten } from '/shared/analysis/stft.js';
+import { spectralFlux, whiten, normalizePeak } from '/shared/analysis/stft.js';
 import { bpmFromEnvelope } from '/shared/analysis/bpm.js';
-import { chromaOf, keyFromChroma, CHROMA_SIZE } from '/shared/analysis/key.js';
+import { estimateKey, CHROMA_SIZE } from '/shared/analysis/key.js';
 import { analyseLoudness } from '/shared/analysis/loudness.js';
 
 const BPM_WINDOW = 120;   // s al centro del brano: bastano per il ritmo
@@ -126,9 +132,12 @@ export function runRhythmAndKey(mono, sampleRate, { a4 = 440, onPhase = null, mi
         if (mono.length - skip > sampleRate) mono = mono.subarray(skip);
     }
     /* il ritmo si misura sui 120 s centrali, con l'hop fitto che serve a
-       distinguere 174 da 175; la tonalita' sull'intero brano ma con una
-       finestra lunga e passo largo, dove conta la frequenza non il tempo */
-    const window = centralWindow(mono, sampleRate);
+       distinguere 174 da 175; la tonalita' sulla stessa finestra, a
+       segmenti di 5 s che votano (ricerca 2026-09-19, punto 4): su un
+       brano intero costerebbe il doppio senza dire nulla di piu'.
+       Il picco viene normalizzato: dal microfono i livelli assoluti non
+       dicono niente (punti 11-12). */
+    const window = normalizePeak(centralWindow(mono, sampleRate));
     const { flux, fps } = spectralFlux(window, { sampleRate });
     const env = whiten(flux, fps);
     say('rhythm', 50);
@@ -136,9 +145,7 @@ export function runRhythmAndKey(mono, sampleRate, { a4 = 440, onPhase = null, mi
     say('key', 60);
     const size = mic ? MIC_CHROMA_SIZE : CHROMA_SIZE;
     const hop = mic ? MIC_CHROMA_SIZE / 4 : CHROMA_HOP_FAST;
-    const frames = mono.length >= size ? 1 + Math.floor((mono.length - size) / hop) : 0;
-    const weights = new Float32Array(frames).fill(1);
-    const key = keyFromChroma(chromaOf(mono, sampleRate, { a4, size, hop, weights }));
+    const key = estimateKey(window, sampleRate, { a4, size, hop });
     say('key', 100);
     return { bpm, key };
 }

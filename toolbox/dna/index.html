@@ -182,10 +182,10 @@
 
         <!-- CONTRATTO dna.js (spec 13 §5, contratto scritto in testa a
              dna.js): data-dna-state su #dna rispecchia lo stato corrente
-             (utile per stile/debug), ma chi mostra/nasconde i cinque
-             blocchi e' solo l'attributo [hidden] che dna.js aggiunge/toglie
-             (vedi dna.css). "empty" e' lo stato iniziale: #dna-drop e'
-             l'unico dei cinque senza [hidden] nel markup, niente flash. -->
+             (empty|recording|working|result|none|error), ma chi mostra/
+             nasconde i blocchi e' solo l'attributo [hidden] che dna.js
+             aggiunge/toglie (vedi dna.css). "empty" e' lo stato iniziale:
+             #dna-drop e' l'unico senza [hidden] nel markup, niente flash. -->
         <main id="dna" class="dna" data-dna-state="empty">
 
             <!-- ---------- Stato 1: vuoto ---------- -->
@@ -207,11 +207,14 @@
 
                 <!-- Vuoto: dna.js lo riempie con <li class="dna-history-row">
                      <button class="dna-history-item" data-dna-id="...">nome ·
-                     BPM · key · LUFS</button><button class="dna-history-del
-                     tb-btn--icon" data-dna-del="...">&times;</button></li> per
-                     record, fino a 200 (spec 13 §4 + NOVITA' in testa a
-                     dna.js), o col testo di dna-history-empty se non ce n'e'
-                     ancora nessuno. -->
+                     BPM · key · LUFS</button><button class="dna-history-rename
+                     tb-btn--icon" data-dna-rename="...">(matita)</button>
+                     <button class="dna-history-del tb-btn--icon"
+                     data-dna-del="...">&times;</button></li> per record, fino
+                     a 200 (spec 13 §4 + NOVITA' in testa a dna.js: storico
+                     rinominabile, .dna-history-rename/.dna-history-input qui
+                     solo come classi CSS), o col testo di dna-history-empty se
+                     non ce n'e' ancora nessuno. -->
                 <div class="dna-history-wrap">
                     <div class="dna-history-head">
                         <h2 class="dna-history-title" data-i18n="dna-recent">Recenti</h2>
@@ -246,12 +249,14 @@
                     <div id="dna-rings" class="dna-rings" aria-hidden="true"></div>
                     <button type="button" id="dna-shazam-btn" class="dna-shazam-btn" aria-pressed="false">
                         <img class="dna-shazam-logo" src="/assets/brand/logo-arancione.png" alt="" width="140" height="140">
-                        <span id="dna-shazam-label" class="dna-shazam-label" data-i18n="dna-press">Premi per iniziare</span>
+                        <span id="dna-shazam-label" class="dna-shazam-label" data-i18n="dna-press">Tocca il logo per iniziare</span>
                     </button>
                 </div>
 
-                <!-- Via di fuga prima dei 10s minimi, quando #dna-stop e'
-                     ancora disabled (feedback Genna): [hidden] di default,
+                <!-- "Annulla" (feedback Genna): esce dall'ascolto e torna allo
+                     stato vuoto senza analizzare, in qualunque momento (non
+                     serve piu' aspettare i 10s minimi: quel limite e' andato
+                     col vecchio "ferma e analizza"). [hidden] di default,
                      dna.js la toglie nello stato ascolto. -->
                 <button type="button" id="dna-listen-cancel" class="tb-btn tb-btn--ghost" hidden data-i18n="dna-cancel">Annulla</button>
 
@@ -259,10 +264,17 @@
                     <span id="dna-countdown" class="dna-countdown">20</span>
                     <span class="dna-countdown-unit" aria-hidden="true">s</span>
                 </div>
+            </div>
 
-                <!-- Attivo dopo 10 s (spec 13 §3): disabled di default, dna.js lo
-                     abilita al passare della soglia. -->
-                <button type="button" id="dna-stop" class="tb-btn tb-btn--ghost" disabled data-i18n="dna-stop">Ferma</button>
+            <!-- ---------- Stato: nessun risultato ---------- -->
+            <!-- CONTRATTO dna.js: ascolto finito (a tempo scaduto o silenzio) senza
+                 un esito affidabile. dna.js scrive in #dna-none-text la chiave
+                 giusta (dna-none-unsure o dna-none-silent) e #dna-retry riporta
+                 alla schermata del logo fermo. -->
+            <div id="dna-none" class="dna-none" hidden>
+                <p id="dna-none-text" class="dna-none-text" data-i18n="dna-none-unsure">Nessun risultato affidabile</p>
+                <p class="dna-none-hint" data-i18n="dna-none-hint">Avvicina il telefono alla cassa, alza il volume e riprova.</p>
+                <button type="button" id="dna-retry" class="tb-btn tb-btn--primary" data-i18n="dna-retry">Riprova</button>
             </div>
 
             <!-- ---------- Stato 3: analisi ---------- -->
@@ -331,6 +343,19 @@
 
                 <!-- LUFS/true peak verso il target della piattaforma. -->
                 <section class="dna-card">
+                    <!-- Intestazione + "i" (feedback Genna, punto 3): spiega LUFS/
+                         picco reale e i target delle piattaforme prima dei numeri.
+                         Markup gia' pronto (contratto .tb-info/.tb-sheet in
+                         shared/components.css); dna.js chiama gia' mountInfos()
+                         su tutte le .tb-info, non serve altro codice. -->
+                    <div class="dna-lufs-head">
+                        <span class="dna-lufs-title" data-i18n="dna-lufs-title">Loudness e target</span>
+                        <button type="button" class="tb-info" aria-haspopup="dialog" aria-expanded="false"
+                            aria-controls="dna-lufs-info" data-i18n-aria="info-aria" aria-label="Che cos'è">
+                            <span class="tb-info-glyph" aria-hidden="true">i</span>
+                        </button>
+                    </div>
+
                     <div class="dna-target-row">
                         <!-- .tb-select (spec 03 §2/§6, contratto in shared/components.css):
                              il <select> nativo resta il valore vero e il ripiego senza
@@ -466,7 +491,18 @@
             <h2 id="dna-mic-info-title" data-i18n="dna-mic-info-title">Stima dal microfono</h2>
             <button type="button" class="tb-sheet-close" data-i18n-aria="sheet-close" aria-label="Chiudi">&times;</button>
         </div>
-        <div class="tb-sheet-body" data-i18n="dna-mic-info-text">La registrazione dal microfono capta anche l'ambiente e la qualità di chi riproduce il brano: BPM e tonalità restano affidabili nella maggior parte dei casi, ma il loudness (LUFS/picco reale) misurato così non è utilizzabile per la distribuzione. Per quei valori usa sempre il file audio originale.</div>
+        <div class="tb-sheet-body" data-i18n="dna-mic-info-text">BPM e tonalità possono essere sbagliati, anche di molto: dal microfono l'analisi è una stima. Per un risultato affidabile usa il file.</div>
+    </div>
+
+    <!-- Foglio "Loudness e target" (feedback Genna, punto 3): stessa
+         "grammatica" di #dna-mic-info qui sopra. -->
+    <div class="tb-sheet-scrim" id="dna-lufs-info-scrim" hidden></div>
+    <div class="tb-sheet" id="dna-lufs-info" role="dialog" aria-modal="true" aria-labelledby="dna-lufs-info-title" hidden>
+        <div class="tb-sheet-head">
+            <h2 id="dna-lufs-info-title" data-i18n="dna-lufs-info-title">Loudness e target</h2>
+            <button type="button" class="tb-sheet-close" data-i18n-aria="sheet-close" aria-label="Chiudi">&times;</button>
+        </div>
+        <div class="tb-sheet-body" data-i18n="dna-lufs-info-text">I LUFS misurano quanto un brano suona forte in media nel tempo, come lo sente l'orecchio; il picco reale (true peak, dBTP) è invece il valore assoluto più alto del segnale. Le piattaforme di streaming abbassano da sole i brani troppo forti fino al loro livello di riferimento: Spotify punta a −14 LUFS, Apple Music a −16 LUFS, YouTube a −14 LUFS e Tidal a −14 LUFS, tutte con un picco reale massimo di −1 dBTP. Se questo strumento consiglia di alzare di X dB, il brano è più piano del target: alzando il volume in fase di mastering ti avvicini al livello scelto dalla piattaforma. Se consiglia di abbassare di X dB, il brano è più forte del target e verrà comunque abbassato in streaming: conviene farlo prima, mantenendo il controllo sul suono finale.</div>
     </div>
 
     <script type="module" src="/dna/dna.js"></script>
