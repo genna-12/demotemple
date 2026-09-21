@@ -7,3 +7,6 @@ legale/
 # Contiene anche le vecchie cartelle foto/ e loghi/, consolidate qui dentro.
 archivio/
 Claude outputs/
+
+# sorgenti scaricate dal build del rimario (grosse, si riscaricano)
+scripts/input/

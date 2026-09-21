@@ -628,6 +628,73 @@ a.tb-menu-link[aria-current="page"] {
     font-size: 0.72rem;
 }
 
+/* Riga dei pacchetti lingua del rimario (spec 14b §3/§5), stessa idea e
+   stessa riga del microfono: [hidden] finche' nessun pacchetto e'
+   installato (in QUALSIASI strumento; solo Penna ne scarica ma "Rimuovi"
+   deve restare a portata ovunque). shared/nav.js riempie #tb-pack-list. */
+.tb-packs-row {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
+
+.tb-packs-row[hidden] {
+    display: none;
+}
+
+.tb-packs-row > span {
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.tb-pack-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.tb-pack {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-2);
+}
+
+.tb-pack-name {
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+.tb-pack-remove {
+    flex-shrink: 0;
+    min-height: 32px;
+    padding: 0 var(--sp-3);
+    font-size: 0.72rem;
+}
+
+/* Conferma inline (niente confirm() del browser, spec 03 §7): nascosta
+   finche' non si tocca "Rimuovi" su un pacchetto, nav.js decide quale con
+   [data-tb-pack] sullo stesso #tb-pack-confirm. */
+#tb-pack-confirm {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--sp-2);
+}
+
+#tb-pack-confirm[hidden] {
+    display: none;
+}
+
+#tb-pack-confirm .tb-btn {
+    flex-shrink: 0;
+    min-height: 32px;
+    padding: 0 var(--sp-3);
+    font-size: 0.72rem;
+}
+
 /* Lingua e "Sito dello studio" sulla stessa riga (criterio 3). */
 .tb-menu-foot-row {
     display: flex;

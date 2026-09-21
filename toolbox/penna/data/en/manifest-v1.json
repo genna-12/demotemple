@@ -1,0 +1,39 @@
+{
+ "lingua": "en",
+ "nome": "English",
+ "versione": "v1",
+ "forme": 131939,
+ "esatti": 124577,
+ "derivate": false,
+ "file": {
+  "parole": {
+   "nome": "parole-v1.txt",
+   "gzip": 479486,
+   "byte": 1109223
+  },
+  "chiavi": {
+   "nome": "chiavi-v1.json",
+   "gzip": 1083646,
+   "byte": 2233239
+  },
+  "tratti": {
+   "nome": "tratti-v1.bin",
+   "gzip": 48644,
+   "byte": 131939
+  }
+ },
+ "gzip": 1611776,
+ "licenza": "CC BY-SA 4.0",
+ "fonti": [
+  {
+   "nome": "CMU Pronouncing Dictionary (cmusphinx/cmudict)",
+   "licenza": "BSD a 2 clausole",
+   "url": "https://github.com/cmusphinx/cmudict"
+  },
+  {
+   "nome": "hermitdave/FrequencyWords (OpenSubtitles 2018)",
+   "licenza": "CC BY-SA 4.0",
+   "url": "https://github.com/hermitdave/FrequencyWords"
+  }
+ ]
+}

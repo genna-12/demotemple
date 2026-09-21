@@ -1,0 +1,635 @@
+/* ========================================================
+   TINY TEMPLE TOOLBOX - PIANIFICATORE DI USCITA
+   Solo questa pagina (spec 15). Richiede shared/tokens.css e
+   shared/base.css/components.css caricati prima (per .tb-btn, .tb-segment,
+   .tb-select, .tb-pill, .tb-info/.tb-sheet, .tb-status: qui non si
+   ridefiniscono). Mobile-first: colonna unica, lista verticale con linea
+   del tempo, bersagli >= 44px, azioni sopra la safe-area (spec 15 §4); da
+   720px contenuto centrato e largo 720 (.tb-shell sotto). Zero JS qui: gli
+   stati ([data-pia-state] su #pianificatore E, con un significato diverso,
+   su ogni <li> di #pia-list — "fatta|scadenza|ritardo|futura" — [hidden]
+   sui contenitori, --pia-pct) li applica pianificatore.js (CONTRATTO
+   nella sua testata). */
+
+.tb-page-header {
+    padding: 0;
+    margin: 8px 0;
+}
+
+.tb-page-header h1 {
+    font-size: 1.1rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+
+.tb-shell {
+    max-width: 720px;
+    padding-bottom: 20px;
+}
+
+.tb-footer {
+    margin-top: 16px;
+    padding-top: 12px;
+    padding-bottom: calc(12px + var(--tb-safe-b));
+}
+
+.tb-footer-line {
+    font-size: 0.72rem;
+}
+
+.tb-footer-line a {
+    min-height: 32px;
+}
+
+/* --- `main#pianificatore` --- */
+.pia {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-4);
+}
+
+/* "Piani"/"Nuovo piano" (spec 15 §3): sempre raggiungibili, tranne mentre
+   il modulo e' aperto (evita un secondo --primary a schermo insieme a
+   #pia-save, criterio 03 §10.2). */
+.pia-toolbar {
+    display: flex;
+    gap: var(--sp-3);
+    flex-wrap: wrap;
+}
+
+.pia-toolbar #pia-plans {
+    flex: 0 0 auto;
+}
+
+.pia-toolbar #pia-new {
+    flex: 1 1 auto;
+}
+
+#pianificatore[data-pia-state="modifica"] .pia-toolbar {
+    display: none;
+}
+
+/* CONTRATTO pianificatore.js: gli stati si mostrano/nascondono SOLO con la
+   proprieta' "hidden" (nessuna regola sul VALORE di [data-pia-state] qui).
+   Le classi impostano pero' "display:flex" di loro, che vince sul solo
+   "[hidden]" dello UA stylesheet perche' una classe e un attributo hanno
+   la stessa specificita' e qui l'ordine e' invertito (stessa insidia di
+   .tb-select-panel.tb-sheet in shared/components.css): un selettore
+   composto classe+attributo, piu' specifico di entrambi, per essere
+   sicuri che l'hidden nasconda davvero, dal primo render a ogni cambio
+   di stato. */
+.pia-empty[hidden],
+.pia-plan[hidden],
+.pia-form[hidden],
+.pia-plans-screen[hidden] {
+    display: none;
+}
+
+/* --- Stato: vuoto --- */
+.pia-empty {
+    padding: clamp(24px, 8vh, 64px) 0;
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 0.95rem;
+}
+
+/* --- Modulo nuovo piano / modifica piano --- */
+.pia-form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-4);
+    max-width: 480px;
+    margin: 0 auto;
+}
+
+.pia-field {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-2);
+}
+
+.pia-field > label,
+.pia-field-label {
+    font-family: var(--font-text);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text-muted);
+}
+
+/* .tb-input: generica, nel modulo statico. CONTRATTO pianificatore.js:
+   i campi dentro #pia-sheet (rinomina/sposta/aggiungi tappa) li crea lui
+   con SOLO .pia-text-input o .pia-date-input come className (sostituisce
+   tutta la classe, niente .tb-input insieme): stesso aspetto qui, non solo
+   nel modulo. */
+.tb-input,
+.pia-text-input,
+.pia-date-input {
+    box-sizing: border-box;
+    width: 100%;
+    min-height: var(--tap);
+    padding: 0 var(--sp-3);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--r-md);
+    background: var(--surface-1);
+    color: var(--text-primary);
+    font-family: var(--font-text);
+    font-size: 0.95rem;
+}
+
+.tb-input:focus-visible,
+.pia-text-input:focus-visible,
+.pia-date-input:focus-visible {
+    border-color: var(--accent-orange);
+}
+
+.pia-notes {
+    padding: var(--sp-3);
+    min-height: 84px;
+    resize: vertical;
+    line-height: 1.5;
+}
+
+/* Input nativo (spec 15 §3: "il nativo e' l'unico sensato su iPhone"),
+   solo vestito: color-scheme dark cosi' l'icona del calendario di Safari/
+   Chrome non resta nera su sfondo scuro. */
+.pia-date-input {
+    color-scheme: dark;
+    font-variant-numeric: tabular-nums;
+}
+
+.pia-form-error:empty {
+    display: none;
+}
+
+.pia-form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--sp-3);
+    flex-wrap: wrap;
+}
+
+/* --- Stato: piano aperto --- */
+.pia-plan {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-4);
+}
+
+.pia-plan-head {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--sp-3);
+}
+
+.pia-plan-head-text {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.pia-plan-title {
+    font-family: var(--font-title);
+    font-size: 1.15rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    color: var(--text-primary);
+    overflow-wrap: break-word;
+}
+
+.pia-plan-date {
+    display: block;
+    font-size: 0.82rem;
+    color: var(--text-muted);
+    font-variant-numeric: tabular-nums;
+}
+
+.pia-plan-distro,
+.pia-plan-notes {
+    font-size: 0.82rem;
+    color: var(--text-muted);
+    line-height: 1.5;
+    overflow-wrap: break-word;
+}
+
+.pia-plan-distro[hidden],
+.pia-plan-notes[hidden] {
+    display: none;
+}
+
+/* Il badge riusa .tb-pill (spec 03 §2, come .dna-badge). */
+.pia-badge {
+    flex-shrink: 0;
+    border-color: rgba(207, 92, 54, 0.4);
+    background: rgba(207, 92, 54, 0.12);
+    color: var(--accent-orange);
+}
+
+.pia-count {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    font-variant-numeric: tabular-nums;
+}
+
+/* CONTRATTO pianificatore.js: --pia-pct la scrive lui su #pia-progress
+   stesso (non su un figlio): l'eredita' del custom property la porta
+   fino a .pia-progress-fill sotto. */
+.pia-progress-track {
+    height: 6px;
+    border-radius: var(--r-pill);
+    background: var(--track);
+    overflow: hidden;
+    --pia-pct: 0%;
+}
+
+.pia-progress-fill {
+    height: 100%;
+    width: var(--pia-pct);
+    border-radius: var(--r-pill);
+    background: var(--grad-accent);
+    transition: width var(--dur-med) var(--ease-cinematic);
+}
+
+/* --- Lista delle tappe: linea del tempo verticale --- */
+.pia-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-5);
+    position: relative;
+}
+
+/* Linea continua dietro le spunte (centro dei 44px di .pia-check).
+   position:relative sta su .pia-list, cosi' la linea non dipende dal
+   numero di tappe ne' dalla loro altezza. */
+.pia-list::before {
+    content: '';
+    position: absolute;
+    left: 21px;
+    top: 22px;
+    bottom: 22px;
+    width: 2px;
+    background: var(--track);
+}
+
+.pia-step {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 0 var(--sp-2);
+    position: relative;
+}
+
+/* --- Spunta accessibile (>= 44px, spec 15 §3) --- */
+/* Input nudo (CONTRATTO pianificatore.js: nessun wrapper), reso grande
+   abbastanza con padding trasparente e clip sul contenuto: l'area
+   cliccabile e' 44x44, il cerchio visibile resta 26px. Segno di spunta
+   via background-image (niente pseudo-elementi su un <input>, supporto
+   incoerente). */
+.pia-check {
+    -webkit-appearance: none;
+    appearance: none;
+    flex-shrink: 0;
+    z-index: 1;
+    width: 26px;
+    height: 26px;
+    margin: 9px;
+    padding: 0;
+    box-sizing: content-box;
+    border-radius: 50%;
+    border: 1px solid var(--glass-border-top);
+    background-color: var(--glass-bg);
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: 14px 14px;
+    cursor: pointer;
+    transition: background-color var(--dur-fast) ease, border-color var(--dur-fast) ease;
+}
+
+.pia-check:checked {
+    background-color: var(--accent-orange);
+    border-color: var(--accent-orange);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 13l4 4L19 7'/%3E%3C/svg%3E");
+}
+
+.pia-check:focus-visible {
+    outline: 2px solid var(--accent-orange);
+    outline-offset: 2px;
+}
+
+.pia-step-title {
+    flex: 1 1 auto;
+    min-width: 0;
+    padding-top: 9px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    overflow-wrap: break-word;
+    cursor: pointer;
+}
+
+.pia-step-when {
+    flex: 1 1 100%;
+    margin-left: calc(26px + 2 * 9px + var(--sp-2));
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0 var(--sp-2);
+    font-size: 0.78rem;
+    color: var(--text-muted);
+}
+
+.pia-step-when time {
+    font-variant-numeric: tabular-nums;
+}
+
+.pia-step-days {
+    color: var(--text-muted);
+}
+
+.pia-step-flag {
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.7rem;
+    letter-spacing: 0.04em;
+}
+
+.pia-step-text {
+    flex: 1 1 100%;
+    margin-left: calc(26px + 2 * 9px + var(--sp-2));
+    font-size: 0.82rem;
+    line-height: 1.5;
+    color: var(--text-muted);
+    overflow-wrap: break-word;
+}
+
+.pia-step-plan {
+    flex: 1 1 100%;
+    margin-left: calc(26px + 2 * 9px + var(--sp-2));
+    font-size: 0.78rem;
+    font-style: italic;
+    color: var(--text-muted);
+}
+
+.pia-step > .tb-info,
+.pia-step-menu {
+    flex-shrink: 0;
+    margin-top: 9px;
+    margin-left: auto;
+}
+
+/* Stati (spec 15 §3/§4): spuntata, in scadenza, in ritardo. Il testo a
+   parole (.pia-step-flag, sopra) e l'aria-description sul checkbox li
+   scrive pianificatore.js: qui solo il colore, mai l'unico segnale. */
+.pia-step[data-pia-state="fatta"] .pia-step-title,
+.pia-step[data-pia-state="fatta"] .pia-step-text {
+    opacity: 0.5;
+}
+
+.pia-step[data-pia-state="scadenza"] .pia-step-flag,
+.pia-step[data-pia-state="scadenza"] .pia-step-days {
+    color: var(--accent-orange);
+}
+
+.pia-step[data-pia-state="ritardo"] .pia-step-flag,
+.pia-step[data-pia-state="ritardo"] .pia-step-days {
+    color: #e8604c;
+}
+
+.pia-step--empty {
+    color: var(--text-muted);
+    font-size: 0.85rem;
+}
+
+.pia-add {
+    align-self: flex-start;
+}
+
+.pia-recalc {
+    align-self: center;
+}
+
+.pia-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-3);
+}
+
+.pia-actions .tb-btn {
+    flex: 1 1 auto;
+    justify-content: center;
+}
+
+.pia-plan-manage {
+    display: flex;
+    justify-content: center;
+    gap: var(--sp-4);
+    /* azioni sopra la safe-area (spec 15 §4) */
+    padding-bottom: var(--tb-safe-b);
+}
+
+.pia-status:empty {
+    display: none;
+}
+
+/* --- Stato: lista piani --- */
+.pia-plans-screen {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-3);
+}
+
+.pia-plans-screen h2 {
+    font-family: var(--font-title);
+    font-size: 1rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.pia-plans-empty {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+}
+
+.pia-plans-empty[hidden] {
+    display: none;
+}
+
+.pia-plans-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-3);
+}
+
+.pia-plan-open {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+    min-height: var(--tap);
+    padding: var(--sp-2) var(--sp-3);
+    border-radius: var(--r-md);
+    border: 1px solid var(--glass-border);
+    background: var(--surface-1);
+    text-align: left;
+    color: var(--text-primary);
+    font-family: var(--font-text);
+}
+
+.pia-plan-name {
+    font-weight: 600;
+}
+
+.pia-plan-sub {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    font-variant-numeric: tabular-nums;
+}
+
+/* --- Contenuto dentro #pia-sheet (spec 03 §2, riusato: menu della tappa,
+   rinomina, sposta, aggiungi, conferme, "perche'"): markup lo scrive
+   pianificatore.js, qui solo l'aspetto. --- */
+.pia-sheet-text {
+    font-size: 0.88rem;
+    line-height: 1.6;
+    color: var(--text-muted);
+}
+
+/* Menu della tappa (Rinomina/Sposta/Ripristina/Elimina): colonna di
+   .tb-btn--ghost, uno sotto l'altro invece che in riga. */
+.pia-sheet-menu {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-2);
+}
+
+.pia-sheet-menu .tb-btn {
+    width: 100%;
+    justify-content: flex-start;
+}
+
+.pia-sheet-label {
+    display: block;
+    margin-top: var(--sp-3);
+    margin-bottom: var(--sp-2);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text-muted);
+}
+
+/* Stessa riga per la conferma a due bottoni (Annulla/OK) e per il menu a
+   piu' voci (Rinomina/Sposta/Ripristina/Elimina): un solo contenitore,
+   ogni bottone si allarga finche' c'e' posto. */
+.pia-sheet-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-2);
+    margin-top: var(--sp-4);
+}
+
+.pia-sheet-actions .tb-btn {
+    flex: 1 1 auto;
+    justify-content: center;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .pia-progress-fill {
+        transition: none;
+    }
+}
+
+/* ========================================================
+   STAMPA (spec 15 §2/§4, criterio 9): "PDF via stampa CSS, zero
+   librerie". Una pagina A4 con titolo, data, tappe e caselle, senza
+   bottoni ne' sfondi: nero su bianco invece del bianco su nero a
+   schermo. Si stampa solo il piano aperto (#pia-plan); tutto il resto
+   della pagina (barra, menu, sprite, footer, toolbar, vuoto/modulo/lista
+   piani, il foglio "i") non esiste su carta. */
+@media print {
+    .tb-bar,
+    .tb-menu-toggle,
+    .tb-logo,
+    #tb-mic-live,
+    .tb-menu,
+    .tb-sprite,
+    .tb-page-header,
+    .tb-footer,
+    .tb-sheet,
+    .tb-sheet-scrim,
+    .pia-toolbar,
+    #pia-empty,
+    #pia-form,
+    .pia-plans-screen,
+    .pia-badge,
+    .pia-progress-track,
+    #pia-view,
+    .pia-add,
+    .pia-recalc,
+    .pia-actions,
+    .pia-plan-manage,
+    .pia-status,
+    .pia-step > .tb-info,
+    .pia-step-menu {
+        display: none !important;
+    }
+
+    /* base nero su bianco: le regole piu' sotto ribadiscono i selettori
+       del contenuto stampato, questa e' solo la rete di sicurezza. */
+    html, body {
+        background: #ffffff !important;
+        color: #000000 !important;
+    }
+
+    body::before {
+        content: none !important;
+    }
+
+    .tb-shell {
+        max-width: none;
+        padding: 0;
+    }
+
+    .pia,
+    .pia-plan {
+        gap: var(--sp-3);
+    }
+
+    .pia-plan-title,
+    .pia-plan-date,
+    .pia-plan-distro,
+    .pia-plan-notes,
+    .pia-count,
+    .pia-step-when,
+    .pia-step-days,
+    .pia-step-flag,
+    .pia-step-title,
+    .pia-step-text,
+    .pia-step-plan {
+        color: #000000 !important;
+    }
+
+    .pia-list::before {
+        background: #000000 !important;
+    }
+
+    .pia-check {
+        background-color: #ffffff !important;
+        border: 1px solid #000000 !important;
+    }
+
+    .pia-check:checked {
+        background-color: #000000 !important;
+    }
+
+    .pia-step[data-pia-state="fatta"] .pia-step-title,
+    .pia-step[data-pia-state="fatta"] .pia-step-text {
+        opacity: 1;
+    }
+}

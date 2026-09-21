@@ -81,5 +81,16 @@ indipendenti possono avere spec in parallelo.
 - [x] Ricerca bisogni + fattibilità → `research/`, sintesi in `01-candidati.md`
 - [x] `scripts/check.mjs` scritto e verificato sul repo (passa)
 - [x] Selezione degli strumenti con Genna (vedi §5)
-- [ ] Spec di architettura della Toolbox → `specs/00-architettura.md` (in corso)
-- [ ] Strumenti, uno alla volta
+- [x] Spec di architettura → `specs/00-architettura.md`; shell, dashboard, componenti (`specs/01-03`)
+- [x] Strumenti 1-6 online sul branch `toolbox`: Metronomo, Accordatore, Calcolatore tempo, DNA (con banco `scripts/eval-dna/`), Penna (+ pacchetti EN/FR/ES), Pianificatore di uscita
+- [x] Rimario rigenerato dal Wikizionario (21/9): IT v2 38 % di accenti esatti (era 7,9 %), FR v2 83 % (era solo regole); versione dei dati in `shared/testo/lingue.js`
+- [x] Editor di Penna: conteggio metrico con sillabe e accenti veri del rimario (Worker, a lotti) quando la lingua del rimario e' quella del testo
+- [ ] Strumenti 7-9: Checklist consegna, Split sheet, Trasposizione
+- [ ] Contenuti da validare con Ponz: `docs/toolbox/contenuti/pianificatore-tappe.md`
+- [ ] Prima del merge su `main`: informative Iubenda, prova completa su iPhone (vedi `guida-genna.md` §2)
+
+## 7. Stato aggiornato al 20 settembre 2026
+
+Routine di Genna e istruzioni pratiche (rimario, cookie, merge): `docs/toolbox/guida-genna.md`.
+Validazione: ogni giro passa da `scripts/check.mjs` e da un test in Chromium headless
+(touch reale a 390×844, microfono simulato) prima della consegna.

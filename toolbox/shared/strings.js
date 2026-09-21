@@ -12,6 +12,9 @@
  * - Il decadimento dipende dalla frequenza: i gravi durano di piu'.
  * - Sui gravi del basso il loop e' "stirato" (piu' peso al campione
  *   precedente): senza, le note sotto i 60 Hz muoiono in mezzo secondo.
+ * - Il ritardo del loop e' FRAZIONARIO (linea intera + ritardo del filtro +
+ *   allpass del primo ordine): con i soli campioni interi la nota usciva
+ *   calante o crescente fino a 19 cent, e si sentiva.
  * - Il violino non si pizzica: e' additivo, attacco 80 ms e vibrato 5,5 Hz.
  * - I buffer restano in cache per (strumento, frequenza, sample rate).
  *
@@ -75,10 +78,28 @@ function fade(data, sr, inSec, outSec) {
 export function pluckBuffer(ctx, hz, kind = 'guitar') {
     const sr = ctx.sampleRate;
     const spec = VOICES[kind] || VOICES.guitar;
-    const n = Math.max(2, Math.round(sr / hz));
     const len = Math.floor(DURATION * sr);
     const buf = ctx.createBuffer(1, len, sr);
     const out = buf.getChannelData(0);
+
+    /* ------------------------------------------------------------------
+       Il giro deve durare ESATTAMENTE un periodo. Con una linea di ritardo
+       di soli campioni interi non torna: a 48 kHz il La4 vuole 109,09
+       campioni, e arrotondare (piu' il mezzo campione che si prende il
+       filtro nel loop) sposta la nota anche di 19 cent. Quindi:
+         periodo = ritardo intero + ritardo del filtro + allpass frazionario
+       Il filtro (1-s)x[i] + s x[i-1] ritarda di `s` campioni, l'allpass del
+       primo ordine con coefficiente (1-f)/(1+f) ritarda di `f`.
+       ------------------------------------------------------------------ */
+    const s = spec.stretch;
+    const rest = Math.max(2, sr / hz - s);
+    let n = Math.floor(rest);
+    let frac = rest - n;
+    /* l'allpass lavora bene fra 0,1 e 1,1: sotto slitta la fase */
+    if (frac < 0.1) { n -= 1; frac += 1; }
+    if (n < 2) { n = 2; frac = Math.max(0, Math.min(1.1, rest - n)); }
+    const apc = (1 - frac) / (1 + frac);
+    const period = sr / hz;
 
     /* eccitazione: rumore filtrato (brillantezza) e sfumato in ingresso */
     const line = new Float32Array(n + 1);
@@ -92,7 +113,7 @@ export function pluckBuffer(ctx, hz, kind = 'guitar') {
     for (let i = 0; i < ramp; i++) line[i] *= 0.5 - 0.5 * Math.cos(Math.PI * i / ramp);
     /* un mezzo periodo di fondamentale nel soffio iniziale: cosi' la corda
        parte sempre con la sua nota (col solo rumore la coda variava a caso) */
-    for (let i = 0; i < n; i++) line[i] += 0.6 * Math.sin(2 * Math.PI * i / n);
+    for (let i = 0; i < n; i++) line[i] += 0.6 * Math.sin(2 * Math.PI * i / period);
     let mean = 0;
     for (let i = 0; i < n; i++) mean += line[i];
     mean /= n;
@@ -104,15 +125,20 @@ export function pluckBuffer(ctx, hz, kind = 'guitar') {
     const target = hz < 100 ? 0.02 : hz < 250 ? 0.035 : 0.1;
     const loops = (DURATION * hz);
     const damp = Math.min(0.9999, Math.pow(target, 1 / Math.max(1, loops)));
-    const s = spec.stretch;
 
     let read = 0;
     let prev = line[n - 1];
+    let apX = 0;   // ultimo ingresso dell'allpass
+    let apY = 0;   // ultima uscita
     for (let i = 0; i < len; i++) {
         const cur = line[read];
-        const y = damp * ((1 - s) * cur + s * prev);
-        out[i] = y;
+        const lp = damp * ((1 - s) * cur + s * prev);
         prev = cur;
+        /* allpass del primo ordine: y = a*x + x[-1] - a*y[-1] */
+        const y = apc * lp + apX - apc * apY;
+        apX = lp;
+        apY = y;
+        out[i] = y;
         line[read] = y;
         read = (read + 1) % n;
     }

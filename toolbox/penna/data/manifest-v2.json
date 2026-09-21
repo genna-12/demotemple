@@ -1,0 +1,29 @@
+{
+ "lingua": "it",
+ "nome": "Italiano",
+ "versione": "v2",
+ "forme": 150000,
+ "esatti": 57193,
+ "derivate": false,
+ "soloRegole": false,
+ "file": {
+  "parole": {
+   "nome": "parole-v2.txt",
+   "gzip": 466627,
+   "byte": 1324307
+  },
+  "chiavi": {
+   "nome": "chiavi-v2.json",
+   "gzip": 735098,
+   "byte": 1499385
+  },
+  "tratti": {
+   "nome": "tratti-v2.bin",
+   "gzip": 55275,
+   "byte": 150000
+  }
+ },
+ "gzip": 1257000,
+ "licenza": "CC BY-SA 4.0",
+ "fonti": []
+}

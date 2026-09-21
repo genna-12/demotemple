@@ -103,35 +103,69 @@ export function frameCount(length, size = DEFAULT_SIZE, hop = DEFAULT_HOP) {
 export const framesPerSecond = (sampleRate, hop = DEFAULT_HOP) => sampleRate / hop;
 
 /**
+ * Bande dell'inviluppo multibanda: cassa/808, corpo (rullante, basso,
+ * accordi), hi-hat e percussioni. Dal microfono di un telefono la banda
+ * bassa e' quella che si perde per prima e la banda alta quella che
+ * sopravvive: tenerle separate permette di pesarle per quanto sono
+ * davvero ritmiche (ricerca 2026-09-19, punto 9 e "multi-band onset").
+ */
+export const BANDS = [[30, 200], [200, 2000], [4000, 11000]];
+
+/**
  * Flusso spettrale (differenza positiva fra magnitudini consecutive, fino
  * a `maxHz`) e, insieme, il chroma grezzo se `chroma` e' una funzione:
  * un solo passaggio di STFT per le due analisi.
  *
- * -> { flux: Float32Array, frames, fps }
+ * Con `bands` si ottengono nello STESSO passaggio anche i flussi delle
+ * singole bande: costano tre accumulatori invece di uno, non una FFT in
+ * piu'.
+ *
+ * -> { flux: Float32Array, bands: [Float32Array...]|null, frames, fps }
  */
 export function spectralFlux(signal, {
     sampleRate,
     size = DEFAULT_SIZE,
     hop = DEFAULT_HOP,
     maxHz = 8000,
+    bands = null,
     onFrame = null
 } = {}) {
     const fft = createFft(size);
     const bins = size / 2 + 1;
     const top = Math.min(bins - 1, Math.floor(maxHz * size / sampleRate));
     const prev = new Float32Array(bins);
-    const flux = new Float32Array(frameCount(signal.length, size, hop));
+    const frames = frameCount(signal.length, size, hop);
+    const flux = new Float32Array(frames);
+    const ranges = bands ? bands.map(([lo, hi]) => [
+        Math.max(1, Math.floor(lo * size / sampleRate)),
+        Math.min(bins - 1, Math.ceil(hi * size / sampleRate))
+    ]) : null;
+    const out = ranges ? ranges.map(() => new Float32Array(frames)) : null;
+    /* `prev` va aggiornato fin dove qualcuno guarda: se si ferma a `top` la
+       banda alta confronta con degli zeri e il flusso diventa la magnitudine */
+    const keep = ranges ? ranges.reduce((m, [, hi]) => Math.max(m, hi), top) : top;
     forEachFrame(signal, { size, hop, fft }, (mag, k) => {
         let sum = 0;
         for (let i = 0; i <= top; i++) {
             const d = mag[i] - prev[i];
             if (d > 0) sum += d;
-            prev[i] = mag[i];
         }
+        if (ranges) {
+            for (let b = 0; b < ranges.length; b++) {
+                const [lo, hi] = ranges[b];
+                let s = 0;
+                for (let i = lo; i <= hi; i++) {
+                    const d = mag[i] - prev[i];
+                    if (d > 0) s += d;
+                }
+                out[b][k] = k === 0 ? 0 : s;
+            }
+        }
+        for (let i = 0; i <= keep; i++) prev[i] = mag[i];
         flux[k] = k === 0 ? 0 : sum; // il primo frame non ha un "prima"
         if (onFrame) onFrame(mag, k);
     });
-    return { flux, frames: flux.length, fps: framesPerSecond(sampleRate, hop) };
+    return { flux, bands: out, frames: flux.length, fps: framesPerSecond(sampleRate, hop) };
 }
 
 /**

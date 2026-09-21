@@ -28,7 +28,7 @@
  * frequenza vera, non un 22050 dato per buono.
  */
 
-import { spectralFlux, whiten, normalizePeak } from '/shared/analysis/stft.js';
+import { spectralFlux, whiten, normalizePeak, BANDS } from '/shared/analysis/stft.js';
 import { bpmFromEnvelope } from '/shared/analysis/bpm.js';
 import { estimateKey, CHROMA_SIZE } from '/shared/analysis/key.js';
 import { analyseLoudness } from '/shared/analysis/loudness.js';
@@ -138,10 +138,13 @@ export function runRhythmAndKey(mono, sampleRate, { a4 = 440, onPhase = null, mi
        Il picco viene normalizzato: dal microfono i livelli assoluti non
        dicono niente (punti 11-12). */
     const window = normalizePeak(centralWindow(mono, sampleRate));
-    const { flux, fps } = spectralFlux(window, { sampleRate });
+    /* le bande (cassa, corpo, hi-hat) escono dallo STESSO passaggio di STFT:
+       servono a pesare per quanto ogni banda e' ritmica e a leggere la
+       suddivisione, cioe' a non leggere un trap a 140 come 70 */
+    const { flux, bands, fps } = spectralFlux(window, { sampleRate, bands: BANDS });
     const env = whiten(flux, fps);
     say('rhythm', 50);
-    const bpm = bpmFromEnvelope(env, fps);
+    const bpm = bpmFromEnvelope(env, fps, { bands: bands ? bands.map((b) => whiten(b, fps)) : null });
     say('key', 60);
     const size = mic ? MIC_CHROMA_SIZE : CHROMA_SIZE;
     const hop = mic ? MIC_CHROMA_SIZE / 4 : CHROMA_HOP_FAST;

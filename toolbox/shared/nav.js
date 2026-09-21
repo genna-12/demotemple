@@ -53,6 +53,17 @@
 //   consenso c'e'; "Revoca" chiama mic.revoke() e ferma le tracce.
 //   Sprite: serve il simbolo #tb-icon-mic.
 //
+//   PACCHETTI DEL RIMARIO (spec 14b §3), accanto alla riga del microfono:
+//     <div id="tb-packs-row" class="tb-packs-row" hidden>
+//       <span data-i18n="pack-installed">Pacchetti del rimario</span>
+//       <ul id="tb-pack-list"></ul>
+//       <div id="tb-pack-confirm" hidden><span data-i18n="pack-remove-ask">Rimuovo?</span>
+//         <button type="button" id="tb-pack-yes" class="tb-btn">Rimuovi</button>
+//         <button type="button" id="tb-pack-no" class="tb-btn tb-btn--ghost">Annulla</button></div></div>
+//   nav.js riempie #tb-pack-list (nome, peso, "Rimuovi"), svuota la cache
+//   `toolbox-rimario` e aggiorna le preferenze; la riga resta nascosta se
+//   non c'e' nessun pacchetto installato.
+//
 // CHIAVI i18n USATE QUI: bar-logo-aria, bar-menu-open, bar-menu-close, menu-all,
 //   fam-<id> e tool-<slug> (da tools.js), pill-soon, mic-live-aria,
 //   mic-state-granted, mic-state-unasked, mic-revoke.
@@ -69,6 +80,8 @@ import { t, lang, setLang, apply, onChange } from './i18n.js';
 import { TOOLS, FAMILIES } from './tools.js';
 import { FOCUSABLE, focusables, createScrollLock, createInert } from './focus.js';
 import * as mic from './mic.js';
+import { prefs } from './storage.js';
+import { LINGUE, normalizzaCodice, cartella } from './testo/lingue.js';
 
 const MENU_ID = 'tb-menu';
 const SVG_NS = 'http://www.w3.org/2000/svg';
@@ -405,9 +418,93 @@ export function mountBar({ page = 'home', titleKey, current } = {}) {
     mic.onStateChange(renderMic);
     renderMic();
 
+    /* ---- pacchetti del rimario: riga nel menu, accanto al microfono ----
+       Stessa idea della revoca del microfono: quello che l'utente ha
+       scaricato deve potersi togliere da qualsiasi pagina, senza andare a
+       cercarlo. La riga sparisce se non c'e' niente da rimuovere. */
+    const packsRow = document.getElementById('tb-packs-row');
+    const packList = document.getElementById('tb-pack-list');
+    const PESI = { it: 1215000, en: 1612000, fr: 1072000, es: 449000 };
+
+    const installati = () => {
+        const v = prefs.get('penna', 'pacchetti', []);
+        return Array.isArray(v) ? v.filter((c) => !!LINGUE[c]) : [];
+    };
+
+    async function rimuoviPacchetto(codice) {
+        const lang = normalizzaCodice(codice);
+        try {
+            if (typeof caches !== 'undefined') {
+                const cache = await caches.open('toolbox-rimario');
+                const dir = cartella(lang, '/penna/data/');
+                const chiavi = await cache.keys();
+                await Promise.all(chiavi
+                    .filter((req) => String(req.url).indexOf(dir) !== -1)
+                    .map((req) => cache.delete(req)));
+            }
+        } catch (e) { /* niente Cache Storage: restano le preferenze */ }
+        const resta = installati().filter((c) => c !== lang);
+        prefs.set('penna', 'pacchetti', resta);
+        if (normalizzaCodice(prefs.get('penna', 'lingua', 'it')) === lang) {
+            prefs.set('penna', 'lingua', resta[0] || 'it');
+        }
+        renderPacks();
+        return resta;
+    }
+
+    function renderPacks() {
+        if (!packsRow) return;
+        const lista = installati();
+        packsRow.hidden = lista.length === 0;
+        if (!packList) return;
+        packList.textContent = '';
+        lista.forEach((codice) => {
+            const spec = LINGUE[codice];
+            const li = document.createElement('li');
+            li.className = 'tb-pack';
+            li.setAttribute('data-tb-pack', codice);
+            const nome = document.createElement('span');
+            nome.className = 'tb-pack-name';
+            const mb = (PESI[codice] || 0) / 1048576;
+            nome.textContent = spec.nome + (mb ? ' · ' + mb.toFixed(1) + ' MB' : '');
+            const via = document.createElement('button');
+            via.type = 'button';
+            via.className = 'tb-btn tb-btn--ghost tb-pack-remove';
+            via.setAttribute('data-tb-pack-remove', codice);
+            via.setAttribute('data-i18n', 'pack-remove');
+            via.textContent = t('pack-remove');
+            via.addEventListener('click', () => {
+                const conferma = document.getElementById('tb-pack-confirm');
+                if (!conferma) { rimuoviPacchetto(codice); return; }
+                conferma.hidden = false;
+                conferma.setAttribute('data-tb-pack', codice);
+            });
+            li.append(nome, via);
+            packList.appendChild(li);
+        });
+    }
+
+    const packYes = document.getElementById('tb-pack-yes');
+    const packNo = document.getElementById('tb-pack-no');
+    if (packYes) {
+        packYes.addEventListener('click', () => {
+            const conferma = document.getElementById('tb-pack-confirm');
+            const codice = conferma ? conferma.getAttribute('data-tb-pack') : null;
+            if (conferma) conferma.hidden = true;
+            if (codice) rimuoviPacchetto(codice);
+        });
+    }
+    if (packNo) {
+        packNo.addEventListener('click', () => {
+            const conferma = document.getElementById('tb-pack-confirm');
+            if (conferma) conferma.hidden = true;
+        });
+    }
+    renderPacks();
+
     apply(document); // logo/hamburger sono radici a se': si traduce tutto il documento
     setToggle(false);
 
-    api = { open, close, isOpen: () => isOpen };
+    api = { open, close, isOpen: () => isOpen, renderPacks, rimuoviPacchetto };
     return api;
 }

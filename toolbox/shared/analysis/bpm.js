@@ -20,9 +20,27 @@
  * insieme quattro cose (§14 della ricerca): stacco fra le ottave, qualita'
  * della griglia, quanti battiti si sono visti (sotto 8 si scende) e quanti
  * attacchi ci sono al secondo.
+ *
+ * Dal 20 settembre 2026, misurato sul banco `scripts/eval-dna` (240 brani
+ * sintetici, puliti e "da microfono"), l'ottava si sceglie anche guardando
+ * la GERARCHIA METRICA, che e' dove si sbagliava quasi tutto:
+ *  - inviluppo MULTIBANDA (cassa/808, corpo, hi-hat) dallo stesso STFT,
+ *    pesato per quanto ogni banda e' ritmica, e si tiene l'inviluppo in cui
+ *    il battito si vede meglio (dal microfono la banda alta e' solo fruscio);
+ *  - `densityFactor`: in musica vera stanno circa due attacchi in un
+ *    battito; mezzo vuol dire che stiamo contando le suddivisioni (la
+ *    ballata arpeggiata letta a 124 invece che a 62), quattro che stiamo
+ *    contando la battuta (il trap letto a 70 invece che a 140);
+ *  - `meterFactor`: il battito deve valere 2, 3, 4 (o 6) volte il tatum;
+ *  - tutte e due contano solo se c'e' un ACCENTO da leggere (`contrast`):
+ *    su un click di metronomo non c'e' gerarchia da inferire e si spengono.
+ * Risultato sul banco: Accuracy1 da 57,9% a 86,5%, Accuracy2 da 94,4% a
+ * 99,4%. La CONFIDENZA pero' si misura sull'evidenza nuda (`base`), senza
+ * queste preferenze: una preferenza non e' una prova. Verificato sul banco:
+ * i casi dichiarati "alta" (>= 0,60) sono giusti nel 100%.
  */
 
-import { spectralFlux, whiten, normalizePeak } from './stft.js';
+import { spectralFlux, whiten, normalizePeak, BANDS } from './stft.js';
 
 export const BPM_MIN = 60;
 export const BPM_MAX = 200;
@@ -176,20 +194,176 @@ export function refineWithBeats(env, fps, bpm) {
     return { bpm: refined, align: track.score, beats };
 }
 
-/** Attacchi al secondo: sotto una certa densita' non c'e' ritmo da stimare. */
-export function onsetRate(env, fps) {
+/* ------------------------------------------------------------------ *
+ * Inviluppo multibanda e griglia metrica
+ * ------------------------------------------------------------------ */
+
+/**
+ * Quanto una banda e' RITMICA: il massimo dell'autocorrelazione normalizzata
+ * nei ritardi utili. Il fruscio di una stanza non si autocorrela, un hi-hat
+ * si': e' una misura di rapporto segnale/rumore che non ha bisogno di
+ * conoscere il rumore (ricerca, "multi-band onset con SNR per banda").
+ */
+export function bandRhythm(env, fps, { min = BPM_MIN, max = BPM_MAX } = {}) {
     const n = env.length;
-    if (!n) return 0;
+    if (n < fps) return 0;
+    let energy = 0;
+    for (let i = 0; i < n; i++) energy += env[i] * env[i];
+    if (!(energy > 0)) return 0;
+    const lagMin = Math.max(2, Math.floor(fps * 60 / max));
+    const lagMax = Math.min(n - 2, Math.ceil(fps * 60 / min));
+    let best = 0;
+    for (let lag = lagMin; lag <= lagMax; lag += 2) {
+        const v = autocorr(env, lag) * (n - lag) / energy;
+        if (v > best) best = v;
+    }
+    return Math.max(0, Math.min(1, best));
+}
+
+/**
+ * Mette insieme le bande in un solo inviluppo, ognuna normalizzata per la
+ * propria media e pesata per quanto e' ritmica. Dal microfono la banda
+ * bassa arriva mezza distrutta: cosi' pesa poco invece di sporcare tutto.
+ * -> { env, weights }
+ */
+export function combineBands(bands, fps, opts = {}) {
+    const usable = (bands || []).filter((b) => b && b.length);
+    if (!usable.length) return { env: null, weights: [] };
+    const n = usable[0].length;
+    const weights = usable.map((b) => bandRhythm(b, fps, opts));
+    const total = weights.reduce((a, w) => a + w, 0);
+    if (!(total > 0)) return { env: null, weights };
+    const out = new Float32Array(n);
+    usable.forEach((b, k) => {
+        let mean = 0;
+        for (let i = 0; i < n; i++) mean += b[i];
+        mean /= n || 1;
+        if (!(mean > 0)) return;
+        const w = weights[k] / total;
+        for (let i = 0; i < n; i++) out[i] += w * b[i] / mean;
+    });
+    return { env: out, weights };
+}
+
+const TATUM_MIN = 0.055;   // s: piu' fitto di cosi' non e' una suddivisione
+const TATUM_MAX = 0.75;    // s: piu' largo di cosi' e' gia' il battito
+
+/**
+ * Il "tatum": la suddivisione piu' fitta che si ripete davvero. E' la
+ * mediana degli intervalli fra attacchi consecutivi - nel trap sono i
+ * sedicesimi dell'hi-hat, in una ballata gli ottavi dell'arpeggio.
+ * -> periodo in frame (0 se non si vede niente).
+ */
+export function tatumPeriod(env, fps) {
+    const n = env ? env.length : 0;
+    if (n < fps) return 0;
     let mean = 0;
     for (let i = 0; i < n; i++) mean += env[i];
     mean /= n;
     if (!(mean > 0)) return 0;
-    let count = 0;
+    const minGap = Math.max(2, Math.round(fps * TATUM_MIN));
+    const peaks = [];
+    let last = -minGap;
     for (let i = 1; i < n - 1; i++) {
-        if (env[i] > mean && env[i] >= env[i - 1] && env[i] > env[i + 1]) count++;
+        if (env[i] <= mean || env[i] < env[i - 1] || env[i] < env[i + 1]) continue;
+        if (i - last < minGap) {
+            if (env[i] > env[last]) { peaks[peaks.length - 1] = i; last = i; }
+            continue;
+        }
+        peaks.push(i);
+        last = i;
     }
-    return count / (n / fps);
+    if (peaks.length < 8) return 0;
+    const gaps = [];
+    for (let i = 1; i < peaks.length; i++) gaps.push(peaks[i] - peaks[i - 1]);
+    gaps.sort((a, b) => a - b);
+    const med = gaps[gaps.length >> 1];
+    const maxGap = fps * TATUM_MAX;
+    return med > 0 && med <= maxGap ? med : 0;
 }
+
+/* Un battito contiene 2, 3, 4 (o 6) suddivisioni: e' la gerarchia metrica
+   di sempre. Quando il "battito" coincide col tatum si sta contando la
+   suddivisione (tipico raddoppio), quando ne contiene otto si sta contando
+   la battuta (tipico dimezzamento: il trap a 70 invece che a 140). */
+const METER = { 1: 0.55, 2: 1, 3: 1, 4: 1, 5: 0.75, 6: 0.92, 7: 0.6, 8: 0.6 };
+
+/* Quanti attacchi stanno in un battito: attorno a due nella musica vera
+   (ottavi, o cassa+rullante+hi-hat). Se ne contiamo mezzo il "battito"
+   e' in realta' la suddivisione (raddoppio), se ne contiamo quattro e'
+   la battuta (dimezzamento, il trap letto a 70). E' una statistica
+   aggregata, non una mediana di intervalli: regge il rumore. */
+const DENSITY_CENTER = 2;
+const DENSITY_SIGMA = 0.9;   // in ottave
+
+/** Preferenza log-gaussiana per il livello metrico con ~2 attacchi a battito. */
+export function densityFactor(bpm, density) {
+    if (!(density > 0) || !(bpm > 0)) return 1;
+    const perBeat = density / (bpm / 60);
+    return Math.exp(-0.5 * Math.pow(Math.log2(perBeat / DENSITY_CENTER) / DENSITY_SIGMA, 2));
+}
+
+/** Quanto e' credibile un BPM viste le suddivisioni che si sentono. */
+export function meterFactor(bpm, tatum, fps) {
+    if (!(tatum > 0) || !(bpm > 0)) return 1;
+    const beat = fps * 60 / bpm;
+    const k = beat / tatum;
+    const kr = Math.round(k);
+    if (kr < 1) return 0.5;
+    if (Math.abs(k - kr) / kr > 0.18) return 0.75;   // non e' una suddivisione intera
+    return METER[kr] !== undefined ? METER[kr] : 0.5;
+}
+
+/**
+ * Statistiche degli attacchi: quanti al secondo e quanto sono DIVERSI fra
+ * loro. La soglia e' media + mezza deviazione standard, non la sola media:
+ * dal microfono il fondo di rumore produce un picchettio continuo che con
+ * la sola media veniva contato come attacchi (una ballata risultava avere
+ * cinque colpi a battito e il BPM raddoppiava).
+ *
+ * `contrast` (deviazione standard delle ampiezze diviso la media) dice se
+ * c'e' un ACCENTO: in un click di metronomo o in un loop di sola cassa e'
+ * quasi zero e le euristiche metriche qui sotto non hanno niente su cui
+ * lavorare, in musica vera sta sopra 0,5.
+ * -> { rate, contrast }
+ */
+export function onsetStats(env, fps) {
+    const n = env.length;
+    if (!n) return { rate: 0, contrast: 0 };
+    let mean = 0;
+    for (let i = 0; i < n; i++) mean += env[i];
+    mean /= n;
+    if (!(mean > 0)) return { rate: 0, contrast: 0 };
+    let varsum = 0;
+    for (let i = 0; i < n; i++) { const d = env[i] - mean; varsum += d * d; }
+    const threshold = mean + 0.5 * Math.sqrt(varsum / n);
+    let count = 0;
+    let sum = 0;
+    let sum2 = 0;
+    for (let i = 1; i < n - 1; i++) {
+        if (env[i] > threshold && env[i] >= env[i - 1] && env[i] > env[i + 1]) {
+            count++;
+            sum += env[i];
+            sum2 += env[i] * env[i];
+        }
+    }
+    if (!count) return { rate: 0, contrast: 0 };
+    const m = sum / count;
+    const sd = Math.sqrt(Math.max(0, sum2 / count - m * m));
+    return { rate: count / (n / fps), contrast: m > 0 ? sd / m : 0 };
+}
+
+/** Attacchi al secondo: sotto una certa densita' non c'e' ritmo da stimare. */
+export function onsetRate(env, fps) {
+    return onsetStats(env, fps).rate;
+}
+
+/* Sotto questo contrasto fra gli attacchi non c'e' un accento da leggere
+   (click di metronomo, loop di sola cassa): le euristiche metriche si
+   spengono invece di inventare una gerarchia che non c'e'. */
+const CONTRAST_MIN = 0.15;
+const CONTRAST_FULL = 0.5;
+const metricStrength = (contrast) => Math.max(0, Math.min(1, (contrast - CONTRAST_MIN) / (CONTRAST_FULL - CONTRAST_MIN)));
 
 /**
  * bpmFromEnvelope(env, fps, { min, max }) ->
@@ -197,9 +371,19 @@ export function onsetRate(env, fps) {
  * confidence = quanto il vincitore stacca la migliore ipotesi di un'altra
  * ottava (0-1): sotto 0,6 la pagina mostra l'alternativa col x2 / :2.
  */
-export function bpmFromEnvelope(env, fps, { min = BPM_MIN, max = BPM_MAX } = {}) {
+export function bpmFromEnvelope(env, fps, { min = BPM_MIN, max = BPM_MAX, bands = null } = {}) {
     const empty = { bpm: 0, confidence: 0, alternatives: [], scores: [] };
     if (!env || env.length < fps * 2) return empty;
+    /* con le bande: si cerca sull'inviluppo pesato per quanto ogni banda e'
+       ritmica, e il tatum si legge dalla banda alta (hi-hat e percussioni),
+       che e' quella che sopravvive al microfono del telefono */
+    const mix = bands ? combineBands(bands, fps, { min, max }) : { env: null, weights: [] };
+    /* si tiene l'inviluppo in cui il battito si vede meglio: dal microfono
+       la banda alta e' solo fruscio e il rimpasto peggiora le cose, su un
+       segnale pulito invece guadagna */
+    if (mix.env && mix.env.length === env.length
+        && bandRhythm(mix.env, fps, { min, max }) > bandRhythm(env, fps, { min, max })) env = mix.env;
+    const tatum = tatumPeriod(env, fps);
     const lagMin = Math.max(2, Math.floor(fps * 60 / max));
     const lagMax = Math.min(env.length - 2, Math.ceil(fps * 60 / min));
     if (lagMax <= lagMin) return empty;
@@ -243,6 +427,9 @@ export function bpmFromEnvelope(env, fps, { min = BPM_MIN, max = BPM_MAX } = {})
 
     /* scelta dell'ottava fra meta', uguale e doppio: qui decide quanta
        energia sta sui battiti e quanti battiti restano vuoti */
+    const stats = onsetStats(env, fps);
+    const density = stats.rate;
+    const strength = metricStrength(stats.contrast);
     const family = [bpm / 2, bpm, bpm * 2]
         .filter((v) => v >= min && v <= max)
         .map((v) => {
@@ -251,17 +438,34 @@ export function bpmFromEnvelope(env, fps, { min = BPM_MIN, max = BPM_MAX } = {})
                una griglia a 64 BPM "copre" tutto ma meta' dei battiti non ha
                nessun attacco sotto, e il DP se ne accorge */
             const track = beatTrack(env, fps, v);
-            return { bpm: v, align: track.score, value: salience(env, lag, fps) * prior(v) * (0.4 + 0.6 * track.score) };
+            const sal = salience(env, lag, fps);
+            /* `base` e' l'evidenza vera e basta: e' da qui che esce la
+               confidenza, perche' una preferenza non e' una prova */
+            const base = sal * prior(v) * (0.4 + 0.6 * track.score);
+            /* `densityFactor` e `meterFactor`: un battito che vale otto
+               suddivisioni sta contando la battuta (il trap letto a 70
+               invece che a 140), uno che ne vale una sta contando i
+               sedicesimi (la ballata letta a 124 invece che a 62). Contano
+               solo se c'e' un accento da leggere: su un click di metronomo
+               `strength` e' zero e la scelta resta quella di prima. */
+            const dens = Math.pow(densityFactor(v, density), strength);
+            const meter = Math.pow(meterFactor(v, tatum, fps), strength);
+            return { bpm: v, align: track.score, sal, base, dens, meter, value: base * dens * meter };
         })
         .sort((a, b) => b.value - a.value);
-    const winnerRaw = family[0] || { bpm, value: 1, align: 0 };
+    const winnerRaw = family[0] || { bpm, value: 1, base: 1, align: 0 };
     /* ultimo controllo: i battiti veri trovati dal DP danno il periodo con
        una precisione che la griglia dei ritardi non ha */
     const refined = refineWithBeats(env, fps, winnerRaw.bpm);
     const winner = { bpm: refined.bpm, value: winnerRaw.value, align: refined.align };
     const rival = family[1] || null;
-    const octave = rival && winner.value > 0
-        ? Math.max(0, Math.min(1, 1 - rival.value / winner.value))
+    /* Lo stacco si misura sull'EVIDENZA (`base`), non sul valore corretto
+       dalle preferenze metriche: altrimenti una preferenza si
+       travestirebbe da certezza. Se l'altra ottava spiega il segnale quasi
+       altrettanto bene, la confidenza deve restare bassa anche quando la
+       scelta e' netta. */
+    const octave = rival && winnerRaw.base > 0
+        ? Math.max(0, Math.min(1, 1 - Math.min(rival.base, winnerRaw.base) / Math.max(rival.base, winnerRaw.base)))
         : 1;
 
     /* Confidenza onesta (§14 della ricerca): quanto si stacca l'ottava
@@ -270,10 +474,9 @@ export function bpmFromEnvelope(env, fps, { min = BPM_MIN, max = BPM_MAX } = {})
     const seconds = env.length / fps;
     const beats = seconds / (60 / winner.bpm);
     const lengthFactor = Math.max(0, Math.min(1, beats / MIN_BEATS));
-    const density = onsetRate(env, fps);
-    const densityFactor = Math.max(0, Math.min(1, density / MIN_ONSETS));
     const alignFactor = Math.max(0, Math.min(1, 0.3 + 0.7 * winner.align));
-    const confidence = Math.max(0, Math.min(1, octave * alignFactor * lengthFactor * densityFactor));
+    const enough = Math.max(0, Math.min(1, density / MIN_ONSETS));
+    const confidence = Math.max(0, Math.min(1, octave * alignFactor * lengthFactor * enough));
 
     const alternatives = [];
     if (confidence < 0.6 && rival) alternatives.push(Math.round(rival.bpm));
@@ -285,6 +488,9 @@ export function bpmFromEnvelope(env, fps, { min = BPM_MIN, max = BPM_MAX } = {})
         align: winner.align,
         beats,
         density,
+        tatum: tatum > 0 ? fps * 60 / tatum : 0,
+        family,
+        bandWeights: mix.weights,
         scores
     };
 }
@@ -295,8 +501,11 @@ export function bpmFromEnvelope(env, fps, { min = BPM_MIN, max = BPM_MAX } = {})
  * nulla e le soglie sugli attacchi cambierebbero a ogni registrazione).
  */
 export function analyseBpm(signal, sampleRate, opts = {}) {
-    const { flux, fps } = spectralFlux(normalizePeak(signal), { sampleRate, ...opts });
-    return bpmFromEnvelope(whiten(flux, fps), fps, opts);
+    const { flux, bands, fps } = spectralFlux(normalizePeak(signal), { sampleRate, bands: BANDS, ...opts });
+    return bpmFromEnvelope(whiten(flux, fps), fps, {
+        ...opts,
+        bands: bands ? bands.map((b) => whiten(b, fps)) : null
+    });
 }
 
 /** Raddoppia o dimezza restando dentro i limiti utili. */

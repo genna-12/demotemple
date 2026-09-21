@@ -175,6 +175,21 @@
                     <span id="tb-mic-state" data-i18n="mic-state-granted">Microfono: consentito</span>
                     <button type="button" id="tb-mic-revoke" class="tb-btn tb-btn--ghost" data-i18n="mic-revoke">Revoca</button>
                 </div>
+                <!-- CONTRATTO shared/nav.js (spec 14b, riga "PACCHETTI DEL
+                     RIMARIO" nel commento in testa a nav.js): riga dei
+                     pacchetti lingua scaricati, accanto a quella del
+                     microfono; [hidden] finche' non ce n'e' nessuno. nav.js
+                     riempie #tb-pack-list (nome, peso, "Rimuovi") e gestisce
+                     la conferma. -->
+                <div id="tb-packs-row" class="tb-packs-row" hidden>
+                    <span data-i18n="pack-installed">Pacchetti del rimario</span>
+                    <ul id="tb-pack-list" class="tb-pack-list"></ul>
+                    <div id="tb-pack-confirm" class="tb-pack-confirm" hidden>
+                        <span data-i18n="pack-remove-ask">Rimuovo questo pacchetto? Potrai riscaricarlo.</span>
+                        <button type="button" id="tb-pack-yes" class="tb-btn" data-i18n="pack-remove">Rimuovi</button>
+                        <button type="button" id="tb-pack-no" class="tb-btn tb-btn--ghost" data-i18n="pack-remove-cancel">Annulla</button>
+                    </div>
+                </div>
                 <div class="tb-menu-foot-row">
                     <div class="tb-lang-switch" role="group" aria-label="Lingua / Language">
                         <button type="button" data-lang="it" aria-pressed="true">IT</button>

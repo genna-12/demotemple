@@ -1,0 +1,41 @@
+{
+ "lingua": "es",
+ "nome": "Español",
+ "versione": "v1",
+ "forme": 150000,
+ "esatti": 150000,
+ "derivate": true,
+ "file": {
+  "parole": {
+   "nome": "parole-v1.txt",
+   "gzip": 449115,
+   "byte": 1221039
+  },
+  "chiavi": "derivata",
+  "tratti": "derivata"
+ },
+ "gzip": 449115,
+ "licenza": "CC BY-SA 4.0",
+ "fonti": [
+  {
+   "nome": "Wikizionario spagnolo via kaikki.org (wiktextract)",
+   "licenza": "CC BY-SA 4.0",
+   "url": "https://kaikki.org/eswiktionary/"
+  },
+  {
+   "nome": "hermitdave/FrequencyWords (OpenSubtitles 2018)",
+   "licenza": "CC BY-SA 4.0",
+   "url": "https://github.com/hermitdave/FrequencyWords"
+  },
+  {
+   "nome": "words/an-array-of-spanish-words",
+   "licenza": "MIT",
+   "url": "https://github.com/words/an-array-of-spanish-words"
+  },
+  {
+   "nome": "Regole RAE di acentuacion",
+   "licenza": "regole",
+   "url": "https://www.rae.es/dpd/tilde"
+  }
+ ]
+}

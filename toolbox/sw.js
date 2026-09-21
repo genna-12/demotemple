@@ -20,11 +20,20 @@
  * l'installazione tutto-o-niente li scarica subito e l'accordatore
  * funziona offline dal primo uso, prima ancora che `toolbox-vendor` si
  * popoli da solo (vedi vendor() sotto, che li trova li' come ripiego).
+ *
+ * `toolbox-rimario` (spec 14 §2): stessa idea di `toolbox-vendor`, ma per
+ * `/penna/data/*`. NON e' in SHELL/TOOLS (~800 KB non si fanno pagare a
+ * chi installa la Toolbox solo per il metronomo): la prima ricerca nel
+ * rimario li scarica da sola, cache-first da li' in poi, mai svuotata al
+ * cambio VERSION. I tre file portano il suffisso `-v1`/`-v2`/... nel nome
+ * (spec 14 §4): cambia il nome, non il contenuto sotto lo stesso nome,
+ * quindi cache-first e' sicuro senza bisogno di `cache:'reload'`.
  */
 
-const VERSION = 'tb-v16';
+const VERSION = 'tb-v21';
 const CACHE = 'toolbox-' + VERSION;
 const VENDOR_CACHE = 'toolbox-vendor';
+const RIMARIO_CACHE = 'toolbox-rimario';
 
 /* Guscio comune: indice, 404, moduli condivisi, font, icone, manifest. */
 const SHELL = [
@@ -67,6 +76,16 @@ const SHELL = [
     '/shared/analysis/key.js',
     '/shared/analysis/loudness.js',
     '/shared/tags.js',
+    '/shared/testo/sillabe.js',
+    '/shared/testo/fonetica.js',
+    '/shared/testo/metrica.js',
+    '/shared/testo/lingue.js',
+    '/shared/testo/en/sillabe.js',
+    '/shared/testo/en/fonetica.js',
+    '/shared/testo/fr/sillabe.js',
+    '/shared/testo/fr/fonetica.js',
+    '/shared/testo/es/sillabe.js',
+    '/shared/testo/es/fonetica.js',
 
     '/assets/brand/logo-arancione.png',
     '/assets/brand/logo-arancione-96.png',
@@ -113,7 +132,22 @@ const TOOLS = [
     '/dna/dna.js',
     '/dna/dna.css',
     '/dna/i18n.js',
-    '/dna/dna-worker.js'
+    '/dna/dna-worker.js',
+
+    '/penna/',
+    '/penna/penna.js',
+    '/penna/penna.css',
+    '/penna/i18n.js',
+    '/penna/rimario-worker.js',
+    '/penna/pacchetti.js',
+
+    '/pianificatore-uscita/',
+    '/pianificatore-uscita/pianificatore.js',
+    '/pianificatore-uscita/pianificatore.css',
+    '/pianificatore-uscita/i18n.js',
+    '/pianificatore-uscita/tappe.js',
+    '/pianificatore-uscita/timeline.js',
+    '/pianificatore-uscita/ics.js'
 ];
 
 const PRECACHE = SHELL.concat(TOOLS);
@@ -147,7 +181,7 @@ self.addEventListener('activate', (event) => {
     event.waitUntil((async () => {
         const names = await caches.keys();
         await Promise.all(names
-            .filter((n) => n.startsWith('toolbox-') && n !== CACHE && n !== VENDOR_CACHE)
+            .filter((n) => n.startsWith('toolbox-') && n !== CACHE && n !== VENDOR_CACHE && n !== RIMARIO_CACHE)
             .map((n) => caches.delete(n)));
         await self.clients.claim();
     })());
@@ -164,6 +198,18 @@ async function vendor(req) {
     const shell = await caches.open(CACHE);
     const shellHit = await shell.match(req);
     if (shellHit) return shellHit;
+    const res = await fetch(req);
+    if (res.ok && res.type === 'basic') await cache.put(req, res.clone());
+    return res;
+}
+
+/* Rimario di Penna (spec 14 §2): cache-first in `toolbox-rimario`, mai
+   svuotata al cambio VERSION, stesso principio di vendor() sopra ma senza
+   il ripiego su SHELL (i dati non ci stanno mai). */
+async function rimario(req) {
+    const cache = await caches.open(RIMARIO_CACHE);
+    const hit = await cache.match(req);
+    if (hit) return hit;
     const res = await fetch(req);
     if (res.ok && res.type === 'basic') await cache.put(req, res.clone());
     return res;
@@ -206,6 +252,8 @@ self.addEventListener('fetch', (event) => {
 
     if (url.pathname.startsWith('/vendor/')) {
         event.respondWith(vendor(req));
+    } else if (url.pathname.startsWith('/penna/data/')) {
+        event.respondWith(rimario(req));
     } else if (req.mode === 'navigate') {
         event.respondWith(navigation(req, url));
     } else {

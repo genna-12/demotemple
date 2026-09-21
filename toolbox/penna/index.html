@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="it">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="format-detection" content="telephone=no, address=no, email=no">
+    <title>Penna | Tiny Temple Toolbox</title>
+
+    <link rel="icon" href="/assets/icons/favicon.ico">
+    <link rel="apple-touch-icon" href="/assets/icons/apple-touch-icon.png">
+    <meta name="theme-color" content="#080808">
+    <meta name="apple-mobile-web-app-title" content="Toolbox">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <link rel="manifest" href="/manifest.webmanifest">
+
+    <meta name="description" content="Blocco testi con sillabe per verso e rime evidenziate, più il rimario italiano offline: rime perfette, assonanze, consonanze e multisillabiche, gratis e senza upload.">
+    <link rel="canonical" href="https://toolbox.tinytemplestudio.it/penna/">
+
+    <script src="/shared/lang-boot.js"></script>
+    <link rel="stylesheet" href="/shared/tokens.css">
+    <link rel="stylesheet" href="/shared/base.css">
+    <link rel="stylesheet" href="/shared/components.css">
+    <link rel="stylesheet" href="/penna/penna.css">
+</head>
+
+<body>
+
+    <!-- tb-bar resta senza sfondo/posizione propri: e' solo il contenitore
+         atteso da shared/nav.js (mountBar). Niente titolo in barra (spec 03
+         §11.6): "Penna" e' solo l'h1 sotto; mountBar va chiamata senza
+         titleKey. -->
+    <header class="tb-bar">
+        <a class="tb-logo in-nav" href="/" data-i18n-aria="bar-logo-aria" aria-label="Toolbox, vai alla dashboard">
+            <img src="/assets/brand/logo-arancione.png" width="100" height="100" alt="" loading="eager">
+            <span class="sr-only">Tiny Temple Toolbox</span>
+        </a>
+        <button type="button" class="tb-menu-toggle is-visible" aria-controls="tb-menu" aria-expanded="false"
+            data-i18n-aria="bar-menu-open" aria-label="Apri il menu">
+            <span class="tb-menu-toggle-line"></span>
+            <span class="tb-menu-toggle-line"></span>
+        </button>
+        <!-- CONTRATTO shared/nav.js: fratello di .tb-menu-toggle, [hidden]
+             di default, nav.js toglie [hidden] mentre uno stream del
+             microfono e' attivo in QUALSIASI strumento. Penna non usa il
+             microfono ma il markup resta identico alle altre pagine. -->
+        <span id="tb-mic-live" class="tb-mic-live" hidden role="status"
+            data-i18n-aria="mic-live-aria" aria-label="Microfono attivo">
+            <svg aria-hidden="true"><use href="#tb-icon-mic"></use></svg>
+        </span>
+    </header>
+
+    <!-- CONTRATTO shared/nav.js: vedi il commento in index.html vicino a #tb-menu. -->
+    <svg class="tb-sprite" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg">
+        <symbol id="tb-icon-mic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"></path>
+            <path d="M19 11a7 7 0 0 1-14 0"></path>
+            <path d="M12 18v4"></path>
+            <path d="M9 22h6"></path>
+        </symbol>
+        <symbol id="tb-icon-metronomo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M8 20h8"></path>
+            <path d="M9 20 11 5h2l2 15"></path>
+            <path d="M12 9v7"></path>
+        </symbol>
+        <symbol id="tb-icon-accordatore" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M5 16a7 7 0 0 1 14 0"></path>
+            <path d="M12 16 15 9"></path>
+            <circle cx="12" cy="16" r="1" fill="currentColor" stroke="none"></circle>
+        </symbol>
+        <symbol id="tb-icon-dna" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 12h3l2-7 4 14 4-14 2 7h3"></path>
+        </symbol>
+        <symbol id="tb-icon-penna" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 20l4-1 11-11-3-3L5 16z"></path>
+            <path d="M14 6l3 3"></path>
+        </symbol>
+        <symbol id="tb-icon-calcolatore-tempo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="13" r="8"></circle>
+            <path d="M12 9v4l3 2"></path>
+            <path d="M9 2h6"></path>
+        </symbol>
+        <symbol id="tb-icon-pianificatore-uscita" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="4" y="5" width="16" height="16" rx="2"></rect>
+            <path d="M4 10h16"></path>
+            <path d="M8 3v4"></path>
+            <path d="M16 3v4"></path>
+        </symbol>
+        <symbol id="tb-icon-checklist-consegna" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="4" y="4" width="16" height="16" rx="2"></rect>
+            <path d="M8 12l3 3 6-7"></path>
+        </symbol>
+        <symbol id="tb-icon-split-sheet" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="9"></circle>
+            <path d="M12 12V3"></path>
+            <path d="M12 12l7.5 4.33"></path>
+        </symbol>
+        <!-- Icone di UI comuni (spec 03 §3/§5/§9). -->
+        <symbol id="tb-icon-arrow-left" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 12H5"></path>
+            <path d="M11 18l-6-6 6-6"></path>
+        </symbol>
+        <symbol id="tb-icon-chevron-down" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M6 9l6 6 6-6"></path>
+        </symbol>
+        <symbol id="tb-icon-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M5 13l4 4L19 7"></path>
+        </symbol>
+        <symbol id="tb-icon-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 5v14"></path>
+            <path d="M5 12h14"></path>
+        </symbol>
+        <!-- Icone nuove per Penna (spec 14): documenti, condividi, elimina. -->
+        <symbol id="tb-icon-docs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M7 3h7l4 4v14H7z"></path>
+            <path d="M14 3v4h4"></path>
+            <path d="M9.5 12h5"></path>
+            <path d="M9.5 16h5"></path>
+        </symbol>
+        <symbol id="tb-icon-share" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="18" cy="5" r="2.5"></circle>
+            <circle cx="6" cy="12" r="2.5"></circle>
+            <circle cx="18" cy="19" r="2.5"></circle>
+            <path d="M8.3 10.7l7.4-4.4"></path>
+            <path d="M8.3 13.3l7.4 4.4"></path>
+        </symbol>
+        <symbol id="tb-icon-trash" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 7h16"></path>
+            <path d="M9 7V4h6v3"></path>
+            <path d="M6 7l1 13h10l1-13"></path>
+            <path d="M10 11v6"></path>
+            <path d="M14 11v6"></path>
+        </symbol>
+    </svg>
+
+    <div id="tb-menu" class="tb-menu" hidden>
+        <div class="tb-menu-scrim"></div>
+        <div class="tb-menu-panel" role="dialog" aria-modal="true" aria-label="Menu">
+            <a class="tb-menu-home tb-menu-item" href="/" data-i18n="menu-all">Dashboard</a>
+            <div class="tb-menu-title" data-i18n="menu-tools">Strumenti</div>
+            <div class="tb-menu-groups"></div>
+            <div class="tb-menu-foot tb-menu-item">
+                <div class="tb-menu-install-group">
+                    <button type="button" id="tb-menu-install" class="tb-menu-install" data-i18n="menu-install">Installa l’app</button>
+                    <details class="tb-menu-ios" id="tb-menu-ios" hidden>
+                        <summary data-i18n="idx-ios-title">Su iPhone</summary>
+                        <div data-pwa-when="safari">
+                            <ol>
+                                <li data-i18n="idx-ios-step1">Apri questa pagina in Safari.</li>
+                                <li data-i18n="idx-ios-step2">Tocca Condividi (il quadrato con la freccia in
+                                    alto).</li>
+                                <li data-i18n="idx-ios-step3">Scegli &ldquo;Aggiungi alla schermata
+                                    Home&rdquo;.</li>
+                            </ol>
+                        </div>
+                        <div data-pwa-when="inapp">
+                            <strong data-i18n="idx-ios-inapp-title">Apri in Safari</strong>
+                            <p data-i18n="idx-ios-inapp-text">Questo browser non permette di installare l’app.
+                                Tocca il menu e scegli &ldquo;Apri in Safari&rdquo;, poi segui i passaggi per
+                                aggiungerla alla schermata Home.</p>
+                        </div>
+                    </details>
+                    <p class="tb-menu-manual" data-pwa-when="manual" hidden data-i18n="pwa-manual">Usa il menu del
+                        browser: Installa app oppure Aggiungi alla schermata Home.</p>
+                </div>
+                <!-- CONTRATTO shared/nav.js: [hidden] finche' il consenso al
+                     microfono non c'e', in qualunque strumento sia stato
+                     dato (Penna non lo usa ma il markup resta identico). -->
+                <div id="tb-mic-row" class="tb-mic-row" hidden>
+                    <span id="tb-mic-state" data-i18n="mic-state-granted">Microfono: consentito</span>
+                    <button type="button" id="tb-mic-revoke" class="tb-btn tb-btn--ghost" data-i18n="mic-revoke">Revoca</button>
+                </div>
+                <!-- CONTRATTO shared/nav.js (spec 14b, riga "PACCHETTI DEL
+                     RIMARIO" nel commento in testa a nav.js): riga dei
+                     pacchetti lingua scaricati, accanto a quella del
+                     microfono; [hidden] finche' non ce n'e' nessuno. nav.js
+                     riempie #tb-pack-list (nome, peso, "Rimuovi") e gestisce
+                     la conferma. -->
+                <div id="tb-packs-row" class="tb-packs-row" hidden>
+                    <span data-i18n="pack-installed">Pacchetti del rimario</span>
+                    <ul id="tb-pack-list" class="tb-pack-list"></ul>
+                    <div id="tb-pack-confirm" class="tb-pack-confirm" hidden>
+                        <span data-i18n="pack-remove-ask">Rimuovo questo pacchetto? Potrai riscaricarlo.</span>
+                        <button type="button" id="tb-pack-yes" class="tb-btn" data-i18n="pack-remove">Rimuovi</button>
+                        <button type="button" id="tb-pack-no" class="tb-btn tb-btn--ghost" data-i18n="pack-remove-cancel">Annulla</button>
+                    </div>
+                </div>
+                <!-- CONTRATTO penna.js (spec 14b §3/§5): lingua DEL DOCUMENTO
+                     (decide le regole del gutter e la lingua proposta al
+                     rimario, indipendente da #pen-lang) e "e muta", solo qui
+                     perche' solo Penna ne ha bisogno. #pen-emuet e' un
+                     input[type=checkbox] come #pen-mono/#pen-colors (non
+                     .tb-toggle: quel componente e' un bottone, penna.js
+                     legge .checked e ascolta "change"); penna.js nasconde la
+                     sua riga fuori dal francese mettendo [hidden] sul
+                     <label> che la contiene. -->
+                <div class="pen-menu-doc tb-menu-item">
+                    <div class="tb-select pen-doc-lang-field" data-value="it">
+                        <span class="pen-doc-lang-label" data-i18n="penna-doc-lang">Lingua del testo</span>
+                        <select id="pen-doc-lang" class="tb-select-native">
+                            <option value="it" selected>IT</option>
+                            <option value="en">EN</option>
+                            <option value="fr">FR</option>
+                            <option value="es">ES</option>
+                        </select>
+                        <button type="button" class="tb-select-trigger" aria-haspopup="listbox" aria-expanded="false"
+                            aria-controls="pen-doc-lang-panel" id="pen-doc-lang-trigger">
+                            <span class="tb-select-value">IT</span>
+                            <svg class="tb-select-chevron" aria-hidden="true"><use href="#tb-icon-chevron-down"></use></svg>
+                        </button>
+                        <div class="tb-select-panel" role="listbox" id="pen-doc-lang-panel" hidden
+                            aria-labelledby="pen-doc-lang-trigger" tabindex="-1">
+                            <button type="button" class="tb-select-option" role="option" data-value="it" aria-selected="true">
+                                <span>IT</span>
+                                <svg class="tb-select-check" aria-hidden="true"><use href="#tb-icon-check"></use></svg>
+                            </button>
+                            <button type="button" class="tb-select-option" role="option" data-value="en" aria-selected="false">
+                                <span>EN</span>
+                                <svg class="tb-select-check" aria-hidden="true"><use href="#tb-icon-check"></use></svg>
+                            </button>
+                            <button type="button" class="tb-select-option" role="option" data-value="fr" aria-selected="false">
+                                <span>FR</span>
+                                <svg class="tb-select-check" aria-hidden="true"><use href="#tb-icon-check"></use></svg>
+                            </button>
+                            <button type="button" class="tb-select-option" role="option" data-value="es" aria-selected="false">
+                                <span>ES</span>
+                                <svg class="tb-select-check" aria-hidden="true"><use href="#tb-icon-check"></use></svg>
+                            </button>
+                        </div>
+                    </div>
+                    <label class="pen-toggle-row">
+                        <span data-i18n="penna-emuet">E muta: conta (verso classico)</span>
+                        <span class="pen-toggle">
+                            <input type="checkbox" id="pen-emuet">
+                            <span class="pen-toggle-thumb" aria-hidden="true"></span>
+                        </span>
+                    </label>
+                </div>
+                <div class="tb-menu-foot-row">
+                    <div class="tb-lang-switch" role="group" aria-label="Lingua / Language">
+                        <button type="button" data-lang="it" aria-pressed="true">IT</button>
+                        <button type="button" data-lang="en" aria-pressed="false">EN</button>
+                    </div>
+                    <a class="tb-menu-ext" href="https://tinytemplestudio.it/" data-i18n="menu-ext">Sito dello
+                        studio</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="tb-shell pen-shell">
+        <header class="tb-page-header">
+            <h1 data-i18n="penna-title">Penna</h1>
+        </header>
+
+        <!-- CONTRATTO penna.js (spec 14 §5, contratto scritto in testa a
+             penna.js): data-pen-state su #penna pilota via CSS quale
+             schermo dell'editor si vede (vuoto|scrittura|documenti),
+             data-pen-count quale conteggio e' attivo (metrico|
+             grammaticale); niente altro JS qui, solo selettori CSS su
+             questi due attributi (vedi penna.css). "vuoto" e' lo stato
+             iniziale: nessun documento ancora aperto. Le classi is-mono/
+             is-colori le mette/toglie penna.js sulla stessa #penna. -->
+        <main id="penna" class="pen" data-pen-state="vuoto" data-pen-count="metrico">
+            <div class="pen-layout">
+
+                <section id="pen-editor" class="pen-editor" aria-label="Editor">
+                    <!-- Barra comandi del documento: sempre visibile, in
+                         qualunque schermo dell'editor. -->
+                    <div class="pen-editor-bar">
+                        <button type="button" id="pen-new" class="tb-btn tb-btn--icon" data-i18n-aria="penna-new" aria-label="Nuovo testo">
+                            <svg aria-hidden="true"><use href="#tb-icon-plus"></use></svg>
+                        </button>
+                        <label for="pen-docs-toggle" class="tb-btn tb-btn--icon pen-docs-open" data-i18n-aria="penna-docs" aria-label="Documenti">
+                            <svg aria-hidden="true"><use href="#tb-icon-docs"></use></svg>
+                        </label>
+                        <input type="text" id="pen-title" class="pen-title" data-i18n-aria="penna-title-aria"
+                            aria-label="Titolo del testo" data-i18n-placeholder="penna-untitled" placeholder="Senza titolo">
+                        <button type="button" id="pen-share" class="tb-btn tb-btn--icon" data-i18n-aria="penna-share" aria-label="Condividi">
+                            <svg aria-hidden="true"><use href="#tb-icon-share"></use></svg>
+                        </button>
+                        <button type="button" id="pen-delete" class="tb-btn tb-btn--icon" data-i18n-aria="penna-delete" aria-label="Elimina">
+                            <svg aria-hidden="true"><use href="#tb-icon-trash"></use></svg>
+                        </button>
+                    </div>
+
+                    <p id="pen-status" class="tb-status pen-status" aria-live="polite"></p>
+
+                    <!-- ---------- Editor: stato vuoto ---------- -->
+                    <!-- CSS-driven da [data-pen-state="vuoto"] su #penna
+                         (spec 14 §3): nessun documento ancora aperto o
+                         creato in questa sessione. "Nuovo testo" e' un
+                         checkbox-hack (#pen-docs-toggle e' il documenti,
+                         qui serve solo aprire un documento: penna.js lo fa
+                         con nuovo(), gia' agganciato a #pen-new). -->
+                    <div class="pen-empty">
+                        <p data-i18n="penna-empty">Scrivi il primo verso</p>
+                        <label for="pen-new" class="tb-btn tb-btn--primary" data-i18n="penna-new">Nuovo testo</label>
+                    </div>
+
+                    <!-- ---------- Editor: stato scrittura ---------- -->
+                    <div class="pen-write">
+                        <div class="pen-body">
+                            <!-- Gutter dei conteggi (spec 14 §3/§5): aria-hidden,
+                                 penna.js ci scrive un <span class="pen-n"
+                                 data-riga="i"> per verso (bottone se il verso ha
+                                 sinalefi, altrimenti span). Allineato riga per
+                                 riga alla textarea: stesso font/line-height,
+                                 nessun ritorno a capo automatico su nessuno dei
+                                 due (vedi penna.css). -->
+                            <div id="pen-gutter" class="pen-gutter" aria-hidden="true"></div>
+                            <div class="pen-text-wrap">
+                                <!-- Livello dei colori sotto la textarea (spec 14
+                                     §3, facoltativo nel contratto ma necessario
+                                     al toggle "Rime a colori": senza, renderColori()
+                                     di penna.js non ha dove scrivere). Sfondo della
+                                     textarea trasparente, stesso identico font e
+                                     line-height dei due livelli. -->
+                                <div id="pen-lines" class="pen-lines" aria-hidden="true"></div>
+                                <textarea id="pen-text" class="pen-text" rows="1" spellcheck="false" autocapitalize="sentences"
+                                    data-i18n-aria="penna-text-aria" aria-label="Testo del brano"
+                                    data-i18n-placeholder="penna-empty" placeholder="Scrivi il primo verso"></textarea>
+                            </div>
+                        </div>
+
+                        <div class="pen-controls">
+                            <div id="pen-count-mode" class="tb-segment" role="radiogroup" data-i18n-aria="penna-count-aria"
+                                aria-label="Modalità di conteggio delle sillabe">
+                                <button type="button" class="tb-segment-btn" data-pen-count="metrico" role="radio"
+                                    aria-checked="true" data-i18n="penna-metric">Metrico</button>
+                                <button type="button" class="tb-segment-btn" data-pen-count="grammaticale" role="radio"
+                                    aria-checked="false" data-i18n="penna-grammatical">Grammaticale</button>
+                            </div>
+
+                            <label class="pen-toggle-row">
+                                <span data-i18n="penna-mono">Monospazio</span>
+                                <span class="pen-toggle">
+                                    <input type="checkbox" id="pen-mono">
+                                    <span class="pen-toggle-thumb" aria-hidden="true"></span>
+                                </span>
+                            </label>
+                            <label class="pen-toggle-row">
+                                <span data-i18n="penna-colors">Rime a colori</span>
+                                <span class="pen-toggle">
+                                    <input type="checkbox" id="pen-colors" checked>
+                                    <span class="pen-toggle-thumb" aria-hidden="true"></span>
+                                </span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- ---------- Editor: stato documenti ---------- -->
+                    <!-- Apertura/chiusura senza JS (nessuna logica qui, spec 14
+                         §5): checkbox fuori vista + label, come il rimario sotto.
+                         penna.js legge solo #pen-docs/#pen-delete-confirm, non
+                         tocca l'apertura di questo pannello. -->
+                    <input type="checkbox" id="pen-docs-toggle" class="sr-only pen-docs-toggle-input">
+                    <div class="pen-docs-screen">
+                        <div class="pen-docs-head">
+                            <h2 data-i18n="penna-docs">Documenti</h2>
+                            <label for="pen-new" class="tb-btn tb-btn--primary" data-i18n="penna-new">Nuovo testo</label>
+                            <label for="pen-docs-toggle" class="tb-btn--icon pen-docs-close" data-i18n-aria="sheet-close" aria-label="Chiudi">
+                                &times;
+                            </label>
+                        </div>
+                        <!-- Vuoto: penna.js lo riempie con <li class="pen-doc">
+                             <button class="pen-doc-open" data-pen-doc="...">titolo +
+                             prima riga + data</button><button class="pen-doc-del
+                             tb-btn--icon" data-pen-del="...">&times;</button></li>
+                             per documento, nessun tetto (spec 14 §4). -->
+                        <ul id="pen-docs" class="pen-docs"></ul>
+                        <!-- Conferma inline (niente confirm() del browser, stesso
+                             principio dello storico del DNA). -->
+                        <div id="pen-delete-confirm" class="pen-delete-confirm" hidden>
+                            <span data-i18n="penna-delete-ask">Elimino questo testo?</span>
+                            <button type="button" id="pen-delete-yes" class="tb-btn" data-i18n="penna-delete">Elimina</button>
+                            <button type="button" id="pen-delete-no" class="tb-btn tb-btn--ghost" data-i18n="penna-cancel">Annulla</button>
+                        </div>
+                    </div>
+
+                    <!-- Barra inferiore mobile (spec 14 §3): titolo corrente,
+                         conteggio del verso dove sta il cursore (aria-live sta
+                         gia' su #pen-status, che penna.js aggiorna), bottone
+                         "Rime" che apre il rimario come tb-sheet. Da 900px il
+                         rimario e' una colonna fissa e questa barra sparisce
+                         (penna.css). -->
+                    <div class="pen-bottombar">
+                        <span class="pen-bottombar-hint" data-i18n="penna-rhymes">Rime</span>
+                        <label for="pen-rhyme-toggle" class="tb-btn tb-btn--primary pen-rhyme-open"
+                            aria-haspopup="dialog" aria-controls="pen-rhyme" data-i18n="penna-rhymes">Rime</label>
+                    </div>
+                </section>
+
+                <!-- Apertura del rimario su mobile, sempre visibile da 900px
+                     (checkbox-hack, nessuna logica JS qui): il rimario e' un
+                     tb-sheet come gli altri strumenti (spec 03 §2) finche' lo
+                     schermo e' stretto, colonna fissa oltre 900px (penna.css
+                     neutralizza scrim/posizione fissa sopra quella soglia). -->
+                <input type="checkbox" id="pen-rhyme-toggle" class="sr-only pen-rhyme-toggle-input">
+                <div class="tb-sheet-scrim pen-rhyme-scrim" id="pen-rhyme-scrim"></div>
+
+                <section id="pen-rhyme" class="pen-rhyme tb-sheet" aria-label="Rimario">
+                    <div class="tb-sheet-head">
+                        <h2 data-i18n="penna-rhymes">Rime</h2>
+                        <button type="button" class="tb-info" aria-haspopup="dialog" aria-expanded="false"
+                            aria-controls="pen-sources-info" data-i18n-aria="penna-sources" aria-label="Da dove vengono le rime">
+                            <span class="tb-info-glyph" aria-hidden="true">i</span>
+                        </button>
+                        <label for="pen-rhyme-toggle" class="tb-sheet-close pen-rhyme-close" data-i18n-aria="sheet-close" aria-label="Chiudi">
+                            &times;
+                        </label>
+                    </div>
+
+                    <div class="tb-sheet-body pen-rhyme-body">
+                        <!-- CONTRATTO penna.js (spec 14b §3/§5): lingua del
+                             RIMARIO caricato. Un bottone per lingua; penna.js
+                             mette aria-checked/is-active su quella attiva e
+                             is-missing (puntino, penna.css) su quelle non
+                             scaricate; il tocco apre #pen-pack-sheet o
+                             ricarica dalla cache se e' gia' installata. -->
+                        <div id="pen-lang" class="tb-segment" role="radiogroup" data-i18n-aria="penna-lang"
+                            aria-label="Lingua del rimario">
+                            <button type="button" class="tb-segment-btn" data-pen-lang="it" role="radio" aria-checked="true">IT</button>
+                            <button type="button" class="tb-segment-btn" data-pen-lang="en" role="radio" aria-checked="false">EN</button>
+                            <button type="button" class="tb-segment-btn" data-pen-lang="fr" role="radio" aria-checked="false">FR</button>
+                            <button type="button" class="tb-segment-btn" data-pen-lang="es" role="radio" aria-checked="false">ES</button>
+                        </div>
+
+                        <label class="pen-query-row">
+                            <span class="sr-only" data-i18n="penna-word">Parola</span>
+                            <input type="search" id="pen-query" class="pen-query" autocomplete="off" autocapitalize="none"
+                                data-i18n-placeholder="penna-word" placeholder="Parola" lang="it">
+                        </label>
+
+                        <div id="pen-type" class="tb-segment tb-segment--scroll" role="radiogroup"
+                            data-i18n-aria="penna-type-aria" aria-label="Tipo di rima">
+                            <button type="button" class="tb-segment-btn" data-pen-type="rime" role="radio"
+                                aria-checked="true" data-i18n="penna-rhymes">Rime</button>
+                            <button type="button" class="tb-segment-btn" data-pen-type="assonanze" role="radio"
+                                aria-checked="false" data-i18n="penna-assonances">Assonanze</button>
+                            <button type="button" class="tb-segment-btn" data-pen-type="consonanze" role="radio"
+                                aria-checked="false" data-i18n="penna-consonances">Consonanze</button>
+                            <button type="button" class="tb-segment-btn" data-pen-type="multi" role="radio"
+                                aria-checked="false" data-i18n="penna-multi">Multisillabiche</button>
+                        </div>
+
+                        <!-- .tb-select (spec 03 §2/§6, contratto in shared/components.css):
+                             il <select> nativo resta il valore vero anche senza JS;
+                             select.js aggiunge .is-enhanced e mostra pillola+pannello.
+                             penna.js ascolta "change" sul nativo (id invariato). -->
+                        <div class="tb-select" data-value="tutte">
+                            <select id="pen-syl" class="tb-select-native">
+                                <option value="tutte" selected data-i18n="penna-syl-all">Tutte</option>
+                                <option value="1">1</option>
+                                <option value="2">2</option>
+                                <option value="3">3</option>
+                                <option value="4+">4+</option>
+                            </select>
+                            <button type="button" class="tb-select-trigger" aria-haspopup="listbox" aria-expanded="false"
+                                aria-controls="pen-syl-panel" id="pen-syl-trigger">
+                                <span class="tb-select-label" data-i18n="penna-syllables">Sillabe</span>
+                                <span class="tb-select-value" data-i18n="penna-syl-all">Tutte</span>
+                                <svg class="tb-select-chevron" aria-hidden="true"><use href="#tb-icon-chevron-down"></use></svg>
+                            </button>
+                            <div class="tb-select-panel" role="listbox" id="pen-syl-panel" hidden
+                                aria-labelledby="pen-syl-trigger" tabindex="-1">
+                                <button type="button" class="tb-select-option" role="option" data-value="tutte" aria-selected="true">
+                                    <span data-i18n="penna-syl-all">Tutte</span>
+                                    <svg class="tb-select-check" aria-hidden="true"><use href="#tb-icon-check"></use></svg>
+                                </button>
+                                <button type="button" class="tb-select-option" role="option" data-value="1" aria-selected="false">
+                                    <span>1</span>
+                                    <svg class="tb-select-check" aria-hidden="true"><use href="#tb-icon-check"></use></svg>
+                                </button>
+                                <button type="button" class="tb-select-option" role="option" data-value="2" aria-selected="false">
+                                    <span>2</span>
+                                    <svg class="tb-select-check" aria-hidden="true"><use href="#tb-icon-check"></use></svg>
+                                </button>
+                                <button type="button" class="tb-select-option" role="option" data-value="3" aria-selected="false">
+                                    <span>3</span>
+                                    <svg class="tb-select-check" aria-hidden="true"><use href="#tb-icon-check"></use></svg>
+                                </button>
+                                <button type="button" class="tb-select-option" role="option" data-value="4+" aria-selected="false">
+                                    <span>4+</span>
+                                    <svg class="tb-select-check" aria-hidden="true"><use href="#tb-icon-check"></use></svg>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Parola sconosciuta (fuori lemmario, spec 14 §3):
+                             [hidden] di default, penna.js la mostra quando la
+                             ricerca torna "sconosciuta" e ricalcola la chiave
+                             col tb-segment piana/sdrucciola. -->
+                        <div id="pen-unknown" class="pen-unknown" hidden>
+                            <span class="tb-pill pen-unknown-badge" data-i18n="penna-unknown">Rima calcolata dalla forma scritta</span>
+                            <div class="tb-segment" role="radiogroup" aria-label="Accento">
+                                <button type="button" class="tb-segment-btn" data-pen-forza="piana" role="radio"
+                                    aria-checked="true" data-i18n="penna-piana">Piana</button>
+                                <button type="button" class="tb-segment-btn" data-pen-forza="sdrucciola" role="radio"
+                                    aria-checked="false" data-i18n="penna-sdrucciola">Sdrucciola</button>
+                            </div>
+                        </div>
+
+                        <!-- Scaricamento del rimario (spec 14 §2/§4): l'editor
+                             funziona offline da subito, questo pannello chiede la
+                             rete una volta sola. penna.js scrive --pen-pct e
+                             aria-valuenow su #pen-progress durante lo scarico e
+                             nasconde #pen-download a fine corsa. -->
+                        <div class="pen-rhyme-download">
+                            <button type="button" id="pen-download" class="tb-btn tb-btn--primary" data-i18n="penna-download">
+                                Scarica il rimario (≈1 MB, una volta sola)
+                            </button>
+                            <div id="pen-progress" class="pen-progress" role="progressbar" aria-valuemin="0"
+                                aria-valuemax="100" aria-valuenow="0" hidden></div>
+                        </div>
+
+                        <!-- Vuoto: penna.js lo riempie con <button class="pen-hit
+                             tb-pill" data-pen-word="..." lang="it">parola <span
+                             class="pen-syl">N</span></button> per risultato, o col
+                             testo di penna-no-results se non ce n'e'. Resta
+                             SEMPRE lang="it" anche con l'interfaccia in inglese
+                             (spec 14 §3). -->
+                        <ul id="pen-results" class="pen-results" aria-live="polite" lang="it"></ul>
+
+                        <!-- Solo da 900px (spec 14 §3: "su desktop tb-toggle
+                             'Copia invece di inserire'"), nascosto sotto con CSS. -->
+                        <label class="pen-toggle-row pen-copy-row">
+                            <span data-i18n="penna-copy-mode">Copia invece di inserire</span>
+                            <span class="pen-toggle">
+                                <input type="checkbox" id="pen-copy-mode">
+                                <span class="pen-toggle-thumb" aria-hidden="true"></span>
+                            </span>
+                        </label>
+                    </div>
+                </section>
+            </div>
+        </main>
+
+        <!-- Riga sola su ogni pagina (spec 03 §4). -->
+        <footer class="tb-footer">
+            <p class="tb-footer-line">
+                <span>Tiny Temple Studio</span>
+                <span class="tb-footer-sep" aria-hidden="true">&middot;</span>
+                <a href="https://www.iubenda.com/privacy-policy/35861019" target="_blank" rel="noopener"
+                    data-i18n="tb-footer-privacy">Privacy</a>
+                <span class="tb-footer-sep" aria-hidden="true">&middot;</span>
+                <span data-i18n="footer-designed">Designed by Genna</span>
+            </p>
+        </footer>
+    </div>
+
+    <!-- Foglio delle sinalefi del verso (spec 14 §3, contratto in testa a
+         penna.js): apriSinalefi() toglie [hidden] a #pen-sheet; la chiusura
+         (X/scrim/Esc) e' lo stesso meccanismo tb-sheet delle altre pagine. -->
+    <div class="tb-sheet-scrim" id="pen-sheet-scrim" hidden></div>
+    <div class="tb-sheet" id="pen-sheet" role="dialog" aria-modal="true" aria-labelledby="pen-sheet-title" hidden>
+        <div class="tb-sheet-head">
+            <h2 id="pen-sheet-title" data-i18n="penna-sinalefe">Sinalefe</h2>
+            <button type="button" class="tb-sheet-close" data-i18n-aria="sheet-close" aria-label="Chiudi">&times;</button>
+        </div>
+        <!-- Vuoto: penna.js lo riempie con un .tb-toggle pen-sin per sinalefe
+             (label > input[type=checkbox][data-pen-sin] + testo). -->
+        <div id="pen-sheet-list" class="pen-sheet-list"></div>
+    </div>
+
+    <!-- Foglio del pacchetto lingua (spec 14b §3/§5, contratto in testa a
+         penna.js): niente checkbox-hack qui, penna.js apre/chiude togliendo/
+         mettendo [hidden] su #pen-pack-sheet direttamente (scegliLingua()/
+         apriFoglioPacchetto()/chiudiFoglioPacchetto()), non passa da
+         shared/sheet.js. #pen-pack-sheet-scrim si accende in CSS puro
+         quando il foglio non e' [hidden] (penna.css); non ha un ascoltatore
+         di click perche' penna.js non ne ha uno: si chiude solo con
+         #pen-pack-cancel. -->
+    <div class="tb-sheet-scrim pen-pack-scrim" id="pen-pack-sheet-scrim"></div>
+    <div class="tb-sheet pen-pack-sheet" id="pen-pack-sheet" role="dialog" aria-modal="true"
+        aria-labelledby="pen-pack-title" hidden>
+        <div class="tb-sheet-head">
+            <h2 id="pen-pack-title" class="pen-pack-title"></h2>
+        </div>
+        <div class="tb-sheet-body">
+            <!-- "0,9 MB · una volta sola · funziona offline" (spec 14b §3):
+                 penna.js scrive qui il peso gia' tradotto con
+                 penna-pack-size/penna-pack-offline. -->
+            <p id="pen-pack-size" class="pen-pack-size"></p>
+
+            <!-- Vuoto: penna.js ci mette una <li> per fonte ("nome —
+                 licenza"), licenze CC BY-SA 4.0/BSD/MIT (spec 14b §2). -->
+            <ul id="pen-pack-fonti" class="pen-pack-fonti"></ul>
+
+            <!-- [hidden] finche' non si scarica: penna.js scrive --pen-pct,
+                 aria-valuenow e la percentuale in testo (aria-live sta gia'
+                 sull'attributo aria-live che il JS imposta). -->
+            <div id="pen-pack-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" hidden></div>
+
+            <div class="pen-pack-actions">
+                <button type="button" id="pen-pack-go" class="tb-btn tb-btn--primary" data-i18n="penna-pack-go">
+                    Scarica
+                </button>
+                <button type="button" id="pen-pack-cancel" class="tb-btn tb-btn--ghost" data-i18n="penna-cancel">
+                    Annulla
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Foglio "Da dove vengono le rime" (spec 14 §2, licenze CC BY-SA 4.0 /
+         MIT): stesso contratto .tb-info/.tb-sheet di ogni altro strumento,
+         penna.js chiama gia' mountInfos(document). -->
+    <div class="tb-sheet-scrim" id="pen-sources-info-scrim" hidden></div>
+    <div class="tb-sheet" id="pen-sources-info" role="dialog" aria-modal="true" aria-labelledby="pen-sources-info-title" hidden>
+        <div class="tb-sheet-head">
+            <h2 id="pen-sources-info-title" data-i18n="penna-sources">Da dove vengono le rime</h2>
+            <button type="button" class="tb-sheet-close" data-i18n-aria="sheet-close" aria-label="Chiudi">&times;</button>
+        </div>
+        <div class="tb-sheet-body" data-i18n="penna-sources-text">Le rime nascono da Wikizionario e dalle frequenze di FrequencyWords (entrambi CC BY-SA 4.0) più le forme di paroleitaliane (MIT): dati aggregati, licenze e attribuzione complete in penna/data/. Il codice di Tiny Temple resta separato dai dati.</div>
+    </div>
+
+    <script type="module" src="/penna/penna.js"></script>
+</body>
+
+</html>

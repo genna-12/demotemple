@@ -126,8 +126,10 @@ if (dictOk) {
 function checkVersion(swRel, files, version) { // se un precacheato cambia e VERSION resta uguale, chi ha gia' visitato resta sulla cache vecchia
   if (!gitOk) { infos.push(`git non disponibile: controllo VERSION di ${swRel} saltato`); return; }
   try {
-    const changed = new Set([...git(['diff', '--name-only', 'HEAD']).split('\n'), ...git(['ls-files', '--others', '--exclude-standard']).split('\n')].filter(Boolean));
-    const touched = [...new Set(files)].filter((f) => changed.has(f));
+    const untracked = new Set(git(['ls-files', '--others', '--exclude-standard']).split('\n').filter(Boolean));
+    const changed = new Set([...git(['diff', '--name-only', 'HEAD']).split('\n').filter(Boolean), ...untracked]);
+    // un file CRLF nel worktree con LF in index (OneDrive, autocrlf) NON e' una modifica: --name-only lo elenca lo stesso, si riverifica il contenuto
+    const touched = [...new Set(files)].filter((f) => changed.has(f) && (untracked.has(f) || git(['diff', '--ignore-cr-at-eol', 'HEAD', '--', f]).trim() !== ''));
     if (touched.length === 0) { ok(`${swRel}: nessun file precacheato modificato rispetto a HEAD, VERSION non necessaria`); return; }
     let headVersion = null; try { headVersion = (git(['show', `HEAD:${swRel}`]).match(/const VERSION\s*=\s*'([^']+)'/) || [])[1] ?? null; } catch { /* assente in HEAD */ }
     if (headVersion === null) infos.push(`${swRel} assente in HEAD: controllo VERSION vs HEAD saltato`);

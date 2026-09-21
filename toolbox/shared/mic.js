@@ -241,6 +241,10 @@ export function acquire(opts = {}) {
         return Promise.reject(new DOMException('Consenso al microfono mancante', 'NotAllowedError'));
     }
     hookPage();
+    /* Uno stream lasciato aperto da un altro strumento (il DNA chiuso male)
+       puo' avere le tracce gia' morte: si riusa solo se e' ancora vivo,
+       altrimenti si richiede da capo. */
+    if (stream && !stream.getTracks().some((t) => t.readyState !== 'ended')) stopTracks();
     refs++;
     lastOpts = opts;
     if (stream) return Promise.resolve(stream);

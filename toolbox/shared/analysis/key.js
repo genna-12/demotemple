@@ -36,8 +36,24 @@
  * com'e' e non va toccata. Scende quando i profili non sono d'accordo,
  * quando i segmenti non sono d'accordo o quando il chroma e' piatto.
  *
+ * Dal 20 settembre 2026, misurato sul banco `scripts/eval-dna`:
+ *  - MODI: dorico e misolidio hanno il loro profilo e, quando battono di un
+ *    margine il diatonico "piatto" maggiore/minore, la tonica diventa la
+ *    loro e il campo nuovo `keyMode` dice quale modo e'. `mode` resta
+ *    maggiore/minore (il Camelot non conosce i modi). Sul banco la tonica
+ *    dei brani modali passa dal 26% al 35% e il modo viene dichiarato
+ *    giusto nel 22% dei casi (prima: mai).
+ *  - BASS-CHROMA: c'e' (`hpcpPair` torna anche il chroma sotto i 260 Hz e
+ *    quanta energia c'e' sopra i 300), ma `fuseBass` e' DISATTIVATA per
+ *    difetto perche' misurata in perdita: vedi il suo commento.
+ *  - CONFIDENZA calibrata sul diagramma di affidabilita' del banco
+ *    (`calibrateConfidence`): la scala resta quella di prima, ma la soglia
+ *    dell'"alta" cade dove l'accuratezza osservata e' davvero del 100%
+ *    (prima era il 78,6%).
+ *
  * API invariata: chromaOf / keyFromChroma / analyseKey / weightsForChroma
- * ci sono ancora, con gli stessi nomi e gli stessi tipi di ritorno.
+ * ci sono ancora, con gli stessi nomi e gli stessi tipi di ritorno; i campi
+ * `keyMode` e `raw` sono in piu'.
  */
 
 import { spectralFlux, whiten, highpass, whitenSpectrum, pickPeaks } from './stft.js';
@@ -75,6 +91,25 @@ export const PROFILES = {
 };
 
 const PROFILE_NAMES = Object.keys(PROFILES);
+
+/**
+ * Modi che non sono ne' maggiore ne' minore. Buona parte del pop, del rock
+ * e del folk ci vive dentro, e i profili tarati sulla musica tonale classica
+ * ci sbagliano in modo sistematico (ricerca 2026-09-19, "gestione modale").
+ * Stessa forma diatonica piatta del profilo `edm`, con tonica e quinta
+ * rinforzate e il grado CARATTERISTICO in evidenza: la sesta maggiore per il
+ * dorico, la settima minore per il misolidio.
+ * `parent` e' l'etichetta maggiore/minore piu' vicina: serve al Camelot,
+ * che non conosce i modi.
+ */
+export const MODAL_PROFILES = {
+    dorian: { parent: 'minor', profile: [3.2, 0.6, 2.0, 2.4, 0.6, 2.0, 0.6, 2.8, 0.6, 2.4, 2.2, 0.6] },
+    mixolydian: { parent: 'major', profile: [3.2, 0.6, 2.0, 0.6, 2.4, 2.0, 0.6, 2.8, 0.6, 2.0, 2.4, 0.6] }
+};
+const MODAL_NAMES = Object.keys(MODAL_PROFILES);
+/* quanto un modo deve battere il maggiore/minore "piatto" per essere
+   dichiarato: sotto questo stacco si resta sull'etichetta di sempre */
+const MODAL_MARGIN = 0.04;
 
 /* Camelot: il numero viene dal circolo delle quinte, la lettera dal modo.
    Do maggiore 8B, La minore 8A. */
@@ -146,11 +181,20 @@ const MAX_PEAKS = 96;              // per frame: piu' che sufficienti
 const HARM_FIFTH = 0.45;
 const HARM_THIRD = 0.20;
 
+export const BASS_MAX_HZ = 260;    // sopra il Do centrale non e' piu' basso
+export const RICH_HZ = 300;        // sopra: l'armonia "suonata" (accordi, voce)
+
 /**
- * HPCP medio del segnale (12 valori, somma 1).
- * `weights` opzionale pesa i frame (di norma l'inviluppo degli attacchi).
+ * hpcpPair: nello STESSO passaggio di STFT escono tre cose.
+ *   chroma     HPCP di tutta la banda (quello di sempre)
+ *   bass       HPCP dei soli suoni sotto i 260 Hz (basso e 808)
+ *   highRatio  quanta energia c'e' sopra i 300 Hz, da 0 a 1
+ * Nel trap l'armonia vive quasi solo nella linea di 808 e sopra i 300 Hz
+ * non c'e' quasi niente: li' il chroma del basso dice la tonica molto
+ * meglio di quello pieno (ricerca 2026-09-19, "bass-chroma per hip-hop/trap").
+ * `highRatio` e' il peso con cui fondere i due, e non costa una seconda FFT.
  */
-export function hpcpOf(signal, sampleRate, {
+export function hpcpPair(signal, sampleRate, {
     a4 = 440,
     size = CHROMA_SIZE,
     hop = CHROMA_HOP,
@@ -165,11 +209,17 @@ export function hpcpOf(signal, sampleRate, {
     kernel = KERNEL_SEMITONES
 } = {}) {
     const chroma = new Float32Array(12);
+    const bass = new Float32Array(12);
     const frame = new Float32Array(12);
+    const low = new Float32Array(12);
     const bins = size / 2 + 1;
     const white = new Float32Array(bins);
     const freqs = new Float32Array(MAX_PEAKS);
     const amps = new Float32Array(MAX_PEAKS);
+    const richBin = Math.min(bins - 1, Math.round(RICH_HZ * size / sampleRate));
+    const topBin = Math.min(bins - 1, Math.round(maxHz * harmonics * size / sampleRate));
+    let eAll = 0;
+    let eHigh = 0;
     /* peso di ogni armonica, calcolato una volta */
     const hw = new Float32Array(harmonics);
     for (let h = 0; h < harmonics; h++) hw[h] = Math.pow(slope, h);
@@ -181,6 +231,13 @@ export function hpcpOf(signal, sampleRate, {
             const w = weights ? weights[k] || 0 : 1;
             if (w <= 0) return;
             frame.fill(0);
+            low.fill(0);
+            /* quanto e' "arrangiato" il frame: energia sopra i 300 Hz */
+            for (let i = 1; i <= topBin; i++) {
+                const e = mag[i] * mag[i];
+                eAll += e;
+                if (i > richBin) eHigh += e;
+            }
             /* 1. via la colorazione della stanza, 2. i picchi veri */
             whitenSpectrum(mag, white, bins, octaveFrac, compress);
             const count = pickPeaks(white, bins, sampleRate, size, freqs, amps, {
@@ -198,6 +255,7 @@ export function hpcpOf(signal, sampleRate, {
                     const midi = 69 + 12 * Math.log2(f0 / a4);
                     const pc = ((midi % 12) + 12) % 12;
                     const weight = amp * hw[h - 1];
+                    const isBass = f0 <= BASS_MAX_HZ;
                     /* kernel a coseno: il picco contribuisce a tutte le
                        classi entro un semitono, non solo alla piu' vicina */
                     for (let c = 0; c < 12; c++) {
@@ -205,7 +263,9 @@ export function hpcpOf(signal, sampleRate, {
                         if (d > 6) d = 12 - d;
                         if (d >= kernel) continue;
                         const g = Math.cos(Math.PI * d / (2 * kernel));
-                        frame[c] += weight * g * g;
+                        const v = weight * g * g;
+                        frame[c] += v;
+                        if (isBass) low[c] += v;
                     }
                 }
             }
@@ -214,19 +274,67 @@ export function hpcpOf(signal, sampleRate, {
                dei frame quasi vuoti non annacqua la media. `contrast` alza
                il profilo del frame: senza, l'HPCP resta troppo piatto e il
                margine fra la prima e la seconda ipotesi si schiaccia. */
-            let fmax = 0;
-            for (let c = 0; c < 12; c++) if (frame[c] > fmax) fmax = frame[c];
-            if (!(fmax > 0)) return;
-            for (let c = 0; c < 12; c++) {
-                const v = frame[c] / fmax;
-                chroma[c] += (contrast === 1 ? v : Math.pow(v, contrast)) * w;
-            }
+            accumulate(chroma, frame, w, contrast);
+            accumulate(bass, low, w, contrast);
         }
     });
+    normalizeChroma(chroma);
+    normalizeChroma(bass);
+    return { chroma, bass, highRatio: eAll > 0 ? eHigh / eAll : 0 };
+}
+
+function accumulate(into, frame, w, contrast) {
+    let fmax = 0;
+    for (let c = 0; c < 12; c++) if (frame[c] > fmax) fmax = frame[c];
+    if (!(fmax > 0)) return;
+    for (let c = 0; c < 12; c++) {
+        const v = frame[c] / fmax;
+        into[c] += (contrast === 1 ? v : Math.pow(v, contrast)) * w;
+    }
+}
+
+function normalizeChroma(chroma) {
     let sum = 0;
     for (let i = 0; i < 12; i++) sum += chroma[i];
     if (sum > 0) for (let i = 0; i < 12; i++) chroma[i] /= sum;
     return chroma;
+}
+
+/**
+ * Fonde il chroma pieno con quello del basso, con un peso che sale quando
+ * sopra i 300 Hz non c'e' quasi niente (trap, brani poco arrangiati).
+ *
+ * MISURATO SUL BANCO (scripts/eval-dna), e il risultato e' negativo: la
+ * linea di 808 dice i FONDAMENTALI DEGLI ACCORDI, non la tonalita', e su
+ * un giro I-V-vi-IV la distribuzione delle fondamentali somiglia alla
+ * relativa minore quanto alla maggiore. Con peso 0,35 il MIREX del trap
+ * pulito scende da 0,650 a 0,629; con 0,12 resta uguale; sopra peggiora.
+ * Resta quindi DISATTIVATA per difetto (`bassWeight: 0`) ed e' un
+ * parametro, non una scelta nascosta: su materiale trap vero, dove l'808
+ * sta molto piu' sulla tonica che sugli altri gradi, vale la pena
+ * rimisurarla.
+ */
+export function fuseBass(chroma, bass, highRatio, maxWeight = 0) {
+    if (!bass || !(maxWeight > 0)) return chroma;
+    let energy = 0;
+    for (let i = 0; i < 12; i++) energy += bass[i];
+    if (!(energy > 0)) return chroma;
+    const w = Math.max(0, Math.min(maxWeight, maxWeight * (1 - highRatio / BASS_RICH)));
+    if (!(w > 0)) return chroma;
+    const out = new Float32Array(12);
+    for (let i = 0; i < 12; i++) out[i] = chroma[i] + w * bass[i];
+    return normalizeChroma(out);
+}
+
+const BASS_RICH = 0.45;    // sopra questa quota di energia acuta: arrangiato
+
+/**
+ * HPCP medio del segnale (12 valori, somma 1). E' `hpcpPair` senza il
+ * chroma del basso: l'API di prima, invariata.
+ * `weights` opzionale pesa i frame (di norma l'inviluppo degli attacchi).
+ */
+export function hpcpOf(signal, sampleRate, opts = {}) {
+    return hpcpPair(signal, sampleRate, opts).chroma;
 }
 
 
@@ -343,8 +451,19 @@ export function keyFromChroma(chroma, { profiles = PROFILE_NAMES } = {}) {
     let second = -1;
     for (let i = 1; i < 24; i++) if (combined[i] > combined[best]) best = i;
     for (let i = 0; i < 24; i++) if (i !== best && (second < 0 || combined[i] > combined[second])) second = i;
-    const tonic = NOTES[best % 12];
-    const mode = best < 12 ? 'major' : 'minor';
+    /* I modi: si confrontano con il profilo diatonico "piatto" (edm), che e'
+       fatto nello stesso modo, e non con la media dei quattro (sarebbe un
+       confronto fra cose diverse). Solo se un modo stacca di un margine si
+       dichiara: altrimenti resta l'etichetta maggiore/minore di sempre. */
+    const modal = bestModal(chroma);
+    let best_ = best;
+    let keyMode = best < 12 ? 'major' : 'minor';
+    if (modal && modal.score > modal.tonalScore + MODAL_MARGIN) {
+        keyMode = modal.name;
+        best_ = modal.index + (MODAL_PROFILES[modal.name].parent === 'minor' ? 12 : 0);
+    }
+    const tonic = NOTES[best_ % 12];
+    const mode = best_ < 12 ? 'major' : 'minor';
     const camelot = camelotOf(tonic, mode);
     const agreement = (votes[tonic + '|' + mode] || 0) / used;
     const margin = second >= 0 ? Math.max(0, combined[best] - combined[second]) : 1;
@@ -364,6 +483,7 @@ export function keyFromChroma(chroma, { profiles = PROFILE_NAMES } = {}) {
     return {
         tonic,
         mode,
+        keyMode,
         camelot,
         confidence,
         compatible: compatibleWith(camelot),
@@ -373,6 +493,33 @@ export function keyFromChroma(chroma, { profiles = PROFILE_NAMES } = {}) {
         runnerUp: second >= 0 ? NOTES[second % 12] + '|' + (second < 12 ? 'major' : 'minor') : '',
         votes
     };
+}
+
+/**
+ * Il modo che spiega meglio il chroma, e il punteggio del maggiore/minore
+ * "piatto" con cui va confrontato.
+ * -> { name, index (tonica 0-11), score, tonalScore } oppure null
+ */
+function bestModal(chroma) {
+    const rotated = new Float32Array(12);
+    const scan = (profile) => {
+        let bestScore = -Infinity;
+        let bestIdx = 0;
+        for (let r = 0; r < 12; r++) {
+            for (let i = 0; i < 12; i++) rotated[i] = profile[(i - r + 12) % 12];
+            const sc = similarity(chroma, rotated);
+            if (sc > bestScore) { bestScore = sc; bestIdx = r; }
+        }
+        return { score: bestScore, index: bestIdx };
+    };
+    const flat = PROFILES.edm;
+    const tonalScore = Math.max(scan(flat.major).score, scan(flat.minor).score);
+    let win = null;
+    MODAL_NAMES.forEach((name) => {
+        const r = scan(MODAL_PROFILES[name].profile);
+        if (!win || r.score > win.score) win = { name, index: r.index, score: r.score };
+    });
+    return win ? { ...win, tonalScore } : null;
 }
 
 /** Maggiore e relativa minore (Do = 0 maggiore, La = 9 minore) e viceversa. */
@@ -405,6 +552,41 @@ export function weightsForChroma(env, envHop, chromaHop, frames) {
     return out;
 }
 
+/**
+ * CALIBRAZIONE DELLA CONFIDENZA (banco scripts/eval-dna, 480 analisi).
+ *
+ * Il margine grezzo fra la prima e la seconda ipotesi e' un punteggio, non
+ * una probabilita': misurato sul banco, i casi dichiarati con margine >= 0,20
+ * (la soglia con cui la pagina scrive "alta", perche' dna.js moltiplica per
+ * 3) erano giusti solo nel 78,6% dei casi. Questa tabella, letta dal
+ * diagramma di affidabilita' del banco, porta la scala in accordo con la
+ * realta': la soglia dell'"alta" cade dove l'accuratezza osservata e' 100%
+ * (margine grezzo 0,35; sotto, a 0,32, era gia' 92,5%).
+ *
+ *   grezzo  0,07 -> 0,04   osservato ~40% di casi giusti
+ *   grezzo  0,14 -> 0,10   osservato ~73%   (la pagina scrive "media")
+ *   grezzo  0,35 -> 0,20   osservato  100%  (la pagina scrive "alta")
+ *   grezzo  0,50 -> 0,333  il massimo utile (x3 = 1)
+ *
+ * La SCALA non cambia (la pagina non si tocca): cambia dove cadono i casi.
+ * Va rifatta se cambia la catena di stima: `node scripts/eval-dna/run.mjs`
+ * stampa il diagramma da cui si leggono i nuovi punti.
+ */
+const CONFIDENCE_CURVE = [[0, 0], [0.07, 0.04], [0.14, 0.1], [0.35, 0.2], [0.5, 1 / 3]];
+
+export function calibrateConfidence(raw) {
+    if (!(raw > 0)) return 0;
+    const c = CONFIDENCE_CURVE;
+    if (raw >= c[c.length - 1][0]) return c[c.length - 1][1];
+    for (let i = 1; i < c.length; i++) {
+        if (raw > c[i][0]) continue;
+        const [x0, y0] = c[i - 1];
+        const [x1, y1] = c[i];
+        return y0 + (y1 - y0) * (raw - x0) / (x1 - x0);
+    }
+    return c[c.length - 1][1];
+}
+
 export const SEGMENT_SECONDS = 5;
 export const SEGMENT_HOP = 2.5;
 
@@ -422,15 +604,21 @@ export function estimateKey(signal, sampleRate, {
     segmentHop = SEGMENT_HOP,
     profiles = PROFILE_NAMES,
     filter = true,
+    bassWeight = 0,
     ...rest
 } = {}) {
     const clean = filter ? highpass(signal, sampleRate, 50) : signal;
     const segLen = Math.round(segment * sampleRate);
     const stepLen = Math.max(1, Math.round(segmentHop * sampleRate));
-    const chromaOfPart = (part) => hpcpOf(part, sampleRate, { a4, size, hop, ...rest });
+    /* il chroma del basso entra qui, pesato per quanto e' pieno lo spettro
+       sopra i 300 Hz: nel trap e' quasi tutta l'armonia che c'e' */
+    const chromaOfPart = (part) => {
+        const pair = hpcpPair(part, sampleRate, { a4, size, hop, ...rest });
+        return fuseBass(pair.chroma, pair.bass, pair.highRatio, bassWeight);
+    };
     if (clean.length < segLen * 1.5) {
         const single = keyFromChroma(chromaOfPart(clean), { profiles });
-        return { ...single, segments: 1, agreement: single.tonic ? 1 : 0, profileAgreement: single.agreement };
+        return { ...single, confidence: calibrateConfidence(single.confidence), raw: single.confidence, segments: 1, agreement: single.tonic ? 1 : 0, profileAgreement: single.agreement };
     }
     /* Un segmento di 5 s spesso contiene UN accordo solo: votare la
        tonalita' segmento per segmento, su un giro lento, elegge
@@ -469,9 +657,11 @@ export function estimateKey(signal, sampleRate, {
     const share = same / parts.length;
     /* sotto il 60% di accordo la confidenza crolla (regola §14b) */
     const factor = Math.max(0, Math.min(1, (Math.max(agreement, share) - 0.15) / 0.45));
+    const raw = Math.max(0, Math.min(1, win.confidence * factor));
     return {
         ...win,
-        confidence: Math.max(0, Math.min(1, win.confidence * factor)),
+        confidence: calibrateConfidence(raw),
+        raw,
         segments: parts.length,
         agreement: share,
         profileAgreement: win.agreement

@@ -30,6 +30,10 @@ import * as mic from './mic.js';
 const WORKLET_URL = '/shared/pitch-worklet.js';
 const PITCHY_URL = '/vendor/pitchy@4.1.0/pitchy.js';
 const SIZE = 2048;
+/* Se entro questo tempo dal via non arriva nemmeno un frame, il worklet non
+   sta girando (su Safari l'import di pitchy dentro il worklet puo' fallire
+   in silenzio: addModule risolve lo stesso) e si passa al ripiego. */
+const WATCHDOG_MS = 1500;
 const HOP = 1024;
 const HPF_HZ = 60;
 const HPF_Q = 0.707;
@@ -146,6 +150,8 @@ export function createPitchTracker({
     let ringTotal = 0;
     let worklet = false;
     let started = false;
+    let frames = 0;          // frame analizzati dall'ultimo start
+    let watchdog = null;
     const median = createMedian(MEDIAN);
     let validTimes = new Float64Array(QUIET_MIN_FRAMES * 4);
     let validWrite = 0;
@@ -168,6 +174,7 @@ export function createPitchTracker({
 
     /* cuore comune ai due percorsi: un frame analizzato -> forse una nota */
     function handle(hz, clarity, rms) {
+        frames++;   // un frame analizzato: il watchdog guarda questo
         const now = (audioCtx ? audioCtx.currentTime : 0) * 1000;
         const good = clarity >= clarityMin && hz >= minHz && hz <= maxHz && rms >= rmsMin;
         if (good) {
@@ -226,6 +233,38 @@ export function createPitchTracker({
         return sp;
     }
 
+    /**
+     * Il worklet e' partito davvero? Se dopo WATCHDOG_MS non e' arrivato
+     * nessun frame si passa al ScriptProcessor senza dire niente a chi
+     * ascolta: per l'utente l'accordatore semplicemente funziona.
+     */
+    function armWatchdog() {
+        if (watchdog) clearTimeout(watchdog);
+        if (!worklet) return;
+        watchdog = setTimeout(() => {
+            watchdog = null;
+            if (!started || !worklet || frames > 0) return;
+            swapToFallback();
+        }, WATCHDOG_MS);
+    }
+
+    async function swapToFallback() {
+        const old = node;
+        worklet = false;
+        node = null;
+        try { if (old && old.port) old.port.postMessage('stop'); } catch (e) { /* gia' chiuso */ }
+        try { if (old) old.disconnect(); } catch (e) { /* gia' scollegato */ }
+        try { if (hpf) hpf.disconnect(); } catch (e) { /* gia' scollegato */ }
+        let sp;
+        try { sp = await buildFallback(); } catch (e) {
+            if (typeof onError === 'function') onError(e);
+            return;
+        }
+        if (!started) { try { sp.disconnect(); } catch (e) { /* mai collegato */ } return; }
+        node = sp;
+        try { connect(); } catch (e) { if (typeof onError === 'function') onError(e); }
+    }
+
     /** Collega (o ricollega) microfono -> filtro -> analizzatore. */
     function connect() {
         src = mic.source(audioCtx);
@@ -271,8 +310,10 @@ export function createPitchTracker({
         median.reset();
         validTimes = validTimes.fill(0);
         quiet = true;
+        frames = 0;
         connect();
         started = true;
+        armWatchdog();
         return true;
     }
 
@@ -294,6 +335,7 @@ export function createPitchTracker({
     function stop() {
         if (!started) return;
         started = false;
+        if (watchdog) { clearTimeout(watchdog); watchdog = null; }
         if (node && node.port) node.port.postMessage('stop');
         if (node && node.onaudioprocess) node.onaudioprocess = null;
         disconnectChain();
@@ -318,6 +360,7 @@ export function createPitchTracker({
         range: () => ({ minHz, maxHz }),
         running: () => started,
         usingWorklet: () => worklet,
+        frames: () => frames,
         /** Solo per i test: inietta un frame gia' analizzato. */
         feed: (hz, clarity, rms) => handle(hz, clarity, rms)
     };

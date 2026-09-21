@@ -26,9 +26,9 @@ export const TOOLS = [
     { slug: 'metronomo', family: 'live', key: 'tool-metronomo', status: 'live' },
     { slug: 'accordatore', family: 'live', key: 'tool-accordatore', status: 'live' },
     { slug: 'dna', family: 'analysis', key: 'tool-dna', status: 'live' },
-    { slug: 'penna', family: 'writing', key: 'tool-penna', status: 'soon', next: true },
+    { slug: 'penna', family: 'writing', key: 'tool-penna', status: 'live' },
     { slug: 'calcolatore-tempo', family: 'calc', key: 'tool-calcolatore-tempo', status: 'live' },
-    { slug: 'pianificatore-uscita', family: 'release', key: 'tool-pianificatore-uscita', status: 'soon' },
-    { slug: 'checklist-consegna', family: 'release', key: 'tool-checklist-consegna', status: 'soon' },
+    { slug: 'pianificatore-uscita', family: 'release', key: 'tool-pianificatore-uscita', status: 'live' },
+    { slug: 'checklist-consegna', family: 'release', key: 'tool-checklist-consegna', status: 'soon', next: true },
     { slug: 'split-sheet', family: 'release', key: 'tool-split-sheet', status: 'soon' }
 ];

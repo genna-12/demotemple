@@ -456,15 +456,42 @@ export function mountTuner() {
         micOff.hidden = !(ui.mode === 'listen' && mic.state() === 'granted');
     }
 
+    /**
+     * Pulsante grande "Avvia ascolto" dentro #acc-consent. Serve quando il
+     * permesso c'e' gia' ma l'ascolto non e' partito: su iOS la cattura
+     * puo' cominciare SOLO dentro un gesto, quindi ci vuole qualcosa da
+     * toccare (prima qui non c'era piu' niente e la pagina restava ferma).
+     */
+    function renderStart() {
+        if (!consentBox) return;
+        consentBox.textContent = '';
+        consentBox.hidden = false;
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.id = 'acc-start';
+        btn.className = 'tb-btn tb-btn--primary acc-start';
+        btn.setAttribute('data-i18n', 'mic-start');
+        btn.textContent = t('mic-start');
+        /* niente await prima di startListening: il gesto deve arrivare
+           intero a getUserMedia e a AudioContext.resume() */
+        btn.addEventListener('click', () => startListening());
+        consentBox.appendChild(btn);
+        renderMicOff();
+    }
+
     function renderConsent() {
         if (!consentBox) return;
         if (ui.mode !== 'listen') { consentBox.textContent = ''; consentBox.hidden = true; return; }
-        /* col permesso dato il riquadro non serve piu': prima restava a
-           schermo finche' non si cambiava pagina */
         if (mic.granted() && mic.state() !== 'denied') {
-            consentBox.textContent = '';
-            consentBox.hidden = true;
-            renderMicOff();
+            /* permesso c'e': o sta gia' ascoltando (via il riquadro) o serve
+               il tocco che fa partire la cattura */
+            if (tracker && tracker.running()) {
+                consentBox.textContent = '';
+                consentBox.hidden = true;
+                renderMicOff();
+                return;
+            }
+            renderStart();
             return;
         }
         consentBox.hidden = false;
@@ -539,18 +566,42 @@ export function mountTuner() {
         micStatus();
     });
 
-    onStateChange(() => {
-        if (ui.mode === 'listen' && needsGesture()) {
-            setStatus(status, { kind: 'idle', key: 'audio-resume-msg' });
+    /**
+     * iOS: dopo una telefonata o un passaggio in background l'AudioContext
+     * resta 'interrupted' e il ramo del microfono smette di produrre frame
+     * senza dire niente. Tornando in primo piano si prova a riprendere da
+     * soli; se il sistema pretende un gesto, ricompare "Avvia ascolto".
+     */
+    onStateChange((state) => {
+        if (ui.mode !== 'listen') return;
+        if (state === 'running') {
+            if (tracker && tracker.running()) { tracker.rebuild(); micStatus(); renderConsent(); }
+            return;
         }
+        if (!(tracker && tracker.running())) return;
+        setStatus(status, { kind: 'idle', key: 'audio-resume-msg' });
+        unlock().then(() => {
+            if (ui.mode !== 'listen' || !(tracker && tracker.running())) return;
+            tracker.rebuild();
+            micStatus();
+            renderConsent();
+        }, () => {
+            if (needsGesture()) renderStart();
+        });
     });
 
     /* ---------------- modalita' ---------------- */
 
-    function setMode(mode) {
+    /**
+     * `gesture` = la chiamata arriva da un tocco dell'utente. Solo allora
+     * si puo' avviare la cattura: all'apertura della pagina (modalita'
+     * ricordata nelle preferenze) si mostra "Avvia ascolto" e si aspetta.
+     */
+    function setMode(mode, { gesture = false } = {}) {
         const next = mode === 'listen' ? 'listen' : 'reference';
         if (next === ui.mode) return;
         ui.mode = next;
+        prefs.set(TOOL, 'mode', next);
         root.setAttribute('data-acc-mode', next);
         if (modeBox) {
             [...modeBox.querySelectorAll('[data-acc-mode]')].forEach((b) => {
@@ -561,10 +612,16 @@ export function mountTuner() {
         }
         if (next === 'listen') {
             stopLoop();
+            /* mic.state() resta 'unasked' su Safari (niente Permissions API):
+               il consenso dato in una sessione precedente lo dice granted() */
+            if (gesture && mic.granted() && mic.state() !== 'denied') {
+                startListening();   // DENTRO il gesto: niente await prima
+                renderMicOff();
+                return;
+            }
             renderConsent();
             renderMicOff();
             micStatus();
-            if (mic.state() === 'granted') startListening();
         } else {
             stopListening();
             if (consentBox) consentBox.textContent = '';
@@ -578,7 +635,7 @@ export function mountTuner() {
     if (modeBox) {
         modeBox.addEventListener('click', (e) => {
             const b = e.target.closest('[data-acc-mode]');
-            if (b) setMode(b.getAttribute('data-acc-mode'));
+            if (b) setMode(b.getAttribute('data-acc-mode'), { gesture: true });
         });
     }
 
@@ -953,12 +1010,17 @@ export function mountTuner() {
     buildStrings();
     markKeys();
     clearReading();
+    /* la modalita' si ricorda, ma l'ascolto NON parte da solo: senza un
+       gesto iOS non da' il microfono, e il pulsante grande e' quel gesto */
     setMode('reference');
     root.setAttribute('data-acc-mode', 'reference');
+    if (prefs.get(TOOL, 'mode', 'reference') === 'listen') setMode('listen');
 
     return {
         ui,
         setMode,
+        renderConsent,
+        renderStart,
         playString,
         strings: () => stringBtns,
         freqs: () => stringFreqs,

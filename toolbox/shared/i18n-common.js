@@ -74,7 +74,7 @@ export default {
         'mic-failed': 'Impossibile usare il microfono. Riprova.',
         'mic-denied': 'Il permesso per il microfono è stato negato. Puoi riattivarlo dalle impostazioni del browser.',
         'mic-retry': 'Riprova',
-        'mic-start': 'Attiva il microfono',
+        'mic-start': 'Avvia ascolto',
         'mic-consent-title': 'Serve il microfono',
         'mic-consent-text': 'Questo strumento usa il microfono del dispositivo solo mentre lo usi tu: l’audio resta nel browser e non viene inviato da nessuna parte. Puoi revocare il consenso quando vuoi.',
         'mic-consent-allow': 'Attiva il microfono',
@@ -83,6 +83,11 @@ export default {
         'mic-state-granted': 'Microfono: consentito',
         'mic-state-unasked': 'Microfono: non richiesto',
         'mic-revoke': 'Revoca',
+
+        'pack-installed': 'Pacchetti del rimario',
+        'pack-remove': 'Rimuovi',
+        'pack-remove-ask': 'Rimuovo questo pacchetto? Potrai riscaricarlo.',
+        'pack-remove-cancel': 'Annulla',
 
         'pwa-update': 'Nuova versione disponibile.',
         'pwa-update-action': 'Aggiorna',
@@ -159,7 +164,7 @@ export default {
         'mic-failed': "Couldn't use the microphone. Try again.",
         'mic-denied': 'Microphone access was denied. You can re-enable it from your browser settings.',
         'mic-retry': 'Try again',
-        'mic-start': 'Turn on the microphone',
+        'mic-start': 'Start listening',
         'mic-consent-title': 'Microphone needed',
         'mic-consent-text': 'This tool uses your device’s microphone only while you’re using it: the audio stays in the browser and is never sent anywhere. You can withdraw consent whenever you like.',
         'mic-consent-allow': 'Turn on the microphone',
@@ -168,6 +173,11 @@ export default {
         'mic-state-granted': 'Microphone: allowed',
         'mic-state-unasked': 'Microphone: not requested',
         'mic-revoke': 'Revoke',
+
+        'pack-installed': 'Rhyme dictionary packs',
+        'pack-remove': 'Remove',
+        'pack-remove-ask': 'Remove this pack? You can download it again later.',
+        'pack-remove-cancel': 'Cancel',
 
         'pwa-update': 'New version available.',
         'pwa-update-action': 'Update',

@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="it">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="format-detection" content="telephone=no, address=no, email=no">
+    <title>Pianificatore di uscita | Tiny Temple Toolbox</title>
+
+    <link rel="icon" href="/assets/icons/favicon.ico">
+    <link rel="apple-touch-icon" href="/assets/icons/apple-touch-icon.png">
+    <meta name="theme-color" content="#080808">
+    <meta name="apple-mobile-web-app-title" content="Toolbox">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <link rel="manifest" href="/manifest.webmanifest">
+
+    <meta name="description" content="Scegli la data di uscita e ottieni la timeline a ritroso con le date vere di master, deposito, artwork, consegna, pitch, pre-save e press: spunta le tappe, portale nel calendario, stampale. Gratis e offline.">
+    <link rel="canonical" href="https://toolbox.tinytemplestudio.it/pianificatore-uscita/">
+
+    <script src="/shared/lang-boot.js"></script>
+    <link rel="stylesheet" href="/shared/tokens.css">
+    <link rel="stylesheet" href="/shared/base.css">
+    <link rel="stylesheet" href="/shared/components.css">
+    <link rel="stylesheet" href="/pianificatore-uscita/pianificatore.css">
+</head>
+
+<body>
+
+    <!-- tb-bar resta senza sfondo/posizione propri: e' solo il contenitore
+         atteso da shared/nav.js (mountBar). Niente titolo in barra (spec 03
+         §11.6): "Pianificatore di uscita" e' solo l'h1 sotto; mountBar va
+         chiamata senza titleKey. -->
+    <header class="tb-bar">
+        <a class="tb-logo in-nav" href="/" data-i18n-aria="bar-logo-aria" aria-label="Toolbox, vai alla dashboard">
+            <img src="/assets/brand/logo-arancione.png" width="100" height="100" alt="" loading="eager">
+            <span class="sr-only">Tiny Temple Toolbox</span>
+        </a>
+        <button type="button" class="tb-menu-toggle is-visible" aria-controls="tb-menu" aria-expanded="false"
+            data-i18n-aria="bar-menu-open" aria-label="Apri il menu">
+            <span class="tb-menu-toggle-line"></span>
+            <span class="tb-menu-toggle-line"></span>
+        </button>
+        <!-- CONTRATTO shared/nav.js: fratello di .tb-menu-toggle, [hidden]
+             di default, nav.js toglie [hidden] mentre uno stream del
+             microfono e' attivo in QUALSIASI strumento. Il pianificatore
+             non usa il microfono ma il markup resta identico alle altre
+             pagine. -->
+        <span id="tb-mic-live" class="tb-mic-live" hidden role="status"
+            data-i18n-aria="mic-live-aria" aria-label="Microfono attivo">
+            <svg aria-hidden="true"><use href="#tb-icon-mic"></use></svg>
+        </span>
+    </header>
+
+    <!-- CONTRATTO shared/nav.js: vedi il commento in index.html vicino a #tb-menu. -->
+    <svg class="tb-sprite" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg">
+        <symbol id="tb-icon-mic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"></path>
+            <path d="M19 11a7 7 0 0 1-14 0"></path>
+            <path d="M12 18v4"></path>
+            <path d="M9 22h6"></path>
+        </symbol>
+        <symbol id="tb-icon-metronomo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M8 20h8"></path>
+            <path d="M9 20 11 5h2l2 15"></path>
+            <path d="M12 9v7"></path>
+        </symbol>
+        <symbol id="tb-icon-accordatore" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M5 16a7 7 0 0 1 14 0"></path>
+            <path d="M12 16 15 9"></path>
+            <circle cx="12" cy="16" r="1" fill="currentColor" stroke="none"></circle>
+        </symbol>
+        <symbol id="tb-icon-dna" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 12h3l2-7 4 14 4-14 2 7h3"></path>
+        </symbol>
+        <symbol id="tb-icon-penna" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 20l4-1 11-11-3-3L5 16z"></path>
+            <path d="M14 6l3 3"></path>
+        </symbol>
+        <symbol id="tb-icon-calcolatore-tempo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="13" r="8"></circle>
+            <path d="M12 9v4l3 2"></path>
+            <path d="M9 2h6"></path>
+        </symbol>
+        <symbol id="tb-icon-pianificatore-uscita" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="4" y="5" width="16" height="16" rx="2"></rect>
+            <path d="M4 10h16"></path>
+            <path d="M8 3v4"></path>
+            <path d="M16 3v4"></path>
+        </symbol>
+        <symbol id="tb-icon-checklist-consegna" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="4" y="4" width="16" height="16" rx="2"></rect>
+            <path d="M8 12l3 3 6-7"></path>
+        </symbol>
+        <symbol id="tb-icon-split-sheet" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="9"></circle>
+            <path d="M12 12V3"></path>
+            <path d="M12 12l7.5 4.33"></path>
+        </symbol>
+        <!-- Icone di UI comuni (spec 03 §3/§5/§9). -->
+        <symbol id="tb-icon-arrow-left" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 12H5"></path>
+            <path d="M11 18l-6-6 6-6"></path>
+        </symbol>
+        <symbol id="tb-icon-chevron-down" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M6 9l6 6 6-6"></path>
+        </symbol>
+        <symbol id="tb-icon-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M5 13l4 4L19 7"></path>
+        </symbol>
+        <symbol id="tb-icon-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 5v14"></path>
+            <path d="M5 12h14"></path>
+        </symbol>
+        <!-- Icone nuove per il Pianificatore (spec 15): condividi (gia'
+             usata da Penna, ripetuta qui perche' lo sprite e' inline per
+             pagina), calendario, stampa. -->
+        <symbol id="tb-icon-share" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="18" cy="5" r="2.5"></circle>
+            <circle cx="6" cy="12" r="2.5"></circle>
+            <circle cx="18" cy="19" r="2.5"></circle>
+            <path d="M8.3 10.7l7.4-4.4"></path>
+            <path d="M8.3 13.3l7.4 4.4"></path>
+        </symbol>
+        <symbol id="tb-icon-calendar" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="5" width="18" height="16" rx="2"></rect>
+            <path d="M3 10h18"></path>
+            <path d="M8 3v4"></path>
+            <path d="M16 3v4"></path>
+            <path d="M8 14h2"></path>
+            <path d="M14 14h2"></path>
+            <path d="M8 18h2"></path>
+        </symbol>
+        <symbol id="tb-icon-print" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M7 8V3h10v5"></path>
+            <rect x="4" y="8" width="16" height="9" rx="1"></rect>
+            <path d="M7 14h10v7H7z"></path>
+        </symbol>
+        <!-- Menu per tappa (spec 15 §3): pianificatore.js la usa via
+             <use href="#tb-icon-more"> (CONTRATTO, funzione icona()). -->
+        <symbol id="tb-icon-more" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="5.5" r="1.4" fill="currentColor" stroke="none"></circle>
+            <circle cx="12" cy="12" r="1.4" fill="currentColor" stroke="none"></circle>
+            <circle cx="12" cy="18.5" r="1.4" fill="currentColor" stroke="none"></circle>
+        </symbol>
+    </svg>
+
+    <div id="tb-menu" class="tb-menu" hidden>
+        <div class="tb-menu-scrim"></div>
+        <div class="tb-menu-panel" role="dialog" aria-modal="true" aria-label="Menu">
+            <a class="tb-menu-home tb-menu-item" href="/" data-i18n="menu-all">Dashboard</a>
+            <div class="tb-menu-title" data-i18n="menu-tools">Strumenti</div>
+            <div class="tb-menu-groups"></div>
+            <div class="tb-menu-foot tb-menu-item">
+                <div class="tb-menu-install-group">
+                    <button type="button" id="tb-menu-install" class="tb-menu-install" data-i18n="menu-install">Installa l’app</button>
+                    <details class="tb-menu-ios" id="tb-menu-ios" hidden>
+                        <summary data-i18n="idx-ios-title">Su iPhone</summary>
+                        <div data-pwa-when="safari">
+                            <ol>
+                                <li data-i18n="idx-ios-step1">Apri questa pagina in Safari.</li>
+                                <li data-i18n="idx-ios-step2">Tocca Condividi (il quadrato con la freccia in
+                                    alto).</li>
+                                <li data-i18n="idx-ios-step3">Scegli &ldquo;Aggiungi alla schermata
+                                    Home&rdquo;.</li>
+                            </ol>
+                        </div>
+                        <div data-pwa-when="inapp">
+                            <strong data-i18n="idx-ios-inapp-title">Apri in Safari</strong>
+                            <p data-i18n="idx-ios-inapp-text">Questo browser non permette di installare l’app.
+                                Tocca il menu e scegli &ldquo;Apri in Safari&rdquo;, poi segui i passaggi per
+                                aggiungerla alla schermata Home.</p>
+                        </div>
+                    </details>
+                    <p class="tb-menu-manual" data-pwa-when="manual" hidden data-i18n="pwa-manual">Usa il menu del
+                        browser: Installa app oppure Aggiungi alla schermata Home.</p>
+                </div>
+                <!-- CONTRATTO shared/nav.js: [hidden] finche' il consenso al
+                     microfono non c'e', in qualunque strumento sia stato
+                     dato (il pianificatore non lo usa ma il markup resta
+                     identico). -->
+                <div id="tb-mic-row" class="tb-mic-row" hidden>
+                    <span id="tb-mic-state" data-i18n="mic-state-granted">Microfono: consentito</span>
+                    <button type="button" id="tb-mic-revoke" class="tb-btn tb-btn--ghost" data-i18n="mic-revoke">Revoca</button>
+                </div>
+                <!-- CONTRATTO shared/nav.js (spec 14b, riga "PACCHETTI DEL
+                     RIMARIO" nel commento in testa a nav.js): riga dei
+                     pacchetti lingua scaricati, accanto a quella del
+                     microfono; [hidden] finche' non ce n'e' nessuno. nav.js
+                     riempie #tb-pack-list (nome, peso, "Rimuovi") e gestisce
+                     la conferma. -->
+                <div id="tb-packs-row" class="tb-packs-row" hidden>
+                    <span data-i18n="pack-installed">Pacchetti del rimario</span>
+                    <ul id="tb-pack-list" class="tb-pack-list"></ul>
+                    <div id="tb-pack-confirm" class="tb-pack-confirm" hidden>
+                        <span data-i18n="pack-remove-ask">Rimuovo questo pacchetto? Potrai riscaricarlo.</span>
+                        <button type="button" id="tb-pack-yes" class="tb-btn" data-i18n="pack-remove">Rimuovi</button>
+                        <button type="button" id="tb-pack-no" class="tb-btn tb-btn--ghost" data-i18n="pack-remove-cancel">Annulla</button>
+                    </div>
+                </div>
+                <div class="tb-menu-foot-row">
+                    <div class="tb-lang-switch" role="group" aria-label="Lingua / Language">
+                        <button type="button" data-lang="it" aria-pressed="true">IT</button>
+                        <button type="button" data-lang="en" aria-pressed="false">EN</button>
+                    </div>
+                    <a class="tb-menu-ext" href="https://tinytemplestudio.it/" data-i18n="menu-ext">Sito dello
+                        studio</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="tb-shell pia-shell">
+        <header class="tb-page-header">
+            <h1 data-i18n="pia-title">Pianificatore di uscita</h1>
+        </header>
+
+        <!-- CONTRATTO pianificatore.js (testata del file, sezione
+             "CONTRATTO CON IL MARKUP"): id in MAIUSCOLO nella sua lista
+             sono ripresi qui uno a uno; quelli senza corrispondenza nella
+             spec §5 (#pia-plan-distro/-notes, #pia-edit, #pia-copy,
+             #pia-delete, #pia-plans-list/-empty, #pia-form-error,
+             #pia-save/-cancel...) li fissa lui, il builder li segue. -->
+        <main id="pianificatore" class="pia" data-pia-state="vuoto">
+
+            <!-- Raggiungibili in ogni stato tranne "modifica" (il modulo
+                 aperto ha gia' il suo Annulla/Salva, vedi @media e regola
+                 CSS su [data-pia-state="modifica"] .pia-toolbar). "Piani"
+                 serve anche per tornare alla lista da un piano aperto: il
+                 JS non nasconde questi due bottoni da soli. -->
+            <div class="pia-toolbar">
+                <button type="button" id="pia-plans" class="tb-btn tb-btn--ghost" data-i18n="pia-plans">Piani</button>
+                <button type="button" id="pia-new" class="tb-btn tb-btn--primary tb-btn--lg" data-i18n="pia-new">Nuovo piano</button>
+            </div>
+
+            <!-- ---------- Stato: vuoto ---------- -->
+            <div id="pia-empty" class="pia-empty">
+                <p data-i18n="pia-empty">Nessun piano</p>
+            </div>
+
+            <!-- ---------- Modulo nuovo piano / modifica piano ---------- -->
+            <!-- [hidden] di default: pianificatore.js lo apre da #pia-new
+                 o da #pia-edit. Niente action/method: il submit lo
+                 intercetta il JS (preventDefault), zero rete (spec 15 §2). -->
+            <form id="pia-form" class="pia-form" hidden>
+                <div class="pia-field">
+                    <label for="pia-title" data-i18n="pia-field-title">Titolo</label>
+                    <input type="text" id="pia-title" class="tb-input" autocomplete="off"
+                        data-i18n-placeholder="pia-field-title-placeholder" placeholder="Titolo del brano">
+                </div>
+
+                <div class="pia-field">
+                    <span class="pia-field-label" id="pia-type-label" data-i18n="pia-type-label">Tipo</span>
+                    <div id="pia-type" class="tb-segment" role="radiogroup" aria-labelledby="pia-type-label">
+                        <button type="button" class="tb-segment-btn" data-pia-type="singolo" role="radio"
+                            aria-checked="true" data-i18n="pia-type-single">Singolo</button>
+                        <button type="button" class="tb-segment-btn" data-pia-type="ep" role="radio"
+                            aria-checked="false" data-i18n="pia-type-ep">EP</button>
+                        <button type="button" class="tb-segment-btn" data-pia-type="album" role="radio"
+                            aria-checked="false" data-i18n="pia-type-album">Album</button>
+                    </div>
+                </div>
+
+                <div class="pia-field">
+                    <label for="pia-date" data-i18n="pia-date-label">Data di uscita</label>
+                    <!-- Nativo stilizzato (spec 15 §3: "il nativo e' l'unico
+                         sensato su iPhone"), niente tb-select qui. -->
+                    <input type="date" id="pia-date" class="tb-input pia-date-input" required>
+                </div>
+
+                <div class="pia-field">
+                    <span class="pia-field-label" id="pia-profile-label" data-i18n="pia-profile-label">Profilo</span>
+                    <div id="pia-profile" class="tb-segment" role="radiogroup" aria-labelledby="pia-profile-label">
+                        <button type="button" class="tb-segment-btn" data-pia-profile="veloce" role="radio"
+                            aria-checked="false" data-i18n="pia-profile-fast">Veloce</button>
+                        <button type="button" class="tb-segment-btn" data-pia-profile="completa" role="radio"
+                            aria-checked="true" data-i18n="pia-profile-full">Completa</button>
+                    </div>
+                </div>
+
+                <!-- .tb-select (spec 03 §2/§6, contratto in shared/components.css):
+                     il <select> nativo resta il valore vero anche senza JS;
+                     select.js aggiunge .is-enhanced e mostra pillola+pannello.
+                     Facoltativo (spec 15 §3): non cambia i calcoli, compare
+                     solo nella riga della tappa "consegna". Marchi (DistroKid,
+                     TuneCore, Amuse, Believe) senza data-i18n. Valori = tappe.js
+                     DISTRIBUTORI (CONTRATTO pianificatore.js). -->
+                <div class="pia-field">
+                    <div class="tb-select" data-value="nessuno">
+                        <select id="pia-distro" class="tb-select-native">
+                            <option value="nessuno" selected data-i18n="pia-distro-nessuno">Non ancora scelto</option>
+                            <option value="distrokid">DistroKid</option>
+                            <option value="tunecore">TuneCore</option>
+                            <option value="amuse">Amuse</option>
+                            <option value="believe">Believe</option>
+                            <option value="altro" data-i18n="pia-distro-altro">Altro</option>
+                        </select>
+                        <button type="button" class="tb-select-trigger" aria-haspopup="listbox" aria-expanded="false"
+                            aria-controls="pia-distro-panel" id="pia-distro-trigger">
+                            <span class="tb-select-label" data-i18n="pia-distro-label">Distributore</span>
+                            <span class="tb-select-value" data-i18n="pia-distro-nessuno">Non ancora scelto</span>
+                            <svg class="tb-select-chevron" aria-hidden="true"><use href="#tb-icon-chevron-down"></use></svg>
+                        </button>
+                        <div class="tb-select-panel" role="listbox" id="pia-distro-panel" hidden
+                            aria-labelledby="pia-distro-trigger" tabindex="-1">
+                            <button type="button" class="tb-select-option" role="option" data-value="nessuno" aria-selected="true">
+                                <span data-i18n="pia-distro-nessuno">Non ancora scelto</span>
+                                <svg class="tb-select-check" aria-hidden="true"><use href="#tb-icon-check"></use></svg>
+                            </button>
+                            <button type="button" class="tb-select-option" role="option" data-value="distrokid" aria-selected="false">
+                                <span>DistroKid</span>
+                                <svg class="tb-select-check" aria-hidden="true"><use href="#tb-icon-check"></use></svg>
+                            </button>
+                            <button type="button" class="tb-select-option" role="option" data-value="tunecore" aria-selected="false">
+                                <span>TuneCore</span>
+                                <svg class="tb-select-check" aria-hidden="true"><use href="#tb-icon-check"></use></svg>
+                            </button>
+                            <button type="button" class="tb-select-option" role="option" data-value="amuse" aria-selected="false">
+                                <span>Amuse</span>
+                                <svg class="tb-select-check" aria-hidden="true"><use href="#tb-icon-check"></use></svg>
+                            </button>
+                            <button type="button" class="tb-select-option" role="option" data-value="believe" aria-selected="false">
+                                <span>Believe</span>
+                                <svg class="tb-select-check" aria-hidden="true"><use href="#tb-icon-check"></use></svg>
+                            </button>
+                            <button type="button" class="tb-select-option" role="option" data-value="altro" aria-selected="false">
+                                <span data-i18n="pia-distro-altro">Altro</span>
+                                <svg class="tb-select-check" aria-hidden="true"><use href="#tb-icon-check"></use></svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="pia-field">
+                    <label for="pia-notes" data-i18n="pia-notes-label">Note</label>
+                    <textarea id="pia-notes" class="tb-input pia-notes" rows="3"></textarea>
+                </div>
+
+                <p id="pia-form-error" class="tb-status pia-form-error" aria-live="polite"></p>
+
+                <div class="pia-form-actions">
+                    <button type="button" id="pia-cancel" class="tb-btn tb-btn--ghost" data-i18n="pia-cancel">Annulla</button>
+                    <button type="submit" id="pia-save" class="tb-btn tb-btn--primary" data-i18n="pia-save">Crea il piano</button>
+                </div>
+            </form>
+
+            <!-- ---------- Stato: piano aperto ---------- -->
+            <div id="pia-plan" class="pia-plan" hidden>
+                <div class="pia-plan-head">
+                    <div class="pia-plan-head-text">
+                        <!-- Testo scritto dal JS: nessun default statico
+                             (CONTRATTO, come #dna-target-label in dna/index.html). -->
+                        <p id="pia-plan-title" class="pia-plan-title"></p>
+                        <time id="pia-plan-date" class="pia-plan-date"></time>
+                        <p id="pia-plan-distro" class="pia-plan-distro" hidden></p>
+                        <p id="pia-plan-notes" class="pia-plan-notes" hidden></p>
+                    </div>
+                    <span id="pia-badge" class="tb-pill pia-badge" hidden></span>
+                </div>
+
+                <p id="pia-count" class="pia-count" aria-live="polite"></p>
+
+                <div id="pia-progress" class="pia-progress-track">
+                    <div class="pia-progress-fill"></div>
+                </div>
+
+                <!-- Tutte le tappe di questo piano, o le tre prossime di
+                     TUTTI i piani (spec 15 §3 "Prossime tappe"): stesso
+                     #pia-list, contenuto diverso, lo sceglie questo
+                     tb-segment (CONTRATTO pianificatore.js). -->
+                <div id="pia-view" class="tb-segment" role="radiogroup" data-i18n-aria="pia-view-aria" aria-label="Vista">
+                    <button type="button" class="tb-segment-btn" data-pia-view="tutte" role="radio"
+                        aria-checked="true" data-i18n="pia-all">Tutte</button>
+                    <button type="button" class="tb-segment-btn" data-pia-view="prossime" role="radio"
+                        aria-checked="false" data-i18n="pia-upcoming">Prossime</button>
+                </div>
+
+                <!-- <ol> VUOTO: lo riempie pianificatore.js con un <li
+                     class="pia-step" data-pia-step="<id>"
+                     data-pia-state="fatta|scadenza|ritardo|futura"> per
+                     tappa (checkbox .pia-check + label .pia-step-title +
+                     .pia-step-when con <time> e giorni + eventuale
+                     .pia-step-flag "in ritardo"/"in scadenza" + .pia-step-text
+                     + eventuale .tb-info (il "perche'" dell'anticipo, spec
+                     03 §2, apre #pia-sheet) + .tb-btn--icon.pia-step-menu
+                     (Rinomina/Sposta/Ripristina/Elimina, apre #pia-sheet)).
+                     La vista "Prossime" aggiunge .pia-step-plan col nome
+                     del piano. CONTRATTO completo in testa a
+                     pianificatore.js: nessun nodo qui viene creato dal
+                     builder. -->
+                <ol id="pia-list" class="pia-list"></ol>
+
+                <button type="button" id="pia-add" class="tb-btn pia-add" data-i18n="pia-add">Aggiungi tappa</button>
+                <button type="button" id="pia-recalc" class="tb-btn tb-btn--ghost pia-recalc" data-i18n="pia-recalc">Ricalcola dalla data</button>
+
+                <div class="pia-actions">
+                    <button type="button" id="pia-ics" class="tb-btn">
+                        <svg aria-hidden="true"><use href="#tb-icon-calendar"></use></svg>
+                        <span data-i18n="pia-ics">Aggiungi al calendario</span>
+                    </button>
+                    <button type="button" id="pia-share" class="tb-btn">
+                        <svg aria-hidden="true"><use href="#tb-icon-share"></use></svg>
+                        <span data-i18n="pia-share">Condividi</span>
+                    </button>
+                    <button type="button" id="pia-print" class="tb-btn">
+                        <svg aria-hidden="true"><use href="#tb-icon-print"></use></svg>
+                        <span data-i18n="pia-print">Stampa o PDF</span>
+                    </button>
+                    <button type="button" id="pia-copy" class="tb-btn tb-btn--ghost" data-i18n="pia-copy">Copia il testo</button>
+                </div>
+
+                <div class="pia-plan-manage">
+                    <button type="button" id="pia-edit" class="tb-btn tb-btn--ghost" data-i18n="pia-edit">Modifica il piano</button>
+                    <button type="button" id="pia-delete" class="tb-btn tb-btn--ghost" data-i18n="pia-delete">Elimina il piano</button>
+                </div>
+
+                <p id="pia-status" class="tb-status pia-status" aria-live="polite"></p>
+            </div>
+
+            <!-- ---------- Stato: lista piani ---------- -->
+            <!-- [data-pia-panel] e' l'ancora che setStato() cerca con
+                 .closest() per nascondere/mostrare questo blocco intero
+                 (CONTRATTO pianificatore.js). [hidden] di default: solo
+                 "vuoto" e' lo stato iniziale. -->
+            <div class="pia-plans-screen" data-pia-panel="piani" hidden>
+                <h2 data-i18n="pia-plans">Piani</h2>
+                <!-- pianificatore.js toglie/mette [hidden] secondo se ci
+                     sono piani salvati. -->
+                <p id="pia-plans-empty" class="pia-plans-empty" data-i18n="pia-plans-empty" hidden>Nessun piano</p>
+                <!-- Vuoto: pianificatore.js lo riempie con <li class="pia-plan-row">
+                     <button class="pia-plan-open" data-pia-plan="<id>"><span
+                     class="pia-plan-name">titolo</span><span class="pia-plan-sub">
+                     data · fatte N di TOT</span></button></li> per piano. -->
+                <ul id="pia-plans-list" class="pia-plans-list"></ul>
+            </div>
+
+        </main>
+
+        <!-- Riga sola su ogni pagina (spec 03 §4). -->
+        <footer class="tb-footer">
+            <p class="tb-footer-line">
+                <span>Tiny Temple Studio</span>
+                <span class="tb-footer-sep" aria-hidden="true">&middot;</span>
+                <a href="https://www.iubenda.com/privacy-policy/35861019" target="_blank" rel="noopener"
+                    data-i18n="tb-footer-privacy">Privacy</a>
+                <span class="tb-footer-sep" aria-hidden="true">&middot;</span>
+                <span data-i18n="footer-designed">Designed by Genna</span>
+            </p>
+        </footer>
+    </div>
+
+    <!-- Foglio unico e riusabile (spec 03 §2: "un solo componente, niente
+         popover separato"): pianificatore.js lo riempie di volta in volta
+         con il "perche'" di una tappa, il menu Rinomina/Sposta/Ripristina/
+         Elimina, il modulo "Aggiungi tappa"/rinomina/sposta o le conferme
+         di ricalcolo/eliminazione, scrivendo il titolo in #pia-sheet-title
+         (rimuove anche il suo data-i18n, CONTRATTO) e il corpo in
+         #pia-sheet-body. Stessa apertura/chiusura (X/scrim/Esc, focus
+         trap) di ogni altro tb-sheet della Toolbox: sheet.js lo riusa, non
+         lo reinventa. -->
+    <div class="tb-sheet-scrim" id="pia-sheet-scrim" hidden></div>
+    <div class="tb-sheet" id="pia-sheet" role="dialog" aria-modal="true" aria-labelledby="pia-sheet-title" hidden>
+        <div class="tb-sheet-head">
+            <h2 id="pia-sheet-title"></h2>
+            <button type="button" class="tb-sheet-close" data-i18n-aria="sheet-close" aria-label="Chiudi">&times;</button>
+        </div>
+        <div id="pia-sheet-body" class="tb-sheet-body"></div>
+    </div>
+
+    <script type="module" src="/pianificatore-uscita/pianificatore.js"></script>
+</body>
+
+</html>

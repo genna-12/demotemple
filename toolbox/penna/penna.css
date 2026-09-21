@@ -1,0 +1,907 @@
+/* ========================================================
+   TINY TEMPLE TOOLBOX - PENNA
+   Solo questa pagina (spec 14). Richiede shared/tokens.css e
+   shared/base.css/components.css caricati prima. Zero JS qui: gli stati
+   ([data-pen-state]/[data-pen-count] su #penna, is-mono/is-colori su
+   #penna) li applica penna.js, tutto il resto (apertura di "Documenti" e
+   del rimario) e' un checkbox-hack CSS puro (spec 14 §5: builder non
+   scrive logica JS, e ne' #pen-docs-toggle ne' #pen-rhyme-toggle sono
+   nel contratto di penna.js: quel file non li tocca mai).
+   Due colonne da 900px (spec 14 §3): editor a sinistra, rimario fisso a
+   destra, niente foglio; sotto, editor a tutta schermata con barra
+   inferiore che apre il rimario come tb-sheet. */
+
+:root {
+    --pen-font-mono: ui-monospace, 'SFMono-Regular', Menlo, Consolas, 'Liberation Mono', monospace;
+    /* Sei classi di rima (spec 14 §3): toni chiari, contrasto >= 4.5:1 su
+       fondo scuro, distinguibili anche in condizioni di daltonismo comuni
+       (arancio/blu/verde/viola/giallo/rosa); la lettera resta comunque il
+       riferimento "senza colore" (criterio 11). */
+    --pen-c0: #e8935f;
+    --pen-c1: #6fb3e0;
+    --pen-c2: #8fd18f;
+    --pen-c3: #d8a6f0;
+    --pen-c4: #e8d268;
+    --pen-c5: #f0a0bc;
+}
+
+.tb-page-header {
+    padding: 0;
+    margin: 8px 0;
+}
+
+.tb-page-header h1 {
+    font-size: 1.1rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+
+.pen-shell {
+    max-width: 1100px;
+    padding-bottom: 12px;
+}
+
+.tb-footer {
+    margin-top: 12px;
+    padding-top: 12px;
+    padding-bottom: calc(12px + var(--tb-safe-b));
+}
+
+.tb-footer-line {
+    font-size: 0.72rem;
+}
+
+.tb-footer-line a {
+    min-height: 32px;
+}
+
+/* --- `main#penna` --- */
+.pen {
+    display: flex;
+    flex-direction: column;
+}
+
+.pen-layout {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    /* Altezza generosa sotto la barra/testata (spec: "editor a tutta
+       schermata"): l'editor e il rimario riempiono quel che resta. */
+    min-height: 72vh;
+    min-height: 72dvh;
+}
+
+/* --- Barra comandi del documento (sempre visibile) --- */
+.pen-editor-bar {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2);
+}
+
+.pen-title {
+    flex: 1;
+    min-width: 0;
+    min-height: var(--tap);
+    padding: 0 var(--sp-3);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--r-md);
+    background: var(--surface-1);
+    color: var(--text-primary);
+    font-family: var(--font-title);
+    font-size: 1rem;
+    font-weight: 700;
+}
+
+.pen-title:focus-visible {
+    border-color: var(--accent-orange);
+}
+
+.pen-status {
+    min-height: 20px;
+    font-size: 0.75rem;
+}
+
+/* --- Editor: contenitore comune degli "schermi" --- */
+.pen-editor {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    flex: 1;
+    min-height: 0;
+}
+
+/* CONTRATTO penna.js: [data-pen-state] su #penna, non su questi blocchi
+   (stessa insidia gia' vista altrove: una classe/attributo composto vince
+   sempre su [hidden]/display di base, qui basta lo switch sotto). */
+.pen-empty,
+.pen-write {
+    display: none;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+}
+
+#penna[data-pen-state="scrittura"] .pen-write {
+    display: flex;
+}
+
+#penna:not([data-pen-state="scrittura"]) .pen-empty {
+    display: flex;
+}
+
+/* --- Editor: stato vuoto --- */
+.pen-empty {
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    padding: 32px 16px;
+    text-align: center;
+    color: var(--text-muted);
+}
+
+/* --- Editor: stato scrittura --- */
+.pen-body {
+    display: flex;
+    flex: 1;
+    min-height: 0;
+    gap: 6px;
+    border: 1px solid var(--glass-border);
+    border-radius: var(--r-lg);
+    background: var(--surface-1);
+    overflow: hidden;
+}
+
+/* Gutter dei conteggi: aria-hidden, un numero per verso (penna.js). Stesso
+   font/line-height/padding-top della textarea (bug da evitare: qualunque
+   differenza fra i due sfalsa i numeri dal verso giusto), nessun ritorno a
+   capo automatico ne' qui ne' sulla textarea, cosi' un verso = una riga =
+   un numero, sempre (spec: "gutter allineato riga per riga"). */
+.pen-gutter,
+.pen-text,
+.pen-lines {
+    padding: var(--sp-3) 0 var(--sp-3) 0;
+    font-family: var(--font-text);
+    font-size: 0.95rem;
+    line-height: 1.6;
+    white-space: pre;
+}
+
+.pen-gutter {
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    min-width: 2.4em;
+    padding-right: var(--sp-2);
+    padding-left: var(--sp-2);
+    color: var(--text-muted);
+    font-variant-numeric: tabular-nums;
+    overflow: hidden;
+}
+
+.pen-n {
+    display: block;
+    min-height: calc(1.6em);
+}
+
+button.pen-n {
+    padding: 0;
+    border: none;
+    background: none;
+    color: inherit;
+    text-align: right;
+    text-decoration: underline dotted;
+    text-underline-offset: 3px;
+    cursor: pointer;
+}
+
+.pen-n.is-stimato {
+    font-style: italic;
+    opacity: 0.75;
+}
+
+.pen-n.is-sinalefe {
+    color: var(--accent-orange);
+}
+
+.pen-text-wrap {
+    position: relative;
+    flex: 1;
+    min-width: 0;
+    display: grid;
+    overflow: auto;
+}
+
+.pen-text-wrap > * {
+    grid-area: 1 / 1;
+}
+
+/* Livello dei colori: dietro la textarea, stesso testo duplicato per verso
+   con lo sfondo tinto (spec 14 §3, contratto in testa a penna.js). Senza
+   questo elemento il toggle "Rime a colori" non ha dove scrivere. */
+.pen-lines {
+    pointer-events: none;
+    color: transparent;
+    padding-right: var(--sp-3);
+    padding-left: var(--sp-3);
+}
+
+.pen-line {
+    display: block;
+    min-height: calc(1.6em);
+    border-radius: 3px;
+}
+
+.pen-lettera {
+    display: inline-block;
+    margin-left: 6px;
+    font-style: normal;
+    font-weight: 700;
+    font-size: 0.7em;
+    color: var(--text-muted);
+    vertical-align: super;
+}
+
+.pen-rima-0 { background: rgba(232, 147, 95, 0.16); box-shadow: inset 3px 0 var(--pen-c0); }
+.pen-rima-1 { background: rgba(111, 179, 224, 0.16); box-shadow: inset 3px 0 var(--pen-c1); }
+.pen-rima-2 { background: rgba(143, 209, 143, 0.16); box-shadow: inset 3px 0 var(--pen-c2); }
+.pen-rima-3 { background: rgba(216, 166, 240, 0.16); box-shadow: inset 3px 0 var(--pen-c3); }
+.pen-rima-4 { background: rgba(232, 210, 104, 0.16); box-shadow: inset 3px 0 var(--pen-c4); }
+.pen-rima-5 { background: rgba(240, 160, 188, 0.16); box-shadow: inset 3px 0 var(--pen-c5); }
+
+.pen-rima-0 .pen-lettera { color: var(--pen-c0); }
+.pen-rima-1 .pen-lettera { color: var(--pen-c1); }
+.pen-rima-2 .pen-lettera { color: var(--pen-c2); }
+.pen-rima-3 .pen-lettera { color: var(--pen-c3); }
+.pen-rima-4 .pen-lettera { color: var(--pen-c4); }
+.pen-rima-5 .pen-lettera { color: var(--pen-c5); }
+
+/* "Rime a colori" spento (penna.js toglie is-colori da #penna): il livello
+   resta vuoto (renderColori esce subito), niente altro da fare qui. */
+
+.pen-text {
+    resize: none;
+    border: none;
+    background: transparent;
+    color: var(--text-primary);
+    padding-right: var(--sp-3);
+    padding-left: var(--sp-3);
+}
+
+.pen-text:focus-visible {
+    outline: none;
+}
+
+/* Monospazio (spec 14 §3, toggle #pen-mono): stesso font su tutti e tre i
+   livelli, altrimenti i caratteri non sarebbero piu' larghi uguali e il
+   gutter/i colori si sfaserebbero dalla textarea. */
+#penna.is-mono .pen-gutter,
+#penna.is-mono .pen-text,
+#penna.is-mono .pen-lines {
+    font-family: var(--pen-font-mono);
+}
+
+.pen-controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--sp-3);
+}
+
+.pen-controls .tb-segment {
+    flex: 1;
+    min-width: 220px;
+}
+
+/* --- Toggle a interruttore su un vero <input type="checkbox"> (spec 03
+   §2: stesso disegno di .tb-toggle, ma qui la casella e' reale perche'
+   penna.js legge .checked/"change", non aria-checked su un bottone: vedi
+   il CONTRATTO in testa a penna.js, #pen-mono/#pen-colors/#pen-copy-mode
+   e ogni .pen-sin dentro il foglio delle sinalefi). Nome diverso da
+   ".tb-toggle" apposta: quella classe in components.css e' cucita su un
+   <button role="switch">, qui la struttura e' label+input+pista ed e' una
+   variante solo di Penna, non va sovrascritta altrove. */
+.pen-toggle-row {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-2);
+    font-size: 0.82rem;
+    color: var(--text-primary);
+}
+
+.pen-toggle {
+    position: relative;
+    display: inline-flex;
+    flex-shrink: 0;
+    width: 52px;
+    height: 32px;
+}
+
+.pen-toggle input[type="checkbox"] {
+    position: absolute;
+    inset: 0;
+    margin: 0;
+    opacity: 0;
+    cursor: pointer;
+}
+
+.pen-toggle-thumb {
+    position: absolute;
+    inset: 0;
+    display: block;
+    border-radius: var(--r-pill);
+    background: var(--track);
+    pointer-events: none;
+    transition: background var(--dur-med) ease;
+}
+
+.pen-toggle-thumb::before {
+    content: '';
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border-top);
+    box-shadow: var(--shadow-pop);
+    transition: transform var(--dur-med) var(--ease-cinematic);
+}
+
+.pen-toggle input:checked + .pen-toggle-thumb {
+    background: var(--accent-orange);
+}
+
+.pen-toggle input:checked + .pen-toggle-thumb::before {
+    transform: translateX(20px);
+}
+
+.pen-toggle input:focus-visible + .pen-toggle-thumb {
+    outline: 2px solid var(--accent-orange);
+    outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .pen-toggle-thumb,
+    .pen-toggle-thumb::before {
+        transition: none;
+    }
+}
+
+/* Sinalefi del verso (foglio #pen-sheet): un .pen-sin per sinalefe. */
+.pen-sheet-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-2);
+}
+
+/* penna.js crea ogni sinalefe come <label class="tb-toggle pen-sin"><input
+   type=checkbox><span>...</span></label> (contratto in testa a penna.js):
+   una vera casella nativa col testo, non il bottone/pista a pillola di
+   components.css. ".pen-sin" qui e' piu' specifico di ".tb-toggle" da
+   solo e vince nella cascata (penna.css carica dopo components.css):
+   azzera pillola/pista e lascia una riga normale con una casella vera. */
+.tb-toggle.pen-sin {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    width: auto;
+    height: auto;
+    gap: var(--sp-3);
+    padding: var(--sp-2) 0;
+    background: none;
+    border-radius: 0;
+    font-size: 0.88rem;
+    color: var(--text-primary);
+}
+
+.pen-sin input[type="checkbox"] {
+    flex-shrink: 0;
+    width: 22px;
+    height: 22px;
+    accent-color: var(--accent-orange);
+}
+
+/* --- Editor: "Documenti" (checkbox-hack, nessuna logica JS: spec 14 §5) --- */
+.pen-docs-toggle-input {
+    position: absolute;
+}
+
+.pen-docs-screen {
+    display: none;
+    position: absolute;
+    inset: 0;
+    z-index: 5;
+    flex-direction: column;
+    gap: var(--sp-3);
+    padding: var(--sp-4);
+    border-radius: var(--r-lg);
+    background: var(--glass-bg);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--shadow-pop);
+    overflow-y: auto;
+}
+
+.pen-docs-toggle-input:checked ~ .pen-docs-screen {
+    display: flex;
+}
+
+/* Focus da tastiera sulla casella nascosta: lo si vede sul bottone
+   visibile che la comanda (":has()", spec 03 su base solida: fuori da qui
+   il progetto non ne dipende, e' solo un miglioramento). */
+.pen-editor-bar:has(#pen-docs-toggle:focus-visible) .pen-docs-open {
+    outline: 2px solid var(--accent-orange);
+    outline-offset: 2px;
+}
+
+.pen-docs-head {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2);
+}
+
+.pen-docs-head h2 {
+    flex: 1;
+    margin: 0;
+    font-family: var(--font-title);
+    font-size: 1rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-primary);
+}
+
+.pen-docs {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    overflow-y: auto;
+}
+
+.pen-doc {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.pen-doc-open {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+    flex: 1;
+    min-width: 0;
+    min-height: var(--tap);
+    padding: 6px var(--sp-3);
+    border-radius: var(--r-sm);
+    border: 1px solid var(--glass-border);
+    background: var(--surface-1);
+    text-align: left;
+}
+
+.pen-doc-title {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-weight: 700;
+    font-size: 0.85rem;
+    color: var(--text-primary);
+}
+
+.pen-doc-sub {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 0.72rem;
+    color: var(--text-muted);
+}
+
+/* penna.js crea questo bottone con solo ".tb-btn--icon" (niente ".tb-btn":
+   contratto in testa a penna.js, stesso principio di ".dna-history-del"
+   nel DNA): quella classe da sola porta solo le misure (44px), qui il
+   resto dell'aspetto (centratura, "x" leggibile). */
+.pen-doc-del {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-muted);
+    font-size: 1.1rem;
+    line-height: 1;
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .pen-doc-open:hover {
+        border-color: var(--accent-orange);
+    }
+    .pen-doc-del:hover {
+        color: var(--accent-orange);
+    }
+}
+
+.pen-delete-confirm {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--sp-2);
+    padding: var(--sp-3);
+    border-radius: var(--r-md);
+    background: var(--surface-1);
+    font-size: 0.85rem;
+    color: var(--text-primary);
+}
+
+.pen-delete-confirm[hidden] {
+    display: none;
+}
+
+.pen-delete-confirm span {
+    flex: 1;
+    min-width: 140px;
+}
+
+/* --- Barra inferiore mobile: solo sotto i 900px (da 900px il rimario e'
+   una colonna fissa, spec 14 §3) --- */
+.pen-bottombar {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: var(--sp-2);
+    padding-top: 6px;
+    padding-bottom: var(--tb-safe-b);
+}
+
+.pen-bottombar-hint {
+    display: none;
+}
+
+/* --- Rimario: tb-sheet sotto i 900px, colonna fissa da 900px --- */
+.pen-rhyme-toggle-input {
+    position: absolute;
+}
+
+/* Il rimario e' gia' un .tb-sheet (contratto shared/components.css): qui
+   solo il contenuto interno e la neutralizzazione dello scrim quando
+   diventa colonna fissa (vedi il blocco @media sotto). Apertura/chiusura
+   sotto i 900px sono il checkbox-hack qui sopra, non penna.js. */
+.pen-rhyme-scrim {
+    display: none;
+}
+
+.pen-rhyme-toggle-input:checked ~ .pen-rhyme-scrim {
+    display: block;
+    opacity: 1;
+}
+
+#pen-rhyme {
+    display: none;
+}
+
+.pen-rhyme-toggle-input:checked ~ #pen-rhyme {
+    display: flex;
+    flex-direction: column;
+    transform: translateY(0);
+}
+
+#pen-rhyme.tb-sheet {
+    max-height: min(80vh, 640px);
+}
+
+.pen-rhyme-body {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-3);
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+}
+
+/* Lingua del rimario (spec 14b §3), in cima al pannello: stesso .tb-segment
+   degli altri gruppi, solo un puntino sulle lingue non ancora scaricate
+   (penna.js mette/toglie la classe, mai lo stile). */
+#pen-lang {
+    flex-wrap: nowrap;
+}
+
+#pen-lang .tb-segment-btn {
+    position: relative;
+}
+
+#pen-lang .tb-segment-btn.is-missing::after {
+    content: '';
+    position: absolute;
+    top: 6px;
+    right: 8px;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--accent-orange);
+}
+
+.pen-query-row {
+    display: block;
+}
+
+.pen-query {
+    width: 100%;
+    min-height: var(--tap);
+    padding: 0 var(--sp-3);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--r-pill);
+    background: var(--surface-1);
+    color: var(--text-primary);
+    font-size: 1rem;
+}
+
+.pen-query:focus-visible {
+    border-color: var(--accent-orange);
+}
+
+.pen-unknown {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--sp-2);
+}
+
+.pen-unknown[hidden] {
+    display: none;
+}
+
+.pen-unknown-badge {
+    color: var(--accent-orange);
+    border-color: rgba(207, 92, 54, 0.4);
+}
+
+.pen-rhyme-download {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+}
+
+#pen-progress {
+    position: relative;
+    width: 100%;
+    max-width: 280px;
+    height: 6px;
+    border-radius: var(--r-pill);
+    background: var(--track);
+    overflow: hidden;
+}
+
+#pen-progress::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    width: var(--pen-pct, 0%);
+    background: var(--grad-accent);
+    transition: width 0.2s ease;
+}
+
+#pen-progress[hidden] {
+    display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    #pen-progress::after {
+        transition: none;
+    }
+}
+
+.pen-results {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+/* Le pillole (.pen-hit.tb-pill) e il "nessun risultato" (.tb-status) li
+   crea penna.js: qui solo l'affiancamento e il numero di sillabe. */
+.pen-hit {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: var(--tap);
+    padding: 0 var(--sp-3);
+    cursor: pointer;
+}
+
+.pen-hit .pen-syl {
+    font-size: 0.68rem;
+    font-weight: 700;
+    color: var(--text-muted);
+    font-variant-numeric: tabular-nums;
+}
+
+.pen-hit.is-stimato {
+    font-style: italic;
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .pen-hit:hover {
+        border-color: var(--accent-orange);
+    }
+}
+
+/* "Copia invece di inserire": solo desktop (spec 14 §3). */
+.pen-copy-row {
+    display: none;
+}
+
+/* --- Foglio del pacchetto lingua (spec 14b §3/§5) ---
+   penna.js apre/chiude togliendo/mettendo [hidden] direttamente su
+   #pen-pack-sheet (mai una classe .is-open, non passa da shared/sheet.js):
+   qui il foglio deve essere visibile appena [hidden] sparisce, quindi si
+   forza transform sempre a 0 invece di aspettare quella classe. Lo scrim e'
+   puro CSS con :has(), gia' usato altrove in questo file, e non intercetta
+   i tocchi (niente ascoltatore JS che lo richiuderebbe): solo "Annulla"
+   chiude. */
+.pen-pack-scrim {
+    pointer-events: none;
+}
+
+body:has(#pen-pack-sheet:not([hidden])) .pen-pack-scrim {
+    opacity: 1;
+}
+
+#pen-pack-sheet:not([hidden]) {
+    transform: translateY(0);
+}
+
+.pen-pack-title {
+    flex: 1;
+}
+
+.pen-pack-size {
+    margin: 0 0 var(--sp-3);
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
+
+.pen-pack-fonti {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin: 0 0 var(--sp-3);
+    padding: 0;
+    list-style: none;
+    font-size: 0.72rem;
+    color: var(--text-muted);
+}
+
+/* Stessa forma di #pen-progress, id a parte perche' e' un pannello diverso
+   (penna.js scrive --pen-pct/aria-valuenow su entrambi allo stesso modo). */
+#pen-pack-bar {
+    position: relative;
+    width: 100%;
+    height: 6px;
+    margin-bottom: var(--sp-3);
+    border-radius: var(--r-pill);
+    background: var(--track);
+    overflow: hidden;
+}
+
+#pen-pack-bar::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    width: var(--pen-pct, 0%);
+    background: var(--grad-accent);
+    transition: width 0.2s ease;
+}
+
+#pen-pack-bar[hidden] {
+    display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    #pen-pack-bar::after {
+        transition: none;
+    }
+}
+
+.pen-pack-actions {
+    display: flex;
+    gap: var(--sp-2);
+}
+
+.pen-pack-actions .tb-btn {
+    flex: 1;
+}
+
+/* --- Lingua del testo ed "e muta", nel menu (spec 14b §3), solo Penna --- */
+.pen-menu-doc {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-2);
+}
+
+.pen-doc-lang-field {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-2);
+    width: auto;
+    padding: 0 0 0 var(--sp-1);
+}
+
+.pen-doc-lang-label {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
+
+.pen-doc-lang-field .tb-select-trigger {
+    width: auto;
+    min-width: 76px;
+}
+
+/* francese soltanto: penna.js mette [hidden] sul <label> fuori da li' */
+.pen-menu-doc .pen-toggle-row[hidden] {
+    display: none;
+}
+
+/* --- Da 900px: due colonne, rimario sempre visibile, niente foglio --- */
+@media (min-width: 900px) {
+    .pen-layout {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 360px;
+        align-items: start;
+        gap: var(--sp-4);
+        min-height: 78vh;
+        min-height: 78dvh;
+    }
+
+    .pen-bottombar {
+        display: none;
+    }
+
+    /* Il rimario smette di essere un foglio: colonna fissa, sempre visibile
+       a prescindere dalla casella (checkbox-hack neutralizzato), niente
+       scrim. Stessa "insidia" di .tb-select-panel.tb-sheet in
+       components.css: un selettore composto piu' specifico per essere
+       sicuri di vincere sia sullo stato closed sia su quello checked. */
+    .pen-rhyme-scrim,
+    .pen-rhyme-toggle-input:checked ~ .pen-rhyme-scrim {
+        display: none !important;
+    }
+
+    #pen-rhyme,
+    .pen-rhyme-toggle-input:checked ~ #pen-rhyme {
+        display: flex !important;
+        position: static;
+        transform: none;
+        width: auto;
+        max-height: none;
+        height: 100%;
+        margin: 0;
+        border-radius: var(--r-lg);
+        box-shadow: none;
+    }
+
+    .pen-copy-row {
+        display: inline-flex;
+    }
+}
+
+/* --- 360px: niente scroll orizzontale, controlli su una sola riga --- */
+@media (max-width: 360px) {
+    .pen-editor-bar {
+        flex-wrap: wrap;
+    }
+
+    .pen-title {
+        order: 1;
+        flex-basis: 100%;
+    }
+}

@@ -33,6 +33,11 @@
 /vendor/*
   Cache-Control: public, max-age=31536000, immutable
 
+# Dati del rimario (spec 14 §2): il nome porta il suffisso di versione
+# (parole-v1.txt, ...), quindi non cambiano mai sotto lo stesso percorso.
+/penna/data/*
+  Cache-Control: public, max-age=31536000, immutable
+
 # Font: copie identiche a quelli della vetrina, non cambiano mai.
 /assets/fonts/*
   Cache-Control: public, max-age=31536000, immutable
