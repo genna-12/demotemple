@@ -1,15 +1,16 @@
 /* ========================================================
    TINY TEMPLE TOOLBOX - PENNA
-   Solo questa pagina (spec 14). Richiede shared/tokens.css e
-   shared/base.css/components.css caricati prima. Zero JS qui: gli stati
-   ([data-pen-state]/[data-pen-count] su #penna, is-mono/is-colori su
-   #penna) li applica penna.js, tutto il resto (apertura di "Documenti" e
-   del rimario) e' un checkbox-hack CSS puro (spec 14 §5: builder non
-   scrive logica JS, e ne' #pen-docs-toggle ne' #pen-rhyme-toggle sono
-   nel contratto di penna.js: quel file non li tocca mai).
-   Due colonne da 900px (spec 14 §3): editor a sinistra, rimario fisso a
-   destra, niente foglio; sotto, editor a tutta schermata con barra
-   inferiore che apre il rimario come tb-sheet. */
+   Solo questa pagina (spec 14, estesa dalla 16: il quaderno). Richiede
+   shared/tokens.css e shared/base.css/components.css caricati prima. Zero
+   JS qui: gli stati ([data-pen-vista]/[data-pen-count] su #penna, is-mono/
+   is-colori su #penna) li applica penna.js; l'apertura del rimario resta
+   un checkbox-hack CSS puro (spec 14 §5/16 §5: builder non scrive logica
+   JS, #pen-rhyme-toggle non e' nel contratto di penna.js).
+   Due viste fratelle sotto #penna (spec 16 §3/§4): #pen-list (elenco dei
+   testi, ingresso dello strumento) e #pen-editor (l'editor della 14, con
+   rimario). Due colonne da 900px dentro #pen-editor: editor a sinistra,
+   rimario fisso a destra, niente foglio; sotto, editor a tutta schermata
+   con barra inferiore che apre il rimario come tb-sheet. */
 
 :root {
     --pen-font-mono: ui-monospace, 'SFMono-Regular', Menlo, Consolas, 'Liberation Mono', monospace;
@@ -71,15 +72,33 @@
     min-height: 72dvh;
 }
 
+/* CONTRATTO penna.js (spec 16 §4): #pen-list e #pen-editor sono fratelli
+   sotto #penna, il CSS mostra l'uno o l'altro in base a
+   #penna[data-pen-vista]. !important solo per lo spegnimento: cosi' non
+   c'e' bisogno di alzare la specificita' delle regole positive qui sopra
+   (.pen-layout, sotto) ne' di quelle della griglia due colonne da 900px
+   piu' in fondo al file (stessa tecnica gia' usata per .pen-rhyme-scrim). */
+#penna:not([data-pen-vista="elenco"]) #pen-list {
+    display: none !important;
+}
+
+#penna:not([data-pen-vista="editor"]) #pen-editor {
+    display: none !important;
+}
+
 /* --- Barra comandi del documento (sempre visibile) --- */
+/* Spec 16 §4 punto 8: flex-wrap sempre attivo (prima solo sotto 360px, quel
+   blocco e' sparito piu' in fondo al file), cosi' su schermi stretti i
+   bottoni vanno a capo invece di spingere in orizzontale. */
 .pen-editor-bar {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
     gap: var(--sp-2);
 }
 
 .pen-title {
-    flex: 1;
+    flex: 1 1 12ch;
     min-width: 0;
     min-height: var(--tap);
     padding: 0 var(--sp-3);
@@ -94,6 +113,17 @@
 
 .pen-title:focus-visible {
     border-color: var(--accent-orange);
+}
+
+/* Revisione: flex: 1 1 12ch da solo non basta stretto fra Indietro e le tre
+   icone (Impostazioni/Condividi/Elimina) - a 390px il titolo resta
+   compresso a ~124px e il testo si taglia. Sotto 560px va su una riga
+   propria (flex-wrap gia' attivo qui sopra spezza prima e dopo un item al
+   100%, niente "order" perche' e' gia' fra Indietro e le icone nel markup). */
+@media (max-width: 560px) {
+    .pen-title {
+        flex-basis: 100%;
+    }
 }
 
 .pen-status {
@@ -111,52 +141,42 @@
     min-height: 0;
 }
 
-/* CONTRATTO penna.js: [data-pen-state] su #penna, non su questi blocchi
-   (stessa insidia gia' vista altrove: una classe/attributo composto vince
-   sempre su [hidden]/display di base, qui basta lo switch sotto). */
-.pen-empty,
+/* Vista editor (spec 16 §4): niente piu' stato "vuoto"/"documenti", solo
+   scrittura. #pen-list/#pen-editor sono fratelli sotto #penna, li' sotto
+   c'e' lo switch [data-pen-vista] (vedi in fondo al file). */
 .pen-write {
-    display: none;
+    display: flex;
     flex-direction: column;
     flex: 1;
     min-height: 0;
 }
 
-#penna[data-pen-state="scrittura"] .pen-write {
-    display: flex;
-}
-
-#penna:not([data-pen-state="scrittura"]) .pen-empty {
-    display: flex;
-}
-
-/* --- Editor: stato vuoto --- */
-.pen-empty {
-    align-items: center;
-    justify-content: center;
-    gap: 14px;
-    padding: 32px 16px;
-    text-align: center;
-    color: var(--text-muted);
-}
-
 /* --- Editor: stato scrittura --- */
+/* Spec 16 §4 punto 1: e' il SOLO contenitore che scorre (prima scorreva
+   .pen-text-wrap mentre il gutter, overflow:hidden, restava fermo, e i
+   numeri si sfasavano appena il testo superava il riquadro). Colonna di
+   scrittura centrata e limitata a 72ch da qui: cosi' vale sia sotto 900px
+   (colonna unica) sia dentro la griglia due colonne piu' sotto. */
 .pen-body {
     display: flex;
     flex: 1;
     min-height: 0;
+    width: 100%;
+    max-width: calc(72ch + 4.5em);
+    margin-inline: auto;
     gap: 6px;
     border: 1px solid var(--glass-border);
     border-radius: var(--r-lg);
     background: var(--surface-1);
-    overflow: hidden;
+    overflow-y: auto;
+    overflow-x: hidden;
 }
 
 /* Gutter dei conteggi: aria-hidden, un numero per verso (penna.js). Stesso
    font/line-height/padding-top della textarea (bug da evitare: qualunque
-   differenza fra i due sfalsa i numeri dal verso giusto), nessun ritorno a
-   capo automatico ne' qui ne' sulla textarea, cosi' un verso = una riga =
-   un numero, sempre (spec: "gutter allineato riga per riga"). */
+   differenza fra i due sfalsa i numeri dal verso giusto). Spec 16 §4 punto
+   3: i versi vanno a capo (pre-wrap) come la textarea, ma il gutter stesso
+   resta su una riga (nowrap, sotto) perche' contiene solo un numero. */
 .pen-gutter,
 .pen-text,
 .pen-lines {
@@ -164,7 +184,7 @@
     font-family: var(--font-text);
     font-size: 0.95rem;
     line-height: 1.6;
-    white-space: pre;
+    white-space: pre-wrap;
 }
 
 .pen-gutter {
@@ -177,15 +197,22 @@
     padding-left: var(--sp-2);
     color: var(--text-muted);
     font-variant-numeric: tabular-nums;
-    overflow: hidden;
+    white-space: nowrap;
+    overflow: visible;
 }
 
+/* Spec 16 §4 punto 6: niente piu' "pre" con scorrimento orizzontale (e' proprio
+   l'overflow da togliere); i versi vanno a capo e penna.js misura il mirror
+   #pen-lines riga per riga (offsetHeight) e scrive --pen-h su ogni .pen-n,
+   cosi' l'altezza del numero segue l'altezza reale del verso che gli sta
+   davanti anche quando va a capo. */
 .pen-n {
     display: block;
-    min-height: calc(1.6em);
+    height: var(--pen-h, 1.6em);
 }
 
 button.pen-n {
+    position: relative;
     padding: 0;
     border: none;
     background: none;
@@ -194,6 +221,22 @@ button.pen-n {
     text-decoration: underline dotted;
     text-underline-offset: 3px;
     cursor: pointer;
+}
+
+/* Bersaglio >= 44px (revisione, spec 03 §2): il numero resta piccolo per
+   non rompere l'allineamento riga per riga (spec 16 §4 punto 6, il glifo
+   e' il vero .pen-n, la sua altezza segue --pen-h), l'area di tocco si
+   espande oltre di esso con un box invisibile che non conta nel layout. */
+/* Area di tocco larga (>= 44 px) ma alta quanto la riga: due versi con
+   sinalefe stanno a 24 px l'uno dall'altro, e un'area da 44 px in altezza
+   finirebbe sul verso sbagliato. */
+button.pen-n::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    right: 0;
+    width: max(100%, var(--tap));
 }
 
 .pen-n.is-stimato {
@@ -205,12 +248,13 @@ button.pen-n {
     color: var(--accent-orange);
 }
 
+/* Spec 16 §4 punto 2: non scorre piu' qui, scorre .pen-body (sopra). */
 .pen-text-wrap {
     position: relative;
     flex: 1;
     min-width: 0;
     display: grid;
-    overflow: auto;
+    overflow: visible;
 }
 
 .pen-text-wrap > * {
@@ -225,30 +269,43 @@ button.pen-n {
     color: transparent;
     padding-right: var(--sp-3);
     padding-left: var(--sp-3);
+    overflow-wrap: anywhere;
 }
 
 .pen-line {
+    position: relative;
     display: block;
     min-height: calc(1.6em);
     border-radius: 3px;
 }
 
+/* BLOCCANTE (revisione): era inline-block + vertical-align:super, e un box
+   inline alza il line-box che lo contiene di ~1px per riga rimata. Su 55
+   versi #pen-lines finiva piu' alta della textarea (scollamento del
+   gutter). Fuori dal flusso (position:absolute rispetto a .pen-line, che
+   ora e' position:relative): non puo' piu' influire sull'altezza della
+   riga, ne' qui ne' nel mirror che penna.js misura. */
 .pen-lettera {
-    display: inline-block;
-    margin-left: 6px;
+    position: absolute;
+    top: 0;
+    right: 4px;
     font-style: normal;
     font-weight: 700;
     font-size: 0.7em;
+    line-height: 1.6;
     color: var(--text-muted);
-    vertical-align: super;
+    pointer-events: none;
 }
 
-.pen-rima-0 { background: rgba(232, 147, 95, 0.16); box-shadow: inset 3px 0 var(--pen-c0); }
-.pen-rima-1 { background: rgba(111, 179, 224, 0.16); box-shadow: inset 3px 0 var(--pen-c1); }
-.pen-rima-2 { background: rgba(143, 209, 143, 0.16); box-shadow: inset 3px 0 var(--pen-c2); }
-.pen-rima-3 { background: rgba(216, 166, 240, 0.16); box-shadow: inset 3px 0 var(--pen-c3); }
-.pen-rima-4 { background: rgba(232, 210, 104, 0.16); box-shadow: inset 3px 0 var(--pen-c4); }
-.pen-rima-5 { background: rgba(240, 160, 188, 0.16); box-shadow: inset 3px 0 var(--pen-c5); }
+/* Alfa dimezzata (revisione, feedback orchestratore: "da demo"): la lettera
+   (.pen-lettera, colore pieno) resta il riferimento leggibile, lo sfondo
+   qui e' solo un richiamo debole dietro al testo bianco. */
+.pen-rima-0 { background: rgba(232, 147, 95, 0.08); box-shadow: inset 3px 0 var(--pen-c0); }
+.pen-rima-1 { background: rgba(111, 179, 224, 0.08); box-shadow: inset 3px 0 var(--pen-c1); }
+.pen-rima-2 { background: rgba(143, 209, 143, 0.08); box-shadow: inset 3px 0 var(--pen-c2); }
+.pen-rima-3 { background: rgba(216, 166, 240, 0.08); box-shadow: inset 3px 0 var(--pen-c3); }
+.pen-rima-4 { background: rgba(232, 210, 104, 0.08); box-shadow: inset 3px 0 var(--pen-c4); }
+.pen-rima-5 { background: rgba(240, 160, 188, 0.08); box-shadow: inset 3px 0 var(--pen-c5); }
 
 .pen-rima-0 .pen-lettera { color: var(--pen-c0); }
 .pen-rima-1 .pen-lettera { color: var(--pen-c1); }
@@ -257,8 +314,19 @@ button.pen-n {
 .pen-rima-4 .pen-lettera { color: var(--pen-c4); }
 .pen-rima-5 .pen-lettera { color: var(--pen-c5); }
 
-/* "Rime a colori" spento (penna.js toglie is-colori da #penna): il livello
-   resta vuoto (renderColori esce subito), niente altro da fare qui. */
+/* Spec 16 §4 punto 7: #pen-lines si disegna SEMPRE (e' il righello che
+   penna.js misura riga per riga per allineare il gutter, non solo il
+   livello dei colori); a colori spenti il CSS toglie solo la resa visiva,
+   non il blocco: altrimenti la misura del punto 6 non avrebbe piu' un
+   elemento da leggere. */
+#penna:not(.is-colori) .pen-line {
+    background: none;
+    box-shadow: none;
+}
+
+#penna:not(.is-colori) .pen-lettera {
+    display: none;
+}
 
 .pen-text {
     resize: none;
@@ -267,6 +335,8 @@ button.pen-n {
     color: var(--text-primary);
     padding-right: var(--sp-3);
     padding-left: var(--sp-3);
+    overflow-y: hidden;
+    overflow-wrap: anywhere;
 }
 
 .pen-text:focus-visible {
@@ -280,18 +350,6 @@ button.pen-n {
 #penna.is-mono .pen-text,
 #penna.is-mono .pen-lines {
     font-family: var(--pen-font-mono);
-}
-
-.pen-controls {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: var(--sp-3);
-}
-
-.pen-controls .tb-segment {
-    flex: 1;
-    min-width: 220px;
 }
 
 /* --- Toggle a interruttore su un vero <input type="checkbox"> (spec 03
@@ -404,129 +462,7 @@ button.pen-n {
     accent-color: var(--accent-orange);
 }
 
-/* --- Editor: "Documenti" (checkbox-hack, nessuna logica JS: spec 14 §5) --- */
-.pen-docs-toggle-input {
-    position: absolute;
-}
-
-.pen-docs-screen {
-    display: none;
-    position: absolute;
-    inset: 0;
-    z-index: 5;
-    flex-direction: column;
-    gap: var(--sp-3);
-    padding: var(--sp-4);
-    border-radius: var(--r-lg);
-    background: var(--glass-bg);
-    backdrop-filter: var(--glass-blur);
-    -webkit-backdrop-filter: var(--glass-blur);
-    border: 1px solid var(--glass-border);
-    box-shadow: var(--shadow-pop);
-    overflow-y: auto;
-}
-
-.pen-docs-toggle-input:checked ~ .pen-docs-screen {
-    display: flex;
-}
-
-/* Focus da tastiera sulla casella nascosta: lo si vede sul bottone
-   visibile che la comanda (":has()", spec 03 su base solida: fuori da qui
-   il progetto non ne dipende, e' solo un miglioramento). */
-.pen-editor-bar:has(#pen-docs-toggle:focus-visible) .pen-docs-open {
-    outline: 2px solid var(--accent-orange);
-    outline-offset: 2px;
-}
-
-.pen-docs-head {
-    display: flex;
-    align-items: center;
-    gap: var(--sp-2);
-}
-
-.pen-docs-head h2 {
-    flex: 1;
-    margin: 0;
-    font-family: var(--font-title);
-    font-size: 1rem;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    color: var(--text-primary);
-}
-
-.pen-docs {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    list-style: none;
-    margin: 0;
-    padding: 0;
-    overflow-y: auto;
-}
-
-.pen-doc {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-}
-
-.pen-doc-open {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 2px;
-    flex: 1;
-    min-width: 0;
-    min-height: var(--tap);
-    padding: 6px var(--sp-3);
-    border-radius: var(--r-sm);
-    border: 1px solid var(--glass-border);
-    background: var(--surface-1);
-    text-align: left;
-}
-
-.pen-doc-title {
-    max-width: 100%;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    font-weight: 700;
-    font-size: 0.85rem;
-    color: var(--text-primary);
-}
-
-.pen-doc-sub {
-    max-width: 100%;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    font-size: 0.72rem;
-    color: var(--text-muted);
-}
-
-/* penna.js crea questo bottone con solo ".tb-btn--icon" (niente ".tb-btn":
-   contratto in testa a penna.js, stesso principio di ".dna-history-del"
-   nel DNA): quella classe da sola porta solo le misure (44px), qui il
-   resto dell'aspetto (centratura, "x" leggibile). */
-.pen-doc-del {
-    flex-shrink: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--text-muted);
-    font-size: 1.1rem;
-    line-height: 1;
-}
-
-@media (hover: hover) and (pointer: fine) {
-    .pen-doc-open:hover {
-        border-color: var(--accent-orange);
-    }
-    .pen-doc-del:hover {
-        color: var(--accent-orange);
-    }
-}
-
+/* --- Editor: conferma eliminazione inline (niente confirm() del browser) --- */
 .pen-delete-confirm {
     display: flex;
     flex-wrap: wrap;
@@ -593,6 +529,10 @@ button.pen-n {
 
 #pen-rhyme.tb-sheet {
     max-height: min(80vh, 640px);
+    /* Spec 16 §4 punto 9: colonna fissa da 900px, dentro una grid (vedi
+       .pen-layout piu' sotto), senza questo un contenuto largo (parola
+       lunga, risultato lungo) spingerebbe la colonna oltre la sua traccia. */
+    min-width: 0;
 }
 
 .pen-rhyme-body {
@@ -602,17 +542,27 @@ button.pen-n {
     flex: 1;
     min-height: 0;
     overflow-y: auto;
+    overflow-x: hidden;
 }
 
 /* Lingua del rimario (spec 14b §3), in cima al pannello: stesso .tb-segment
    degli altri gruppi, solo un puntino sulle lingue non ancora scaricate
    (penna.js mette/toglie la classe, mai lo stile). */
+/* Quattro lingue in nowrap dentro il rimario a colonna fissa (spec 16 §4
+   punto 9, corretto nel giro di revisione): il min-width di default di
+   .tb-segment-btn (var(--tap) = 44px) x4 non ci sta nei ~185px del corpo a
+   1366x768 e va in overflow orizzontale. Qui i bottoni restano corti
+   (IT/EN/FR/ES) e possono scendere sotto quella soglia in larghezza (resta
+   il min-height 40px per l'altezza del tocco). */
 #pen-lang {
     flex-wrap: nowrap;
 }
 
 #pen-lang .tb-segment-btn {
     position: relative;
+    min-width: 0;
+    padding: 0 var(--sp-2);
+    font-size: 0.78rem;
 }
 
 #pen-lang .tb-segment-btn.is-missing::after {
@@ -628,6 +578,7 @@ button.pen-n {
 
 .pen-query-row {
     display: block;
+    min-width: 0;
 }
 
 .pen-query {
@@ -704,6 +655,7 @@ button.pen-n {
     list-style: none;
     margin: 0;
     padding: 0;
+    min-width: 0;
 }
 
 /* Le pillole (.pen-hit.tb-pill) e il "nessun risultato" (.tb-status) li
@@ -712,8 +664,10 @@ button.pen-n {
     display: inline-flex;
     align-items: center;
     gap: 6px;
+    max-width: 100%;
     min-height: var(--tap);
     padding: 0 var(--sp-3);
+    overflow-wrap: anywhere;
     cursor: pointer;
 }
 
@@ -820,7 +774,8 @@ body:has(#pen-pack-sheet:not([hidden])) .pen-pack-scrim {
     flex: 1;
 }
 
-/* --- Lingua del testo ed "e muta", nel menu (spec 14b §3), solo Penna --- */
+/* --- Lingua del testo ed "e muta", dentro #pen-settings (spec 16 §3,
+   spostate dal menu di nav.js dove stavano nella 14b), solo Penna --- */
 .pen-menu-doc {
     display: flex;
     flex-direction: column;
@@ -851,8 +806,13 @@ body:has(#pen-pack-sheet:not([hidden])) .pen-pack-scrim {
     display: none;
 }
 
-/* --- Da 900px: due colonne, rimario sempre visibile, niente foglio --- */
-@media (min-width: 900px) {
+/* --- Da 900px: due colonne, rimario sempre visibile, niente foglio ---
+   "screen and": senza, #pen-rhyme{display:flex!important} qui sotto batte
+   .tb-sheet{display:none!important} della stampa (id+!important vince su
+   classe+!important a parita' di importanza) e il rimario finisce nella
+   pagina stampata. E' un layout solo per schermo: la stampa non deve mai
+   valutare questo blocco, a qualunque larghezza di pagina. */
+@media screen and (min-width: 900px) {
     .pen-layout {
         display: grid;
         grid-template-columns: minmax(0, 1fr) 360px;
@@ -879,6 +839,11 @@ body:has(#pen-pack-sheet:not([hidden])) .pen-pack-scrim {
     #pen-rhyme,
     .pen-rhyme-toggle-input:checked ~ #pen-rhyme {
         display: flex !important;
+        /* Corretto nel giro di revisione: senza, la colonna ricadeva sul
+           flex-direction:row di default (nessuna regola lo fissava a
+           questa specificita' a 900px) e testata/corpo finivano affiancati
+           invece che impilati. */
+        flex-direction: column;
         position: static;
         transform: none;
         width: auto;
@@ -894,14 +859,519 @@ body:has(#pen-pack-sheet:not([hidden])) .pen-pack-scrim {
     }
 }
 
-/* --- 360px: niente scroll orizzontale, controlli su una sola riga --- */
-@media (max-width: 360px) {
+/* ============================================================
+   Vista elenco (spec 16 §3/§4): "I tuoi testi", ingresso dello
+   strumento. #pen-list e' nascosta fuori da quella vista da
+   #penna:not([data-pen-vista="elenco"]) #pen-list, in cima al file.
+   ============================================================ */
+.pen-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-4);
+    flex: 1;
+    min-height: 0;
+}
+
+.pen-list-title {
+    margin: 0;
+    font-family: var(--font-title);
+    font-size: 1.1rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-primary);
+}
+
+.pen-list-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--sp-2);
+}
+
+/* Cerca+Ordina (revisione): gruppo a parte cosi' si puo' nascondere solo
+   questo, non Nuovo testo/Impostazioni, quando il quaderno e' vuoto. */
+.pen-list-search {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--sp-2);
+    flex: 1 1 260px;
+    min-width: 0;
+}
+
+/* Revisione: niente da cercare o ordinare a quaderno vuoto. Cerca/Ordina
+   occupavano comunque una riga sopra la card tratteggiata; :has() (Safari
+   15.4+) le toglie finche' #pen-list-empty e' visibile, lasciando Nuovo
+   testo/Impostazioni al loro posto. */
+#pen-list:has(#pen-list-empty:not([hidden])) .pen-list-search,
+#pen-list:has(#pen-list-empty:not([hidden])) #pen-new {
+    display: none;
+}
+
+.pen-search-row {
+    display: block;
+    flex: 1 1 200px;
+    min-width: 0;
+}
+
+.pen-search {
+    width: 100%;
+    min-height: var(--tap);
+    padding: 0 var(--sp-3);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--r-pill);
+    background: var(--surface-1);
+    color: var(--text-primary);
+    font-size: 1rem;
+}
+
+.pen-search:focus-visible {
+    border-color: var(--accent-orange);
+}
+
+/* .tb-select di base e' width:100% (components.css): qui deve stare al
+   proprio contenuto nella barra, come .pen-doc-lang-field piu' sotto. */
+.pen-sort-field {
+    flex-shrink: 0;
+    width: auto;
+}
+
+.pen-sort-field .tb-select-trigger {
+    width: auto;
+    min-width: 168px;
+}
+
+/* Card (spec 16 §3): auto-fill min 240px, una colonna sotto 560px. */
+.pen-list-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: var(--sp-3);
+}
+
+@media (max-width: 560px) {
+    .pen-list-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Il markup di ogni card lo genera penna.js clonando <template id="pen-card-tpl">
+   (spec 16 §5, corretta nel giro di revisione): <article>, non <button>
+   (dentro ci sono due bottoni, apri + cestino, un button non ne annida un
+   altro). flex-wrap: .pen-card-confirm va a capo su riga propria (flex: 1
+   1 100%) quando compare, senza un wrapper in piu'. */
+.pen-card {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 4px;
+    padding: 6px;
+    border: 1px solid var(--glass-border);
+    border-radius: var(--r-lg);
+    background: var(--surface-1);
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .pen-card:hover {
+        border-color: var(--accent-orange);
+    }
+}
+
+.pen-card-open {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+    flex: 1;
+    min-width: 0;
+    min-height: var(--tap);
+    padding: 6px 6px 6px 8px;
+    text-align: left;
+}
+
+.pen-card-title {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-family: var(--font-title);
+    font-weight: 700;
+    font-size: 0.95rem;
+    color: var(--text-primary);
+}
+
+.pen-card-verse {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 0.82rem;
+    color: var(--text-muted);
+}
+
+.pen-card-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    margin-top: 4px;
+    font-size: 0.7rem;
+    color: var(--text-muted);
+}
+
+.pen-card-lang {
+    text-transform: uppercase;
+}
+
+/* Cestino della card (spec 16 §3, corretto nel giro di revisione): stessa
+   icona di #pen-delete, penna.js lo aggancia per classe (.pen-card-del). */
+.pen-card-del {
+    flex-shrink: 0;
+    color: var(--text-muted);
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .pen-card-del:hover {
+        color: var(--accent-orange);
+    }
+}
+
+/* Conferma inline dell'eliminazione dentro la card: stesso principio di
+   #pen-delete-confirm nell'editor, [hidden] di default. */
+.pen-card-confirm {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--sp-2);
+    flex: 1 1 100%;
+    padding: 6px 6px 4px 8px;
+    font-size: 0.82rem;
+    color: var(--text-primary);
+}
+
+.pen-card-confirm[hidden] {
+    display: none;
+}
+
+.pen-card-confirm span {
+    flex: 1;
+    min-width: 120px;
+}
+
+/* Stato vuoto: card tratteggiata a tutta larghezza (spec 16 §3). */
+.pen-list-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--sp-3);
+    width: 100%;
+    padding: 40px var(--sp-4);
+    border: 1px dashed var(--glass-border);
+    border-radius: var(--r-lg);
+    text-align: center;
+    color: var(--text-muted);
+}
+
+.pen-list-empty[hidden] {
+    display: none;
+}
+
+.pen-list-empty-title {
+    margin: 0;
+    font-family: var(--font-title);
+    font-size: 1rem;
+    color: var(--text-primary);
+}
+
+.pen-list-empty-text {
+    margin: 0;
+    font-size: 0.85rem;
+}
+
+.pen-list-none {
+    margin: 0;
+    padding: var(--sp-4) 0;
+    text-align: center;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+}
+
+.pen-list-none[hidden] {
+    display: none;
+}
+
+/* --- Barra dell'editor: bottone Indietro (spec 16 §3, al posto di
+   "Documenti") --- */
+.pen-back {
+    flex-shrink: 0;
+}
+
+.pen-back svg {
+    width: 18px;
+    height: 18px;
+}
+
+/* --- Bottone Impostazioni (spec 16 §3/§4): stesso ruolo in elenco e in
+   editor, id distinti (.pen-settings-open comune per un eventuale
+   ascoltatore unico lato JS). --- */
+.pen-settings-open {
+    flex-shrink: 0;
+}
+
+/* --- Foglio impostazioni (spec 16 §3/§4) --- */
+.pen-settings-body {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-4);
+}
+
+.pen-settings-sep {
+    margin: 0;
+    border: none;
+    border-top: 1px solid var(--glass-border);
+}
+
+.pen-settings-heading {
+    margin: 0;
+    font-family: var(--font-title);
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-muted);
+}
+
+/* Revisione: flex 1 1 120px stringeva "Esporta tutto" su due righe mentre
+   "Stampa" restava sola sulla sua. Griglia a due colonne: ogni bottone ha
+   la stessa larghezza garantita, "Stampa" occupa la prima cella della
+   seconda riga senza stiracchiarsi su entrambe. */
+.pen-settings-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--sp-2);
+}
+
+.pen-settings-actions .tb-btn {
+    width: 100%;
+}
+
+/* tre azioni su due colonne: la terza (Stampa) prende tutta la riga
+   (l'input file sr-only in mezzo e' position:absolute, non occupa celle) */
+.pen-settings-actions > #pen-print {
+    grid-column: 1 / -1;
+}
+
+/* --- Sincronizza fra dispositivi (spec 17 §3/§5) --- */
+.pen-sync {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-3);
+}
+
+.pen-sync-state {
+    min-height: 20px;
+    margin: 0;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+.pen-sync-view {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-3);
+}
+
+.pen-sync-view[hidden] {
+    display: none;
+}
+
+.pen-sync-intro {
+    margin: 0;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+}
+
+/* Riquadro del codice (spec 17 §5): font-family del testo (non mono, e'
+   un codice da leggere ad alta voce, non da allineare), dimensione
+   generosa e interlinea ampia per le sei parole su piu' righe a 390px,
+   user-select:all per prenderlo con un tocco, overflow-wrap:anywhere
+   perche' una parola lunga non sbordi. Vetro coerente con --glass-*
+   (stessa ricetta di .tb-menu-toggle/.tb-tile), raggio --r-md. */
+.pen-sync-code {
+    margin: 0;
+    padding: var(--sp-4);
+    border-radius: var(--r-md);
+    background: var(--glass-bg);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    border: 1px solid var(--glass-border);
+    border-top: 1px solid var(--glass-border-top);
+    font-family: var(--font-text);
+    font-size: 1.15rem;
+    line-height: 1.8;
+    letter-spacing: 0.02em;
+    text-align: center;
+    color: var(--text-primary);
+    user-select: all;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+}
+
+.pen-sync-warn {
+    margin: 0;
+    font-size: 0.78rem;
+    color: var(--text-muted);
+}
+
+.pen-sync-input-row {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-1);
+}
+
+.pen-sync-input-label {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
+
+.pen-sync-input {
+    width: 100%;
+    min-height: var(--tap);
+    padding: 0 var(--sp-3);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--r-pill);
+    background: var(--surface-1);
+    color: var(--text-primary);
+    font-size: 1rem;
+}
+
+.pen-sync-input:focus-visible {
+    border-color: var(--accent-orange);
+}
+
+.pen-sync-last {
+    margin: 0;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
+
+/* Bottone unico di una vista (es. "Collega" nella vista have): stessa
+   griglia a due colonne di .pen-settings-actions, ma a tutta riga invece
+   di meta'. */
+.pen-settings-actions--single .tb-btn {
+    grid-column: 1 / -1;
+}
+
+/* Annulla (vista create/have): sempre a tutta riga, sotto la coppia di
+   azioni primarie quando ce n'e' una (create) o sotto Collega (have,
+   dove .pen-settings-actions--single lo fa gia', qui e' ridondante ma
+   innocuo). */
+.pen-settings-actions .pen-sync-cancel {
+    grid-column: 1 / -1;
+}
+
+/* Vista "on": Sincronizza/Mostra codice in coppia, Scollega (terzo item)
+   a tutta riga, stesso principio di #pen-print. */
+.pen-settings-actions > #pen-sync-unlink {
+    grid-column: 1 / -1;
+}
+
+/* #pen-sync-wipe sta fuori dalla griglia (azione distruttiva, mai in
+   coppia con le altre): a tutta riga, font e spaziatura ridotti perche'
+   "Scollega ed elimina dal server" non vada a capo a 390px. */
+.pen-sync-wipe-btn {
+    width: 100%;
+    font-size: 0.72rem;
+    letter-spacing: 1px;
+    padding-left: var(--sp-3);
+    padding-right: var(--sp-3);
+}
+
+/* ============================================================
+   Stampa (spec 16 §4 punto 11, stesso principio di pianificatore.css):
+   resta solo .pen-write (titolo e versi), via tutto il resto. Il gutter
+   e' aria-hidden gia' in schermo, in stampa sparisce anche visivamente;
+   .pen-lines serve solo alla misura a schermo, in stampa non serve. */
+@media print {
+    .tb-bar,
+    .tb-menu-toggle,
+    .tb-logo,
+    #tb-mic-live,
+    .tb-menu,
+    .tb-sprite,
+    .tb-page-header,
+    .tb-footer,
+    .tb-sheet,
+    .tb-sheet-scrim,
+    .tb-toast-region,
+    #pen-list,
+    #pen-back,
+    .pen-settings-open,
+    #pen-share,
+    #pen-delete,
+    #pen-status,
+    .pen-delete-confirm,
+    .pen-gutter,
+    .pen-lines,
+    .pen-bottombar {
+        display: none !important;
+    }
+
+    html, body {
+        background: #ffffff !important;
+        color: #000000 !important;
+    }
+
+    body::before {
+        content: none !important;
+    }
+
+    .tb-shell,
+    .pen-shell {
+        max-width: none;
+        padding: 0;
+    }
+
+    #penna,
+    #pen-editor,
+    .pen-editor,
+    .pen-write,
+    .pen-body,
+    .pen-text-wrap {
+        display: block !important;
+        min-height: 0 !important;
+        overflow: visible !important;
+        border: none !important;
+        background: none !important;
+        box-shadow: none !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        max-width: none !important;
+    }
+
     .pen-editor-bar {
-        flex-wrap: wrap;
+        display: block !important;
+        border: none !important;
+        gap: 0;
     }
 
     .pen-title {
-        order: 1;
-        flex-basis: 100%;
+        display: block !important;
+        width: auto;
+        border: none !important;
+        background: none !important;
+        color: #000000 !important;
+        font-size: 1.3rem;
+        padding: 0 0 8px;
+    }
+
+    .pen-text {
+        display: block;
+        width: 100% !important;
+        border: none !important;
+        background: none !important;
+        color: #000000 !important;
+        line-height: 1.5 !important;
+        font-size: 1rem !important;
+        padding: 0 !important;
     }
 }

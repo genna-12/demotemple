@@ -93,6 +93,9 @@ export function sillabe(parola) {
         for (let k = i; k < end; k++) {
             if (muteSet.has(k)) { if (cur) cur.fine = k + 1; continue; }
             const c = chars[k];
+            /* la stessa vocale ripetuta e' una nota tenuta, non un'altra
+               sillaba: "ooo", "nooo", "aaah" (vocalizzi dei ritornelli) */
+            if (cur && c === chars[k - 1] && !muteSet.has(k - 1)) { cur.fine = k + 1; continue; }
             const altraDopo = k + 1 < end && !muteSet.has(k + 1);
             const debole = isDebole(c) && !isAccentata(c);
             if (debole && altraDopo) {

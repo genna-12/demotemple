@@ -214,6 +214,7 @@ async function leggiKaikki(file) {
         for (const h of hy) {
             const parts = Array.isArray(h.parts) ? h.parts.map((p) => String(p).toLowerCase()) : null;
             if (!parts || !parts.length || parts.some((p) => !/^[a-zàèéìíîòóùú]+$/.test(p))) continue;
+            sineresi(parts);
             const senza = parts.join('');
             /* la sillabazione deve essere della parola, non di un'altra forma */
             if (senza.normalize('NFD').replace(/[̀-ͯ]/g, '') !== parola.normalize('NFD').replace(/[̀-ͯ]/g, '')) continue;
@@ -226,6 +227,31 @@ async function leggiKaikki(file) {
     }
     if (viste) log('    (kaikki: ' + viste + ' voci lette, ' + italiane + ' italiane)');
     return m;
+}
+
+/**
+ * Il Wikizionario sillaba "grammaticalmente": "mà-i", "sà-i", "ì-o",
+ * "pi-ù". Nel verso queste sono sillabe sole (dittongo discendente e
+ * sineresi dei monosillabi): si uniscono qui, in loco, cosi' il rimario
+ * conta come conta chi scrive canzoni. "pa-ù-ra" e "po-e-sì-a" restano
+ * iati: la regola tocca solo la i/u finale atona e i bisillabi che
+ * diventano monosillabi.
+ */
+const FINALE_ATONA = /^[iu]$/;
+const VOCALE_SOLA = /^[aeoàèéòóùúìí]$/;
+function sineresi(parts) {
+    const n = parts.length;
+    if (n < 2) return;
+    /* (a) "mà"+"i" -> "mài": i/u finale senza accento dopo una vocale */
+    if (FINALE_ATONA.test(parts[n - 1]) && /[aeoàèéòóiuìíùú]$/.test(parts[n - 2]) && !/[iu]$/.test(parts[n - 2])) {
+        parts[n - 2] += parts[n - 1];
+        parts.pop();
+    }
+    /* (b) "ì"+"o", "mì"+"o", "pi"+"ù", "tù"+"o" -> monosillabo per sineresi */
+    if (parts.length === 2 && /[iuìíùú]$/.test(parts[0]) && VOCALE_SOLA.test(parts[1])) {
+        parts[0] += parts[1];
+        parts.pop();
+    }
 }
 
 function classeDa(sillabe, tonica) {

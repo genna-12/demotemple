@@ -30,7 +30,7 @@
  * quindi cache-first e' sicuro senza bisogno di `cache:'reload'`.
  */
 
-const VERSION = 'tb-v21';
+const VERSION = 'tb-v27';
 const CACHE = 'toolbox-' + VERSION;
 const VENDOR_CACHE = 'toolbox-vendor';
 const RIMARIO_CACHE = 'toolbox-rimario';
@@ -138,8 +138,12 @@ const TOOLS = [
     '/penna/penna.js',
     '/penna/penna.css',
     '/penna/i18n.js',
+    '/penna/elenco.js',
+    '/penna/file.js',
     '/penna/rimario-worker.js',
     '/penna/pacchetti.js',
+    '/penna/sync.js',
+    '/penna/parole-codice.js',
 
     '/pianificatore-uscita/',
     '/pianificatore-uscita/pianificatore.js',
@@ -249,6 +253,11 @@ self.addEventListener('fetch', (event) => {
     let url;
     try { url = new URL(req.url); } catch (e) { return; }
     if (url.origin !== self.location.origin) return;
+
+    /* Il quaderno sul server (spec 17 §2): `/api/` esce PRIMA di asset(),
+       cosi' non finisce in cache e offline l'errore di rete arriva al
+       client invece del /404 della navigazione. */
+    if (url.pathname.startsWith('/api/')) return;
 
     if (url.pathname.startsWith('/vendor/')) {
         event.respondWith(vendor(req));

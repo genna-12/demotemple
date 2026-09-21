@@ -1,13 +1,37 @@
 /**
- * Tiny Temple Toolbox - Penna: blocco testi + rimario italiano (spec 14).
+ * Tiny Temple Toolbox - Penna: il quaderno (spec 14, 14b, 16).
+ *
+ * Due viste sotto lo stesso <main>: l'ELENCO dei testi (l'ingresso) e
+ * l'EDITOR. L'unica fonte della vista e' l'hash: `/penna/` e' l'elenco,
+ * `/penna/#t=<id>` e' quel testo (spec 16 §3). Il modello dell'elenco
+ * (ricerca, ordine, unione dei file importati) sta in `penna/elenco.js`,
+ * i file del quaderno in `penna/file.js`: tutti e due si provano da soli.
  *
  * =====================================================================
- * CONTRATTO CON IL MARKUP (spec 14 §5: gli id li fissa la spec, qui si
- * dice solo che cosa ci fa il JS; dove la spec tace vale questo file)
+ * CONTRATTO CON IL MARKUP (spec 14 §5 e 16 §4: gli id li fissa la spec,
+ * qui si dice solo che cosa ci fa il JS; dove la spec tace vale questo file)
  * =====================================================================
- *   #penna          <main> con data-pen-state="vuoto|scrittura|documenti"
- *                   e data-pen-count="metrico|grammaticale"
+ *   #penna          <main> con data-pen-vista="elenco|editor" (lo scrive il
+ *                   JS, il CSS ci accende una delle due sezioni) e
+ *                   data-pen-count="metrico|grammaticale"
+ *   #pen-list       la vista elenco; dentro:
+ *                   #pen-search   <input type="search"> ricerca
+ *                   #pen-sort     <select> ordine: mod|titolo (tb-select)
+ *                   #pen-list-grid dove vanno le card
+ *                   #pen-card-tpl <template> di una card: il JS lo clona e
+ *                                 riempie .pen-card-title/.pen-card-verse/
+ *                                 .pen-card-lang/.pen-card-date/.pen-card-verses
+ *                                 e scrive data-id sul bottone
+ *                   #pen-list-empty quaderno vuoto (+ #pen-list-empty-new)
+ *                   #pen-list-none  ricerca senza risultati
  *   #pen-editor     contenitore dell'editor
+ *   #pen-back       torna all'elenco (salvando prima)
+ *   #pen-settings   foglio impostazioni (tb-sheet, shared/sheet.js), aperto
+ *                   dai due .pen-settings-open (#pen-settings-open in elenco,
+ *                   #pen-settings-open-editor in barra); dentro, oltre ai
+ *                   comandi della 14/14b: #pen-export #pen-import
+ *                   #pen-import-input #pen-print, e la sezione #pen-sync
+ *                   (spec 17, qui sotto)
  *   #pen-title      <input type="text"> titolo del documento
  *   #pen-text       <textarea> il testo (etichettata, spec §6.11)
  *   #pen-gutter     colonna dei conteggi, aria-hidden="true": il JS ci
@@ -18,10 +42,12 @@
  *   #pen-count-mode .tb-segment con [data-pen-count="metrico|grammaticale"]
  *   #pen-mono       .tb-toggle monospazio (input[type=checkbox])
  *   #pen-colors     .tb-toggle rime a colori
- *   #pen-lines      (facoltativo) livello sotto la textarea per i colori:
- *                   il JS ci scrive un <span class="pen-line pen-rima-N">
- *                   per verso; senza, i colori restano sulle pillole
- *   #pen-docs       lista documenti (vuota: la riempie il JS)
+ *   #pen-lines      livello sotto la textarea: il JS ci scrive un
+ *                   <span class="pen-line pen-rima-N"> per verso. Si disegna
+ *                   SEMPRE, anche a colori spenti (spec 16 §4 punto 7): e' il
+ *                   righello che misuraRighe() legge riga per riga per
+ *                   scrivere --pen-h su ogni .pen-n e l'altezza della
+ *                   textarea. I colori li spegne il CSS, non il JS.
  *   #pen-new #pen-share #pen-delete   comandi
  *   #pen-status     .tb-status ("Salvato", errori)
  *   #pen-rhyme      pannello/foglio del rimario
@@ -62,6 +88,27 @@
  *   #tb-pack-list   dentro, una <li> per pacchetto installato: la crea
  *                   nav.js/penna.js con nome, peso e "Rimuovi".
  *
+ * =====================================================================
+ * SINCRONIZZA FRA DISPOSITIVI (spec 17 §3) — markup che scrive il builder
+ * =====================================================================
+ *   #pen-sync       la sezione dentro #pen-settings; dentro:
+ *                   #pen-sync-state  .tb-status con aria-live (in corso,
+ *                                    fatto, offline, codice non valido...)
+ *                   quattro sotto-viste [data-sync-view="off|create|have|on"]:
+ *                   penna.js mostra quella giusta e mette [hidden] alle altre.
+ *      off:   #pen-sync-create "Crea un codice", #pen-sync-have "Ho gia' un codice"
+ *      create: #pen-sync-code il riquadro grande e selezionabile con le sei
+ *              parole (lo riempie il JS), #pen-sync-copy, #pen-sync-activate
+ *      have:  #pen-sync-input <input> del codice, #pen-sync-link "Collega"
+ *      on:    #pen-sync-last "Ultima sincronizzazione: {ora}" (testo dal JS),
+ *             #pen-sync-now, #pen-sync-show, #pen-sync-unlink, #pen-sync-wipe
+ *             e la conferma #pen-sync-wipe-confirm con -yes / -no.
+ *   Ogni .pen-sync-cancel (in create e have) riporta a "off" e butta via il
+ *   codice generato ma mai attivato. #pen-sync-show e' un INTERRUTTORE: porta
+ *   aria-expanded e rivela #pen-sync-code-on + #pen-sync-copy-on dentro "on",
+ *   cosi' non si vedono mai due sotto-viste insieme.
+ *   La rete sta tutta in penna/sync.js e non parte mai da sola (spec 17 §2).
+ *
  * Il catalogo dei pacchetti e' `penna/pacchetti.js` (lo scrive il builder):
  * un modulo PRECACHEATO, cosi' aprendo Penna non parte nessuna richiesta
  * verso /penna/data/ (spec 14b §2). Se manca, penna.js usa il catalogo
@@ -76,7 +123,9 @@
  *   penna-offline, penna-empty, penna-no-results, penna-unknown,
  *   penna-estimated, penna-copied, penna-inserted, penna-undo,
  *   penna-delete-ask, penna-deleted, penna-share-fail, penna-it-only,
- *   penna-new, penna-syllables, penna-sinalefe, piu' le comuni
+ *   penna-new, penna-syllables, penna-sinalefe, penna-untitled,
+ *   penna-verses, penna-list-title, penna-gone, penna-imported,
+ *   penna-import-fail, penna-copy-manual, piu' le comuni
  *   (search, copy, share, delete, cancel, close).
  *
  * Tutto il resto (documenti in IndexedDB, salvataggio automatico, colori,
@@ -85,13 +134,19 @@
 
 import commonDict from '/shared/i18n-common.js';
 import toolDict from '/penna/i18n.js';
-import { init, t, lang } from '/shared/i18n.js';
+import { init, t, lang, onChange } from '/shared/i18n.js';
 import { pressFeedback, setStatus, toast } from '/shared/ui.js';
 import { mountBar } from '/shared/nav.js';
 import { initPwa } from '/shared/pwa.js';
 import { mountSelects } from '/shared/select.js';
-import { mountInfos } from '/shared/sheet.js';
+import { mountInfos, openSheet, closeSheet } from '/shared/sheet.js';
 import { prefs, get, put, list, del } from '/shared/storage.js';
+import { filtra, fondi, riassunto, idDaHash, hashDiId } from '/penna/elenco.js';
+import { condividi as condividiFileTesto, esporta, leggiFileScelto, leggiQuaderno, stampa } from '/penna/file.js';
+import {
+    avvia as avviaSync, stato as statoSync, onStato as onStatoSync, creaCodice, collega,
+    scollega, sincronizza, segnaEliminato
+} from '/penna/sync.js';
 import { versoMetrico, contaVerso, ultimaParola, parole as paroleDelVerso } from '/shared/testo/metrica.js';
 import { chiaveRima } from '/shared/testo/fonetica.js';
 import { LINGUE, CODICI, normalizzaCodice, cartella, moduli } from '/shared/testo/lingue.js';
@@ -109,6 +164,8 @@ const CATALOGO_BASE = Object.fromEntries(CODICI.map((c) => {
     return [c, { codice: c, nome: LINGUE[c].nome, versione: v, gzip, file }];
 }));
 const SALVA_DOPO = 600;      // ms di quiete prima di salvare
+const SYNC_DOPO = 3000;      // ms di quiete dopo l'ultimo salvataggio (spec 17 §3)
+const MISURA_DOPO = 100;     // ms di quiete del ResizeObserver (spec 16 §4)
 const COLORI = 6;            // classi di rima colorate (spec §3)
 const LETTERE = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
 
@@ -163,12 +220,30 @@ export function mountPenna() {
     const textIn = el('pen-text');
     const gutter = el('pen-gutter');
     const linesBox = el('pen-lines');
+    const bodyBox = root.querySelector('.pen-body');
+    const wrapBox = root.querySelector('.pen-text-wrap');
     const countMode = el('pen-count-mode');
     const monoTgl = el('pen-mono');
     const colorsTgl = el('pen-colors');
-    const docsBox = el('pen-docs');
     const statusOut = el('pen-status');
     const newBtn = el('pen-new');
+    /* --- vista elenco (spec 16 §3) --- */
+    const listBox = el('pen-list');
+    const gridBox = el('pen-list-grid');
+    const cardTpl = el('pen-card-tpl');
+    const searchIn = el('pen-search');
+    const sortSel = el('pen-sort');
+    const emptyBox = el('pen-list-empty');
+    const emptyNewBtn = el('pen-list-empty-new');
+    const noneBox = el('pen-list-none');
+    const backBtn = el('pen-back');
+    /* --- foglio impostazioni e quaderno (spec 16 §3) --- */
+    const settingsSheet = el('pen-settings');
+    const settingsBtns = [...document.querySelectorAll('.pen-settings-open')];
+    const exportBtn = el('pen-export');
+    const importBtn = el('pen-import');
+    const importIn = el('pen-import-input');
+    const printBtn = el('pen-print');
     const shareBtn = el('pen-share');
     const deleteBtn = el('pen-delete');
     const queryIn = el('pen-query');
@@ -191,9 +266,35 @@ export function mountPenna() {
     const packFonti = el('pen-pack-fonti');
     const docLang = el('pen-doc-lang');
     const emuetTgl = el('pen-emuet');
+    /* --- sincronizza fra dispositivi (spec 17 §3): il markup lo scrive il
+           builder, qui si aggancia quel che c'e' e non si fallisce mai per
+           un id che manca --- */
+    const syncBox = el('pen-sync');
+    const syncState = el('pen-sync-state');
+    const syncCreateBtn = el('pen-sync-create');
+    const syncHaveBtn = el('pen-sync-have');
+    const syncCodeBox = el('pen-sync-code');
+    const syncCodeOn = el('pen-sync-code-on');
+    const syncCopyBtn = el('pen-sync-copy');
+    const syncCopyOn = el('pen-sync-copy-on');
+    const syncActivateBtn = el('pen-sync-activate');
+    const syncCancelBtns = [...document.querySelectorAll('.pen-sync-cancel')];
+    const syncInput = el('pen-sync-input');
+    const syncLinkBtn = el('pen-sync-link');
+    const syncNowBtn = el('pen-sync-now');
+    const syncShowBtn = el('pen-sync-show');
+    const syncUnlinkBtn = el('pen-sync-unlink');
+    const syncWipeBtn = el('pen-sync-wipe');
+    const syncWipeBox = el('pen-sync-wipe-confirm');
+    const syncWipeYes = el('pen-sync-wipe-yes');
+    const syncWipeNo = el('pen-sync-wipe-no');
+    const syncLastOut = el('pen-sync-last');
 
     const ui = {
-        stato: 'vuoto',
+        vista: 'elenco',
+        /* i record dell'elenco in memoria (elenco.js: riassunto()) */
+        record: [],
+        ordine: prefs.get(TOOL, 'ordine', 'mod') === 'titolo' ? 'titolo' : 'mod',
         conteggio: prefs.get(TOOL, 'conteggio', 'metrico') === 'grammaticale' ? 'grammaticale' : 'metrico',
         mono: !!prefs.get(TOOL, 'mono', false),
         colori: prefs.get(TOOL, 'colori', true) !== false,
@@ -236,11 +337,99 @@ export function mountPenna() {
     let regoleDoc = null;      // moduli della lingua del documento
     let scaricamento = null;   // { annulla() } mentre un pacchetto scende
 
-    /* ---------------- stato della pagina ---------------- */
+    /* ---------------- vista e router dell'hash (spec 16 §3) ---------------- */
 
-    function setStato(stato) {
-        ui.stato = stato;
-        root.setAttribute('data-pen-state', stato);
+    let hashApplicato = null;  // l'hash gia' servito: popstate+hashchange arrivano in coppia
+    let focusTitolo = false;   // un testo appena creato apre col fuoco sul titolo
+    let primaVista = true;
+    /* Come si sta navigando: col puntatore il fuoco e' gia' dove serve, da
+       tastiera o con l'Indietro del browser va riportato a mano. */
+    let daTastiera = false;
+    let daStoria = false;
+
+    function setVista(vista) {
+        const nuova = vista === 'editor' ? 'editor' : 'elenco';
+        const cambia = ui.vista !== nuova;
+        ui.vista = nuova;
+        root.setAttribute('data-pen-vista', nuova);
+        if (cambia || primaVista) annunciaVista();
+        primaVista = false;
+    }
+
+    /* Regione di cortesia per lo schermo letto: l'elenco non ha una .tb-status
+       e #pen-status vive dentro l'editor (nascosto in vista elenco). Mai il
+       fuoco sul titolo: disegnerebbe un riquadro a tutta larghezza. */
+    let vocePagina = null;
+    function annuncia(testo) {
+        if (!vocePagina) {
+            vocePagina = document.createElement('p');
+            vocePagina.className = 'sr-only';
+            vocePagina.setAttribute('aria-live', 'polite');
+            vocePagina.setAttribute('aria-atomic', 'true');
+            document.body.appendChild(vocePagina);
+        }
+        vocePagina.textContent = testo;
+    }
+
+    /** Il cambio vista si sente anche con lo schermo letto (spec 16 §6.11). */
+    function annunciaVista() {
+        if (ui.vista === 'editor') {
+            if (!statusOut) return;
+            statusOut.removeAttribute('data-i18n');
+            statusOut.setAttribute('aria-live', 'polite');
+            statusOut.textContent = (ui.doc && ui.doc.titolo) || t('penna-untitled');
+            return;
+        }
+        if (primaVista) return;
+        annuncia(t('penna-list-title'));
+        /* Il fuoco si sposta solo quando non c'e' un puntatore che l'ha gia'
+           portato dove serve: da tastiera o dall'Indietro del browser. */
+        if (!daTastiera && !daStoria) return;
+        const primo = [searchIn, newBtn].find((e) => e && e.offsetParent !== null);
+        if (primo) { try { primo.focus({ preventScroll: true }); } catch (e) { /* niente fuoco */ } }
+    }
+
+    /** Il testo aperto va salvato prima di lasciare la vista (spec 16 §3). */
+    async function salvaPrimaDiUscire() {
+        if (!salvaTimer) return;
+        clearTimeout(salvaTimer);
+        salvaTimer = null;
+        await salvaOra();
+    }
+
+    /** Porta a un testo (id) o all'elenco (null), scrivendo l'hash. */
+    function vai(id, { sostituisci = false } = {}) {
+        const url = location.pathname + location.search + (id ? hashDiId(id) : '');
+        try {
+            if (sostituisci) history.replaceState(null, '', url);
+            else history.pushState(null, '', url);
+        } catch (e) {
+            location.hash = id ? hashDiId(id) : '';
+            return;                      // l'hashchange fara' il resto
+        }
+        applicaHash();
+    }
+
+    /**
+     * L'hash e' l'unica fonte della vista: qui si esegue. Un id sconosciuto
+     * torna all'elenco con un toast (spec 16 §3).
+     */
+    async function applicaHash() {
+        const hash = location.hash || '';
+        if (hash === hashApplicato) return;
+        hashApplicato = hash;
+        const id = idDaHash(hash);
+        await salvaPrimaDiUscire();
+        if (!id) { mostraElenco(); return; }
+        if (ui.id === id && ui.doc) { setVista('editor'); dopoEditor(); return; }
+        let doc = null;
+        try { doc = await get(TOOL, id); } catch (e) { doc = null; }
+        if (!doc) {
+            toast('penna-gone');
+            vai(null, { sostituisci: true });
+            return;
+        }
+        apri(id, doc);
     }
 
     function setConteggio(modo) {
@@ -294,6 +483,8 @@ export function mountPenna() {
             if (a.stimato) nodo.setAttribute('aria-description', t('penna-estimated'));
             gutter.appendChild(nodo);
         });
+        /* i .pen-n sono nuovi: hanno perso --pen-h, si rimisura */
+        pianificaMisura();
         annunciaVerso();
     }
 
@@ -311,11 +502,15 @@ export function mountPenna() {
         statusOut.textContent = n + ' ' + t('penna-syllables');
     }
 
+    /**
+     * Il mirror sotto la textarea. Si disegna SEMPRE, anche a colori spenti
+     * (spec 16 §4 punto 7): e' il righello di misuraRighe(); i colori li
+     * toglie il CSS con #penna:not(.is-colori).
+     */
     function renderColori() {
         if (!linesBox || !textIn) return;
         linesBox.textContent = '';
         linesBox.setAttribute('aria-hidden', 'true');
-        if (!ui.colori) return;
         const righe = String(textIn.value || '').split('\n');
         const mappa = new Map();
         gruppiDiRima(textIn.value, regoleDoc).forEach((g) => mappa.set(g.riga, g));
@@ -332,6 +527,64 @@ export function mountPenna() {
             }
             linesBox.appendChild(span);
         });
+        pianificaMisura();
+    }
+
+    /* ---------------- misura delle righe (spec 16 §4) ---------------- */
+
+    let misuraRaf = null;
+    let misuraTimer = null;
+    let osservatore = null;
+
+    /** Una sola misura per giro, dopo che il mirror e' in pagina. */
+    function pianificaMisura() {
+        if (misuraRaf !== null) return;
+        if (typeof requestAnimationFrame !== 'function') { misuraRighe(); return; }
+        misuraRaf = requestAnimationFrame(() => { misuraRaf = null; misuraRighe(); });
+    }
+
+    /**
+     * Allinea la colonna dei numeri alla textarea: legge l'altezza vera di
+     * ogni verso sul mirror #pen-lines (i versi vanno a capo, spec 16 §4
+     * punto 6), poi scrive --pen-h su ogni .pen-n e l'altezza della
+     * textarea. Tutte le letture prima, tutte le scritture dopo: un solo
+     * reflow per giro.
+     */
+    function misuraRighe() {
+        if (!linesBox || !textIn || !gutter) return;
+        if (ui.vista !== 'editor') return;      // in elenco l'editor e' display:none
+        const versi = linesBox.children;
+        const numeri = gutter.children;
+        const n = Math.min(versi.length, numeri.length);
+        if (!n) return;
+        /* --- letture ---
+           getBoundingClientRect, non offsetHeight: l'interlinea vera e'
+           frazionaria (1.6 × 0.95rem = 24,32 px) e offsetHeight arrotonda a
+           intero. Su 55 versi quei 0,32 px persi per riga diventavano 20 px
+           di sfasamento in fondo alla pagina. */
+        const alte = new Array(n);
+        for (let i = 0; i < n; i++) alte[i] = versi[i].getBoundingClientRect().height;
+        const totale = linesBox.getBoundingClientRect().height;
+        const minimo = bodyBox ? bodyBox.clientHeight : 0;
+        if (!totale) return;                    // non ancora in pagina
+        /* --- scritture --- */
+        for (let i = 0; i < n; i++) {
+            /* .pen-gutter e' una colonna flex: senza flex-shrink:0 i numeri
+               si comprimerebbero quando il testo supera il riquadro */
+            numeri[i].style.setProperty('--pen-h', alte[i].toFixed(3) + 'px');
+            numeri[i].style.flexShrink = '0';
+        }
+        textIn.style.height = Math.max(totale, minimo) + 'px';
+    }
+
+    /** ResizeObserver sulla colonna di scrittura, con quiete di 100 ms. */
+    function osservaLarghezza() {
+        if (osservatore || typeof ResizeObserver !== 'function' || !wrapBox) return;
+        osservatore = new ResizeObserver(() => {
+            if (misuraTimer) clearTimeout(misuraTimer);
+            misuraTimer = setTimeout(() => { misuraTimer = null; pianificaMisura(); }, MISURA_DOPO);
+        });
+        osservatore.observe(wrapBox);
     }
 
     /* ---------------- documenti ---------------- */
@@ -351,7 +604,10 @@ export function mountPenna() {
             await put(TOOL, ui.id, ui.doc);
             prefs.set(TOOL, 'ultimo', ui.id);
             segnaSalvato();
-            renderDocs();
+            aggiornaRecord(ui.id, ui.doc);
+            /* 3 s di quiete dopo l'ultimo salvataggio, mai mentre si scrive
+               (spec 17 §3); senza sincronizzazione attiva non fa niente */
+            pianificaGiro();
         } catch (e) {
             setStatus(statusOut, { kind: 'error', key: 'penna-save-fail' });
         }
@@ -362,6 +618,7 @@ export function mountPenna() {
         salvaTimer = setTimeout(() => { salvaTimer = null; salvaOra(); }, SALVA_DOPO);
     }
 
+    /** Apre un testo nell'editor (ci arriva solo il router dell'hash). */
     function apri(id, doc) {
         ui.id = id;
         ui.doc = { ...documentoVuoto(), ...doc };
@@ -372,62 +629,150 @@ export function mountPenna() {
         renderLingue();
         if (titleIn) titleIn.value = ui.doc.titolo || '';
         if (textIn) textIn.value = ui.doc.testo || '';
-        setStato('scrittura');
+        /* setVista annuncia il titolo in aria-live (spec 16 §6.11); la riga
+           diventa "Salvato" al primo salvataggio, non prima. */
+        setVista('editor');
         renderGutter();
         renderColori();
         prefs.set(TOOL, 'ultimo', id);
+        dopoEditor();
     }
 
-    function nuovo() {
+    /** Quello che va fatto ogni volta che l'editor torna a video. */
+    function dopoEditor() {
+        osservaLarghezza();
+        pianificaMisura();
+        const box = el('pen-delete-confirm');
+        if (box) box.hidden = true;
+        if (focusTitolo && titleIn) {
+            focusTitolo = false;
+            try { titleIn.focus({ preventScroll: true }); } catch (e) { titleIn.focus(); }
+        }
+    }
+
+    /** Nuovo testo: nasce salvato, poi lo apre l'hash. */
+    async function nuovo() {
+        const id = nuovoId();
         const doc = documentoVuoto('', ui.lingua);
-        apri(nuovoId(), doc);
-        if (titleIn) titleIn.focus();
-        salvaPresto();
+        try { await put(TOOL, id, doc); } catch (e) { /* si apre lo stesso, si risalva dopo */ }
+        aggiornaRecord(id, doc);
+        focusTitolo = true;
+        vai(id);
     }
 
-    function etichetta(doc) {
-        const prima = String(doc.testo || '').split('\n').find((r) => r.trim()) || '';
-        const data = new Date(doc.modificato || doc.creato || Date.now());
-        let quando;
-        try { quando = new Intl.DateTimeFormat(lang(), { day: 'numeric', month: 'short' }).format(data); } catch (e) { quando = ''; }
-        return { titolo: doc.titolo || t('penna-untitled'), prima: prima.slice(0, 60), quando };
-    }
+    /* ---------------- elenco (spec 16 §3) ---------------- */
 
-    async function renderDocs() {
-        if (!docsBox) return;
+    /** Rilegge tutto il quaderno da IndexedDB e ridisegna l'elenco. */
+    async function caricaElenco() {
         let tutti = [];
-        try { tutti = await list(TOOL); } catch (e) { return; }
-        docsBox.textContent = '';
-        tutti.slice().reverse().forEach((rec) => {
-            const doc = rec.value || rec;
-            const id = rec.id;
-            const info = etichetta(doc);
-            const li = document.createElement('li');
-            li.className = 'pen-doc';
-            const apriBtn = document.createElement('button');
-            apriBtn.type = 'button';
-            apriBtn.className = 'pen-doc-open';
-            apriBtn.setAttribute('data-pen-doc', String(id));
-            apriBtn.innerHTML = '';
-            const titolo = document.createElement('span');
-            titolo.className = 'pen-doc-title';
-            titolo.textContent = info.titolo;
-            const sotto = document.createElement('span');
-            sotto.className = 'pen-doc-sub';
-            sotto.textContent = [info.prima, info.quando].filter(Boolean).join(' · ');
-            apriBtn.append(titolo, sotto);
-            apriBtn.addEventListener('click', () => { apri(id, doc); });
-            const rm = document.createElement('button');
-            rm.type = 'button';
-            rm.className = 'pen-doc-del tb-btn--icon';
-            rm.setAttribute('data-pen-del', String(id));
-            rm.setAttribute('aria-label', t('penna-delete'));
-            rm.textContent = '×';
-            rm.addEventListener('click', (e) => { e.stopPropagation(); chiediElimina(id); });
-            li.append(apriBtn, rm);
-            docsBox.appendChild(li);
-        });
+        try { tutti = await list(TOOL); } catch (e) { tutti = []; }
+        ui.record = tutti.map((rec) => riassunto(rec.id, rec.value || {}));
+        renderElenco();
     }
+
+    /** Aggiorna (o inserisce) un record senza rileggere tutto il quaderno. */
+    function aggiornaRecord(id, doc) {
+        const nuovoRec = riassunto(id, doc);
+        const i = ui.record.findIndex((r) => r.id === String(id));
+        if (i >= 0) ui.record[i] = nuovoRec;
+        else ui.record.push(nuovoRec);
+        if (ui.vista === 'elenco') renderElenco();
+    }
+
+    function togliRecord(id) {
+        ui.record = ui.record.filter((r) => r.id !== String(id));
+        if (ui.vista === 'elenco') renderElenco();
+    }
+
+    function dataBreve(iso) {
+        const data = new Date(iso || Date.now());
+        if (Number.isNaN(data.getTime())) return '';
+        const stessoAnno = data.getFullYear() === new Date().getFullYear();
+        const opzioni = stessoAnno
+            ? { day: 'numeric', month: 'short' }
+            : { day: 'numeric', month: 'short', year: 'numeric' };
+        try { return new Intl.DateTimeFormat(lang(), opzioni).format(data); } catch (e) { return ''; }
+    }
+
+    /**
+     * Una card clonata da <template id="pen-card-tpl"> (spec 16 §4):
+     * <article> con dentro il bottone che apre, il cestino e la conferma
+     * inline. Il cestino porta aria-expanded sulla conferma.
+     */
+    function cardDi(rec) {
+        if (!cardTpl || !cardTpl.content) return null;
+        const nodo = cardTpl.content.firstElementChild.cloneNode(true);
+        const scrivi = (sel, testo) => {
+            const e = nodo.querySelector(sel);
+            if (e) e.textContent = testo;
+        };
+        const titolo = rec.titolo.trim() || t('penna-untitled');
+        nodo.setAttribute('data-id', rec.id);
+        scrivi('.pen-card-title', titolo);
+        scrivi('.pen-card-verse', rec.prima);
+        scrivi('.pen-card-lang', String(rec.lingua || 'it').toUpperCase());
+        scrivi('.pen-card-date', dataBreve(rec.modificato));
+        scrivi('.pen-card-verses', rec.versi === 1 ? t('penna-verse-one') : t('penna-verses', { n: rec.versi }));
+
+        const apriBtn = nodo.querySelector('.pen-card-open');
+        if (apriBtn) apriBtn.addEventListener('click', () => vai(rec.id));
+
+        const cestino = nodo.querySelector('.pen-card-del');
+        const conferma = nodo.querySelector('.pen-card-confirm');
+        if (cestino && conferma) {
+            if (!conferma.id) conferma.id = 'pen-card-confirm-' + (++contaConferme);
+            cestino.setAttribute('aria-controls', conferma.id);
+            cestino.setAttribute('aria-expanded', 'false');
+            cestino.addEventListener('click', () => {
+                if (cardAperta === nodo) { chiudiConferme(); return; }
+                chiudiConferme();
+                cardAperta = nodo;
+                conferma.hidden = false;
+                cestino.setAttribute('aria-expanded', 'true');
+                const si = conferma.querySelector('.pen-card-yes');
+                if (si) { try { si.focus({ preventScroll: true }); } catch (e) { /* niente fuoco */ } }
+            });
+            const no = conferma.querySelector('.pen-card-no');
+            if (no) no.addEventListener('click', () => { chiudiConferme(); try { cestino.focus({ preventScroll: true }); } catch (e) { /* niente fuoco */ } });
+            const si = conferma.querySelector('.pen-card-yes');
+            if (si) si.addEventListener('click', () => elimina(rec.id));
+        }
+        return nodo;
+    }
+
+    /** Una conferma per volta (spec 16 §3): la aprono le card, la chiude Esc. */
+    let cardAperta = null;
+    let contaConferme = 0;
+    function chiudiConferme() {
+        if (!gridBox) return;
+        gridBox.querySelectorAll('.pen-card-confirm').forEach((c) => { c.hidden = true; });
+        gridBox.querySelectorAll('.pen-card-del').forEach((b) => b.setAttribute('aria-expanded', 'false'));
+        cardAperta = null;
+    }
+
+    function renderElenco() {
+        if (!gridBox) return;
+        const mostrati = filtra(ui.record, searchIn ? searchIn.value : '', ui.ordine);
+        gridBox.textContent = '';
+        cardAperta = null;            // le card sono nuove: nessuna conferma aperta
+        mostrati.forEach((rec) => {
+            const card = cardDi(rec);
+            if (card) gridBox.appendChild(card);
+        });
+        const quadernoVuoto = ui.record.length === 0;
+        if (emptyBox) emptyBox.hidden = !quadernoVuoto;
+        if (noneBox) noneBox.hidden = quadernoVuoto || mostrati.length > 0;
+        gridBox.hidden = quadernoVuoto;
+    }
+
+    function mostraElenco() {
+        setVista('elenco');
+        caricaElenco();
+        /* l'elenco e' l'ingresso: e' il momento buono per un giro (spec 17 §3) */
+        giroSync();
+    }
+
+    /* ---------------- elimina ---------------- */
 
     let daEliminare = null;
     function chiediElimina(id) {
@@ -435,14 +780,252 @@ export function mountPenna() {
         const box = el('pen-delete-confirm');
         if (!box) { elimina(id); return; }
         box.hidden = false;
+        const si = el('pen-delete-yes');
+        if (si) { try { si.focus({ preventScroll: true }); } catch (e) { /* niente fuoco */ } }
     }
     async function elimina(id) {
+        /* la lapide va scritta PRIMA: il `sid` vive dentro il documento
+           (spec 17 §4). Senza sincronizzazione attiva non c'e' `sid` e non
+           succede niente. */
+        await segnaEliminato(id, ui.id === id ? ui.doc : null);
         try { await del(TOOL, id); } catch (e) { /* niente da fare */ }
         const box = el('pen-delete-confirm');
         if (box) box.hidden = true;
-        if (ui.id === id) { ui.id = null; ui.doc = null; setStato('vuoto'); }
+        daEliminare = null;
+        togliRecord(id);
         toast('penna-deleted');
-        renderDocs();
+        if (ui.id === id) {
+            ui.id = null;
+            ui.doc = null;
+            if (salvaTimer) { clearTimeout(salvaTimer); salvaTimer = null; }
+            prefs.set(TOOL, 'ultimo', undefined);
+            vai(null);
+        }
+    }
+
+    /* ---------------- sincronizza fra dispositivi (spec 17) ---------------- */
+
+    /*
+     * Tutta la rete sta in penna/sync.js: qui ci sono solo i bottoni, gli
+     * stati in aria-live e i tre momenti in cui parte un giro — all'apertura
+     * dell'elenco, 3 s dopo l'ultimo salvataggio, a mano. Finche' l'utente
+     * non tocca Attiva o Collega non parte NESSUNA richiesta (spec 17 §2):
+     * `statoSync().attivo` e' falso e ogni funzione qui sotto esce subito.
+     *
+     * La vista giusta fra `[data-sync-view="off|create|have|on"]` la sceglie
+     * renderSync(); l'unica eccezione e' "Mostra il codice" da collegato, che
+     * lascia visibile anche la sotto-vista dove vive #pen-sync-code.
+     */
+    let syncVista = 'off';        // off | create | have (da scollegato)
+    let codiceNuovo = '';         // le sei parole appena sorteggiate
+    let codiceVisibile = false;   // l'interruttore "Mostra il codice"
+    let giroTimer = null;
+
+    function oraBreve(ms) {
+        if (!ms) return '';
+        try { return new Intl.DateTimeFormat(lang(), { hour: '2-digit', minute: '2-digit' }).format(new Date(ms)); } catch (e) { return ''; }
+    }
+
+    function statoSyncUI(kind, key) {
+        if (syncState) setStatus(syncState, { kind, key });
+    }
+
+    /* #pen-sync-state e' una regione aria-live: quando non c'e' niente da
+       annunciare deve restare VUOTA, non ospitare l'introduzione (che sta
+       nella .pen-sync-intro della vista "off"). */
+    function pulisciStatoSync() {
+        if (!syncState) return;
+        setStatus(syncState, { kind: 'idle' });
+        syncState.removeAttribute('data-i18n');
+        syncState.textContent = '';
+    }
+
+    function renderSync() {
+        if (!syncBox) return;
+        const s = statoSync();
+        const vista = s.attivo ? 'on' : syncVista;
+        /* una sola sotto-vista per volta, sempre */
+        syncBox.querySelectorAll('[data-sync-view]').forEach((v) => {
+            v.hidden = v.getAttribute('data-sync-view') !== vista;
+        });
+        if (syncCodeBox) syncCodeBox.textContent = codiceNuovo;
+        /* da collegato il codice sta nel suo riquadro dentro "on", rivelato
+           dall'interruttore #pen-sync-show: niente due viste insieme */
+        const mostra = s.attivo && codiceVisibile;
+        if (syncCodeOn) {
+            syncCodeOn.textContent = mostra ? s.codice : '';
+            syncCodeOn.hidden = !mostra;
+        }
+        if (syncCopyOn) syncCopyOn.hidden = !mostra;
+        if (syncShowBtn) syncShowBtn.setAttribute('aria-expanded', mostra ? 'true' : 'false');
+        if (syncLastOut) syncLastOut.textContent = s.ultima ? t('sync-last', { ora: oraBreve(s.ultima) }) : '';
+        if (syncWipeBox && !s.attivo) syncWipeBox.hidden = true;
+        if (syncNowBtn) syncNowBtn.disabled = !!s.inCorso;
+    }
+
+    function vistaSync(quale) {
+        syncVista = quale;
+        codiceVisibile = false;
+        renderSync();
+    }
+
+    /** Un giro solo per volta; senza rete si dice e basta, non si insiste. */
+    async function giroSync({ manuale = false } = {}) {
+        const s = statoSync();
+        if (!s.attivo || s.inCorso) return null;
+        if (navigator.onLine === false) {
+            if (manuale) statoSyncUI('denied', 'sync-off');
+            return null;
+        }
+        statoSyncUI('busy', 'sync-doing');
+        let esito;
+        try {
+            esito = await sincronizza();
+        } catch (e) {
+            esito = { esito: 'server' };
+        }
+        const chiavi = {
+            ok: ['ok', 'sync-done'],
+            offline: ['denied', 'sync-off'],
+            server: ['error', 'sync-fail'],
+            pieno: ['error', 'sync-full'],
+            grande: ['error', 'sync-too-big']
+        };
+        const [kind, chiave] = chiavi[esito.esito] || chiavi.server;
+        statoSyncUI(kind, chiave);
+        renderSync();
+        /* oltre i 20 documenti per giro il resto va al giro dopo */
+        if (esito.esito === 'ok' && esito.restano > 0) pianificaGiro();
+        return esito;
+    }
+
+    function pianificaGiro() {
+        if (!statoSync().attivo) return;
+        if (giroTimer) clearTimeout(giroTimer);
+        giroTimer = setTimeout(() => { giroTimer = null; giroSync(); }, SYNC_DOPO);
+    }
+
+    /** Un testo arrivato (o cambiato) dal server: e' gia' in IndexedDB. */
+    function suDocumento(id, doc) {
+        aggiornaRecord(id, doc);
+        if (ui.id !== id || !ui.doc) return;
+        if (doc.sid && ui.doc.sid !== doc.sid) ui.doc.sid = doc.sid;
+        const piuNuovo = Date.parse(doc.modificato || '') > Date.parse(ui.doc.modificato || '');
+        /* mai mentre si scrive: se c'e' un salvataggio in coda si lascia stare */
+        if (!piuNuovo || salvaTimer) return;
+        if (ui.vista === 'editor') apri(id, doc);
+        else ui.doc = { ...ui.doc, ...doc };
+    }
+
+    /** Un testo eliminato altrove: e' gia' sparito da IndexedDB. */
+    function suRimosso(id) {
+        togliRecord(id);
+        if (ui.id !== id) return;
+        ui.id = null;
+        ui.doc = null;
+        if (salvaTimer) { clearTimeout(salvaTimer); salvaTimer = null; }
+        prefs.set(TOOL, 'ultimo', undefined);
+        toast('penna-gone');
+        vai(null, { sostituisci: true });
+    }
+
+    async function attivaCodice(codice) {
+        try {
+            await collega(codice);
+        } catch (e) {
+            statoSyncUI('error', 'sync-bad-code');
+            return false;
+        }
+        codiceNuovo = '';
+        codiceVisibile = false;
+        syncVista = 'off';
+        renderSync();
+        giroSync({ manuale: true });
+        return true;
+    }
+
+    if (syncCreateBtn) {
+        syncCreateBtn.addEventListener('click', async () => {
+            try {
+                codiceNuovo = await creaCodice();
+            } catch (e) {
+                statoSyncUI('error', 'sync-fail');
+                return;
+            }
+            vistaSync('create');
+        });
+    }
+    if (syncHaveBtn) {
+        syncHaveBtn.addEventListener('click', () => {
+            vistaSync('have');
+            if (syncInput) { try { syncInput.focus({ preventScroll: true }); } catch (e) { /* niente fuoco */ } }
+        });
+    }
+    async function copiaCodice(testo) {
+        if (!testo) return;
+        try {
+            await navigator.clipboard.writeText(testo);
+            statoSyncUI('ok', 'sync-copied');
+        } catch (e) {
+            /* senza permesso resta il riquadro, che e' selezionabile a mano */
+            statoSyncUI('idle', 'sync-copy');
+        }
+    }
+    if (syncCopyBtn) syncCopyBtn.addEventListener('click', () => copiaCodice(codiceNuovo));
+    if (syncCopyOn) syncCopyOn.addEventListener('click', () => copiaCodice(statoSync().codice));
+    /* "Annulla" da create/have: si torna alla scelta e il codice generato ma
+       mai attivato si butta via (spec 17 §3, nessuno stato a meta') */
+    syncCancelBtns.forEach((b) => b.addEventListener('click', () => {
+        codiceNuovo = '';
+        if (syncInput) syncInput.value = '';
+        pulisciStatoSync();
+        vistaSync('off');
+    }));
+    if (syncActivateBtn) syncActivateBtn.addEventListener('click', () => { if (codiceNuovo) attivaCodice(codiceNuovo); });
+    if (syncLinkBtn) syncLinkBtn.addEventListener('click', () => attivaCodice(syncInput ? syncInput.value : ''));
+    if (syncInput) {
+        syncInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') { e.preventDefault(); attivaCodice(syncInput.value); }
+        });
+    }
+    if (syncNowBtn) syncNowBtn.addEventListener('click', () => giroSync({ manuale: true }));
+    if (syncShowBtn) {
+        syncShowBtn.addEventListener('click', () => {
+            codiceVisibile = !codiceVisibile;
+            renderSync();
+        });
+    }
+    if (syncUnlinkBtn) {
+        syncUnlinkBtn.addEventListener('click', async () => {
+            try { await scollega({ elimina: false }); } catch (e) { statoSyncUI('error', 'sync-fail'); return; }
+            codiceNuovo = '';
+            syncVista = 'off';
+            pulisciStatoSync();
+            renderSync();
+        });
+    }
+    if (syncWipeBtn && syncWipeBox) {
+        syncWipeBtn.addEventListener('click', () => {
+            syncWipeBox.hidden = false;
+            if (syncWipeYes) { try { syncWipeYes.focus({ preventScroll: true }); } catch (e) { /* niente fuoco */ } }
+        });
+    }
+    if (syncWipeNo && syncWipeBox) syncWipeNo.addEventListener('click', () => { syncWipeBox.hidden = true; });
+    if (syncWipeYes) {
+        syncWipeYes.addEventListener('click', async () => {
+            statoSyncUI('busy', 'sync-doing');
+            try {
+                await scollega({ elimina: true });
+            } catch (e) {
+                statoSyncUI(navigator.onLine === false ? 'denied' : 'error', navigator.onLine === false ? 'sync-off' : 'sync-fail');
+                return;
+            }
+            if (syncWipeBox) syncWipeBox.hidden = true;
+            codiceNuovo = '';
+            syncVista = 'off';
+            statoSyncUI('ok', 'sync-done');
+            renderSync();
+        });
     }
 
     /* ---------------- lingue e pacchetti ---------------- */
@@ -863,6 +1446,9 @@ export function mountPenna() {
         const a = versoMetrico(righe[riga] || '', { dialefe: spente, classi, ...opzioniLingua() });
         sheetList.textContent = '';
         sheetList.setAttribute('data-pen-line', String(riga));
+        /* il foglio puo' aver ospitato il ripiego del download: titolo a posto */
+        const cap = el('pen-sheet-title');
+        if (cap) { cap.setAttribute('data-i18n', 'penna-sinalefe'); cap.textContent = t('penna-sinalefe'); }
         a.sinalefi.forEach((s) => {
             const label = document.createElement('label');
             label.className = 'tb-toggle pen-sin';
@@ -876,7 +1462,8 @@ export function mountPenna() {
             label.append(input, testo);
             sheetList.appendChild(label);
         });
-        if (sheet) sheet.hidden = false;
+        /* shared/sheet.js: scrim, trappola del fuoco, X ed Esc come altrove */
+        if (sheet) openSheet(sheet);
     }
 
     function toggleSinalefe(riga, indice, attiva) {
@@ -891,16 +1478,120 @@ export function mountPenna() {
         salvaPresto();
     }
 
-    /* ---------------- condivisione ---------------- */
+    /* ---------------- condivisione, file, stampa (spec 16 §3) ---------------- */
 
+    /**
+     * Ripiego del download (standalone su iOS, dove <a download> non apre
+     * niente): il foglio delle sinalefi presta la sua struttura — e' l'unico
+     * tb-sheet libero in pagina — e mostra il testo, gia' selezionato e
+     * copiato negli appunti. Niente pulsante "Copia" perche' il dizionario
+     * di Penna non ha una chiave per quell'etichetta (vedi report): il
+     * riscontro lo da' il toast penna-copied / penna-copy-manual.
+     */
+    function apriFoglioTesto({ titolo, testo }) {
+        if (!sheet || !sheetList) { copia(testo); return; }
+        const cap = el('pen-sheet-title');
+        if (cap) { cap.removeAttribute('data-i18n'); cap.textContent = titolo || ''; }
+        sheetList.textContent = '';
+        sheetList.removeAttribute('data-pen-line');
+        const area = document.createElement('textarea');
+        area.className = 'pen-fallback-text';
+        area.readOnly = true;
+        area.rows = 8;
+        area.style.width = '100%';
+        area.value = testo || '';
+        sheetList.appendChild(area);
+        openSheet(sheet);
+        try { area.select(); } catch (e) { /* selezione a mano */ }
+        copia(testo);
+    }
+
+    async function copia(testo) {
+        if (!testo) return;
+        try { await navigator.clipboard.writeText(testo); toast('penna-copied'); }
+        catch (e) { toast('penna-copy-manual'); }
+    }
+
+    /** Condividi il testo aperto come .txt (spec 16 §3, ripieghi in file.js). */
     async function condividi() {
-        const testo = (ui.doc && ui.doc.testo) || (textIn ? textIn.value : '');
-        const titolo = (titleIn && titleIn.value) || t('penna-untitled');
+        const testo = (textIn ? textIn.value : '') || (ui.doc && ui.doc.testo) || '';
+        const titolo = (titleIn && titleIn.value.trim()) || t('penna-untitled');
         if (!testo.trim()) return;
-        if (navigator.share) {
-            try { await navigator.share({ title: titolo, text: testo }); return; } catch (e) { /* annullato o non permesso */ }
+        const esito = await condividiFileTesto({ titolo, testo, ripiego: apriFoglioTesto });
+        if (esito === 'copiato') toast('penna-copied');
+        else if (esito === 'niente') toast('penna-copy-manual');
+    }
+
+    /** Tutto il quaderno in un .json (spec 16 §3). */
+    async function esportaTutto() {
+        let tutti = [];
+        try { tutti = await list(TOOL); } catch (e) { tutti = []; }
+        const testi = tutti.map((rec) => ({ id: rec.id, ...documentoVuoto(), ...(rec.value || {}) }));
+        const esito = await esporta(testi, { ripiego: apriFoglioTesto });
+        if (esito === 'niente') toast('penna-import-fail');
+    }
+
+    /**
+     * Importa un quaderno: unione per id (elenco.js), poi in IndexedDB.
+     * Un file non riconosciuto non tocca niente (spec 16 §6.7).
+     * `toast` traduce la chiave che riceve: qui il messaggio ha {n} e {m},
+     * quindi si passa gia' tradotto (t() di una stringa non-chiave la
+     * restituisce com'e').
+     */
+    async function importa(file) {
+        const grezzo = await leggiFileScelto(file);
+        const testi = grezzo === null ? null : leggiQuaderno(grezzo);
+        if (!testi) { toast('penna-import-fail'); return null; }
+        let tutti = [];
+        try { tutti = await list(TOOL); } catch (e) { tutti = []; }
+        const locali = tutti.map((rec) => ({ id: rec.id, ...(rec.value || {}) }));
+        const esito = fondi(locali, testi);
+        for (const rec of esito.daScrivere) {
+            const { id, ...doc } = rec;
+            try { await put(TOOL, id, doc); } catch (e) { /* un record in meno, gli altri passano */ }
         }
-        try { await navigator.clipboard.writeText(testo); toast('penna-copied'); } catch (e) { toast('penna-copy-manual'); }
+        await caricaElenco();
+        /* il testo aperto puo' essere stato sovrascritto: si rilegge */
+        if (ui.id && esito.daScrivere.some((r) => r.id === ui.id)) {
+            try {
+                const doc = await get(TOOL, ui.id);
+                if (doc && ui.vista === 'editor') apri(ui.id, doc);
+            } catch (e) { /* si tiene quello in memoria */ }
+        }
+        toast(t('penna-imported', { n: esito.nuovi, m: esito.aggiornati }));
+        return esito;
+    }
+
+    /**
+     * Stampa: la textarea ha un'altezza in pixel scritta da misuraRighe()
+     * per lo schermo, ma in stampa font e interlinea cambiano (penna.css
+     * @media print). Si passa alle righe e si rimette tutto dopo.
+     */
+    function stampaTesto() {
+        let altezza = '';
+        let righe = 0;
+        stampa({
+            prima: () => {
+                if (!textIn) return;
+                altezza = textIn.style.height;
+                righe = textIn.rows;
+                const versi = String(textIn.value || '').split('\n').length;
+                /* i versi andati a capo a video contano come righe in piu':
+                   in stampa la colonna e' piu' larga, quindi ne bastano meno */
+                const passo = linesBox ? parseFloat(getComputedStyle(linesBox).lineHeight) || 0 : 0;
+                const visive = linesBox && passo
+                    ? [...linesBox.children].reduce((n, e) => n + Math.max(1, Math.round(e.offsetHeight / passo)), 0)
+                    : versi;
+                textIn.style.height = 'auto';
+                textIn.rows = Math.max(versi, visive, 1);
+            },
+            dopo: () => {
+                if (!textIn) return;
+                textIn.rows = righe || 1;
+                textIn.style.height = altezza;
+                pianificaMisura();
+            }
+        });
     }
 
     /* ---------------- eventi ---------------- */
@@ -942,12 +1633,92 @@ export function mountPenna() {
     if (colorsTgl) colorsTgl.addEventListener('change', () => setColori(colorsTgl.checked));
     if (copyTgl) copyTgl.addEventListener('change', () => { ui.copia = copyTgl.checked; prefs.set(TOOL, 'copia', ui.copia); });
     if (newBtn) newBtn.addEventListener('click', nuovo);
+    if (emptyNewBtn) emptyNewBtn.addEventListener('click', nuovo);
     if (shareBtn) shareBtn.addEventListener('click', condividi);
     if (deleteBtn) deleteBtn.addEventListener('click', () => { if (ui.id) chiediElimina(ui.id); });
     const yes = el('pen-delete-yes');
     const no = el('pen-delete-no');
     if (yes) yes.addEventListener('click', () => { if (daEliminare) elimina(daEliminare); });
-    if (no) no.addEventListener('click', () => { const b = el('pen-delete-confirm'); if (b) b.hidden = true; });
+    if (no) no.addEventListener('click', () => { const b = el('pen-delete-confirm'); if (b) b.hidden = true; daEliminare = null; });
+
+    /* --- elenco: indietro, ricerca, ordine (spec 16 §3) --- */
+    if (backBtn) backBtn.addEventListener('click', () => vai(null));
+    if (gridBox) {
+        gridBox.addEventListener('keydown', (e) => {
+            if (e.key !== 'Escape' && e.key !== 'Esc') return;
+            if (!cardAperta) return;
+            const cestino = cardAperta.querySelector('.pen-card-del');
+            chiudiConferme();
+            if (cestino) { try { cestino.focus({ preventScroll: true }); } catch (x) { /* niente fuoco */ } }
+        });
+    }
+    if (searchIn) searchIn.addEventListener('input', renderElenco);
+    if (sortSel) {
+        sortSel.addEventListener('change', () => {
+            ui.ordine = sortSel.value === 'titolo' ? 'titolo' : 'mod';
+            prefs.set(TOOL, 'ordine', ui.ordine);
+            renderElenco();
+        });
+    }
+
+    /* --- foglio impostazioni e quaderno (spec 16 §3) --- */
+    settingsBtns.forEach((b) => {
+        b.addEventListener('click', () => {
+            if (settingsSheet && !settingsSheet.hidden) { closeSheet(); return; }
+            /* la sezione sync riparte sempre dalla scelta (spec 17 §3): "Crea
+               un codice" e "Ho gia' un codice" vivono solo li' dentro, e da
+               "create" non ci sarebbe altro modo di tornare indietro */
+            syncVista = 'off';
+            codiceNuovo = '';
+            codiceVisibile = false;
+            renderSync();
+            if (settingsSheet) openSheet(settingsSheet, { anchor: b });
+        });
+    });
+    if (exportBtn) exportBtn.addEventListener('click', esportaTutto);
+    if (importBtn && importIn) importBtn.addEventListener('click', () => importIn.click());
+    if (importIn) {
+        importIn.addEventListener('change', async () => {
+            const file = importIn.files && importIn.files[0];
+            importIn.value = '';          // lo stesso file si puo' riprovare
+            if (file) await importa(file);
+        });
+    }
+    if (printBtn) {
+        printBtn.addEventListener('click', () => {
+            closeSheet();
+            /* in stampa resta solo .pen-write: senza un testo aperto non ci
+               sarebbe niente da stampare (vedi report, Dubbi) */
+            if (ui.vista !== 'editor' || !ui.doc) { toast('penna-gone'); return; }
+            stampaTesto();
+        });
+    }
+
+    /* --- l'hash e' la vista: si ascoltano tutti e due gli eventi, la
+           traversata ne manda una coppia e applicaHash() serve un hash solo
+           una volta (spec 16 §3) --- */
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Tab' || e.key === 'Enter' || e.key === ' ' || e.key === 'Spacebar') daTastiera = true;
+    }, true);
+    document.addEventListener('pointerdown', () => { daTastiera = false; }, true);
+    const daHistory = () => { daStoria = true; applicaHash().finally(() => { daStoria = false; }); };
+    window.addEventListener('hashchange', daHistory);
+    window.addEventListener('popstate', daHistory);
+
+    /**
+     * apply() di shared/i18n.js traduce data-i18n, -aria e -html, non
+     * data-i18n-placeholder (che il markup usa qui e nel pianificatore):
+     * finche' e' cosi' i segnaposto li traduce lo strumento.
+     */
+    function applicaSegnaposto() {
+        document.querySelectorAll('[data-i18n-placeholder]').forEach((e) => {
+            e.setAttribute('placeholder', t(e.getAttribute('data-i18n-placeholder')));
+        });
+    }
+
+    /* le card le scrive il JS (t('penna-verses'), data breve, "Senza
+       titolo"): apply() del cambio lingua non le vede, si rifanno qui */
+    onChange(() => { renderElenco(); applicaSegnaposto(); renderSync(); });
     if (downloadBtn) downloadBtn.addEventListener('click', () => scarica());
     if (queryIn) {
         let attesa = null;
@@ -1017,6 +1788,7 @@ export function mountPenna() {
 
     mountSelects(document);
     mountInfos(document);
+    applicaSegnaposto();
     /* il catalogo e' un modulo precacheato: nessuna richiesta di rete */
     import(PACCHETTI_URL).then((m) => {
         if (m && m.PACCHETTI) { catalogo = m.PACCHETTI; renderLingue(); }
@@ -1032,16 +1804,23 @@ export function mountPenna() {
     setMono(ui.mono);
     setColori(ui.colori);
     if (copyTgl) copyTgl.checked = ui.copia;
-    setStato('vuoto');
-    renderDocs();
-    (async () => {
-        const ultimo = prefs.get(TOOL, 'ultimo', null);
-        if (!ultimo) return;
-        try {
-            const doc = await get(TOOL, ultimo);
-            if (doc) apri(ultimo, doc);
-        } catch (e) { /* niente documento: si resta sul vuoto */ }
-    })();
+    /* l'ordine salvato passa dal <select> nativo: mountSelect e' gia' in
+       ascolto e allinea la pillola da solo (shared/select.js) */
+    if (sortSel && sortSel.value !== ui.ordine) {
+        sortSel.value = ui.ordine;
+        sortSel.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+    /* Sincronizzazione: si legge solo che cosa c'e' salvato. Nessuna rete
+       finche' l'utente non tocca Attiva o Collega (spec 17 §2); il giro
+       dell'apertura parte da mostraElenco(), quando c'e' un codice. */
+    onStatoSync(renderSync);
+    renderSync();
+    avviaSync({ applicaDoc: suDocumento, rimuoviDoc: suRimosso, apertoId: () => ui.id })
+        .then(() => { renderSync(); if (ui.vista === 'elenco') giroSync(); })
+        .catch(() => { /* senza IndexedDB la sincronizzazione resta spenta */ });
+    /* La vista la decide l'hash, sempre: /penna/ e' l'elenco, anche se
+       l'ultima volta si stava scrivendo (spec 16 §6.2). */
+    applicaHash();
     /* l'indice si scarica solo quando serve: l'editor funziona offline */
     if (prefs.get(TOOL, 'rimario', false) && navigator.onLine !== false) scarica();
 
@@ -1050,7 +1829,13 @@ export function mountPenna() {
         apri,
         nuovo,
         salvaOra,
-        renderDocs,
+        caricaElenco,
+        renderElenco,
+        misuraRighe,
+        vai,
+        esportaTutto,
+        importa,
+        stampaTesto,
         renderGutter,
         renderColori,
         gruppiDiRima,
@@ -1073,7 +1858,11 @@ export function mountPenna() {
         opzioniLingua,
         catalogo: () => catalogo,
         documento: () => ui.doc,
-        pronto: () => pronto
+        pronto: () => pronto,
+        /* sincronizzazione (spec 17): per i collaudi in browser headless */
+        giroSync,
+        renderSync,
+        statoSync
     };
 }
 

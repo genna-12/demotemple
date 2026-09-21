@@ -19,7 +19,7 @@ export const LINGUE = {
         codice: 'it',
         nome: 'Italiano',
         etichetta: 'IT',
-        versione: 'v2',             // suffisso dei file in /penna/data/ (alzare quando cambiano i dati)
+        versione: 'v3',             // suffisso dei file in /penna/data/ (alzare quando cambiano i dati)
         base: null,                 // i dati italiani stanno in /penna/data/
         sillabe: '/shared/testo/sillabe.js',
         fonetica: '/shared/testo/fonetica.js',

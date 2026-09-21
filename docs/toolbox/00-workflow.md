@@ -85,6 +85,9 @@ indipendenti possono avere spec in parallelo.
 - [x] Strumenti 1-6 online sul branch `toolbox`: Metronomo, Accordatore, Calcolatore tempo, DNA (con banco `scripts/eval-dna/`), Penna (+ pacchetti EN/FR/ES), Pianificatore di uscita
 - [x] Rimario rigenerato dal Wikizionario (21/9): IT v2 38 % di accenti esatti (era 7,9 %), FR v2 83 % (era solo regole); versione dei dati in `shared/testo/lingue.js`
 - [x] Editor di Penna: conteggio metrico con sillabe e accenti veri del rimario (Worker, a lotti) quando la lingua del rimario e' quella del testo
+- [x] Penna v2 "quaderno" (spec 16): elenco dei testi, router `#t=<id>`, foglio impostazioni, esporta/importa `.json`, `.txt`/condividi, stampa, gutter misurato sul mirror; validato in Chromium col testo di prova (`contenuti/testo-prova-canto.txt`)
+- [x] Penna sync (spec 17): codice di sei parole, AES-GCM lato client, Pages Function `toolbox/functions/api/quaderno/` + D1 `QUADERNO`; **da attivare da Genna** (guida-genna.md §3c) e informative Iubenda prima di annunciarla
+- [ ] Da provare su iPhone: Penna v2 (download in standalone, condividi `.txt`, tastiera aperta, stampa) e PBKDF2 200k iterazioni (spec 17 §6.9)
 - [ ] Strumenti 7-9: Checklist consegna, Split sheet, Trasposizione
 - [ ] Contenuti da validare con Ponz: `docs/toolbox/contenuti/pianificatore-tappe.md`
 - [ ] Prima del merge su `main`: informative Iubenda, prova completa su iPhone (vedi `guida-genna.md` §2)

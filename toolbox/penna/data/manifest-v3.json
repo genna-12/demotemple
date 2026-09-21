@@ -1,29 +1,29 @@
 {
  "lingua": "it",
  "nome": "Italiano",
- "versione": "v2",
+ "versione": "v3",
  "forme": 150000,
- "esatti": 57193,
+ "esatti": 57401,
  "derivate": false,
  "soloRegole": false,
  "file": {
   "parole": {
-   "nome": "parole-v2.txt",
+   "nome": "parole-v3.txt",
    "gzip": 466627,
    "byte": 1324307
   },
   "chiavi": {
-   "nome": "chiavi-v2.json",
-   "gzip": 735098,
-   "byte": 1499385
+   "nome": "chiavi-v3.json",
+   "gzip": 737061,
+   "byte": 1503777
   },
   "tratti": {
-   "nome": "tratti-v2.bin",
-   "gzip": 55275,
+   "nome": "tratti-v3.bin",
+   "gzip": 55356,
    "byte": 150000
   }
  },
- "gzip": 1257000,
+ "gzip": 1259044,
  "licenza": "CC BY-SA 4.0",
  "fonti": []
 }

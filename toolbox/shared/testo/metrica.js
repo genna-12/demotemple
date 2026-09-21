@@ -105,8 +105,12 @@ export function versoMetrico(verso, {
     });
     const grammaticale = lista.reduce((n, p) => n + p.sillabe, 0);
     const sinalefi = [];
+    const testoVerso = String(verso || '');
     for (let i = 0; sinalefe && i + 1 < lista.length; i++) {
         if (!finisceInVocale(lista[i].pulita, vocale) || !iniziaPerVocale(lista[i + 1].pulita, vocale)) continue;
+        /* un trattino fra le due parole le tiene separate: "ooo-ooo-ooo"
+           sono tre note, non una sinalefe */
+        if (/[-‐‑–—]/.test(testoVerso.slice(lista[i].a, lista[i + 1].da))) continue;
         sinalefi.push({
             indice: i,
             prima: lista[i].testo,

@@ -1,6 +1,6 @@
 # Guida rapida per Genna
 
-Le cose da fare a mano, sempre uguali. Aggiornata al 20 settembre 2026.
+Le cose da fare a mano, sempre uguali. Aggiornata al 21 settembre 2026.
 
 ## 1. Ogni volta che arrivano file nuovi nella cartella
 
@@ -78,6 +78,37 @@ cartella del sito per toglierlo: Cloudflare lo userebbe per avviare una build.
   `node scripts/build-rimario.mjs --lang fr`. Lo script usa l'IPA del
   Wikizionario per contare le sillabe (e muta compresa), che oggi è stimato
   dalle regole. Scrive `toolbox/penna/data/fr/*-v2.*`: cancella i `-v1`.
+
+## 3c. Attivare la sincronizzazione di Penna (una volta, spec 17)
+
+Penna v2 sincronizza i testi fra PC e telefono con un "codice del quaderno" di
+sei parole: i testi partono cifrati dal dispositivo e il server (una Pages
+Function + un database D1 dello stesso progetto Cloudflare, costo zero) vede
+solo un identificatore e blocchi illeggibili. Il codice è già nel repo
+(`toolbox/functions/api/quaderno/[[route]].js`) e parte col push; manca solo
+il database, che si crea dalla dashboard:
+
+1. Cloudflare → **Storage & Databases → D1 SQL Database → Create database**,
+   nome `quaderno`.
+2. Nel database, scheda **Console**, incolla ed esegui:
+   ```
+   CREATE TABLE voci (quaderno TEXT, doc TEXT, aggiornato INTEGER, cancellato INTEGER,
+     blob TEXT, PRIMARY KEY (quaderno, doc));
+   CREATE TABLE limiti (quaderno TEXT PRIMARY KEY, finestra INTEGER, colpi INTEGER);
+   ```
+3. **Workers & Pages → tiny-temple-toolbox → Settings → Bindings → Add → D1
+   database**: Variable name `QUADERNO`, database `quaderno`. Salva.
+4. **Deployments → Retry deployment** (o un nuovo push): i binding valgono dal
+   deploy successivo.
+5. Prova: apri `https://toolbox.tinytemplestudio.it/api/quaderno/00000000000000000000000000000000`
+   → deve rispondere `{"ora":…,"voci":[]}`. Se risponde 500, il binding non c'è.
+6. **Informative Iubenda**: aggiungi la sezione "Sincronizzazione del quaderno"
+   (testo IT+EN pronto in `docs/toolbox/specs/17-penna-sync.md`, §4 Deploy,
+   punto 6) **prima** di dire agli artisti che la sincronizzazione esiste.
+   Finché non la attivano loro, Penna non fa nessuna richiesta di rete.
+
+Se il database non c'è ancora, Penna funziona lo stesso: chi prova ad attivare
+la sincronizzazione vede "Errore del server: riprovo dopo" e nient'altro.
 
 ## 4. Dove stanno le cose
 
