@@ -66,47 +66,38 @@ di esporta→cancella tutto→importa; nessuna richiesta a `/api/` senza codice 
 **Genna:** creare il database D1 con l'SQL della spec 18 §4 e il binding `QUADERNO`;
 pubblicare il testo Iubenda esteso; poi la sezione sincronizzazione si scopre.
 
-## T2 — Gli strumenti esistenti portati a «completo» · 5 giri
+## T2 — Gli strumenti esistenti portati a «completo» · 4,5 giri
 
 **Obiettivo:** chiudere tutte le lacune **A** della ricerca casi d'uso, più le **B** che costano
-poco una volta che la piattaforma c'è.
+poco una volta che la piattaforma c'è. Principio (Genna, 22/09): gli strumenti devono servire a
+qualunque artista, non solo a chi lavora con Tiny Temple.
 
 | ordine | strumento | cosa entra | giri |
 |---|---|---|---|
-| 1 | Pianificatore | **dashboard con calendario delle uscite** (tutti i piani, tappe in scadenza), più uscite in parallelo, bozza che sopravvive, collegamento alle altre tappe | 1,5 |
-| 2 | Penna | assonanze coerenti nei colori, ricerca fra i testi, sillabe nell'elenco, filtri del rimario che sopravvivono | 1 |
-| 3 | DNA | storico sincronizzato e rinominabile, esporta, tonalità compatibili cliccabili, glossario al primo risultato | 1 |
-| 4 | Accordatore | accordature personalizzate con nome nell'archivio (oggi solo in una preferenza locale), ultima corda ricordata | 0,75 |
-| 5 | Metronomo | preset nominati (bpm, battuta, suddivisione, suono, volume), count-in, setlist | 0,75 |
+| 1 | Penna | assonanze coerenti nei colori, ricerca fra i testi, sillabe nell'elenco, filtri del rimario che sopravvivono, prova su iPhone | 1 |
+| 2 | DNA | storico sincronizzato e rinominabile, esporta, tonalità compatibili cliccabili, glossario al primo risultato, prova su brani veri | 1 |
+| 3 | Accordatore | accordature personalizzate con nome nell'archivio (oggi solo in una preferenza locale), ultima corda ricordata | 0,75 |
+| 4 | Metronomo | preset nominati (bpm, battuta, suddivisione, suono, volume), count-in, setlist | 0,75 |
+| 5 | Pianificatore | resta com'è, generico (tappe dalle guide dei distributori, non dal flusso dello studio); solo affidabilità: bozza che sopravvive, più uscite in parallelo, calendario se avanza tempo | 0,5 |
+| 6 | Calcolatore | celle copiabili, eyebrow sulle schede | 0,5 |
 
 **Come si valida:** per ogni strumento un e2e che crea il dato, ricarica, lo ritrova, lo
 sincronizza su un secondo contesto e lo elimina su entrambi; «Come funziona» in IT ed EN;
 audit ripetuto con punteggio ≥ 4 su ogni pagina.
 
-**Genna:** commit e push; una prova su iPhone per strumento; per il Pianificatore, confermare
-con Ponz le tappe già scritte in `contenuti/pianificatore-tappe.md`.
+**Genna:** commit e push; una prova su iPhone per strumento.
 
-## T3 — Trasposizione, e gli altri due quando ci sono le risposte · 1,5 + 2,5 giri
+## T3 — Trasposizione · 1,5 giri (solo se la qualità regge)
 
-**Decisione (Genna, 22/09):** Checklist consegna e Split sheet dipendono dalle risposte di
-Ponz (`contenuti/domande-per-ponz.md`), che potrebbero tardare: **si spostano in coda** e non
-bloccano niente. Le istruzioni per quei due strumenti arrivano da Genna.
+**Decisione (Genna, 22/09):** Checklist consegna e Split sheet **non si fanno**: erano tagliati
+sul flusso di lavoro di Tiny Temple e gli strumenti devono servire a tutti. Resta la
+Trasposizione (cambio tonalità di una base), utile a chiunque: **prima una spec dedicata**
+(oggi è una riga in `01-candidati` §F), poi mezzo giro di implementazione con avviso di
+qualità oltre ±4 semitoni e tonalità di partenza presa da DNA; **go/no-go sulla qualità
+percepita** prima di pubblicarla: se la resa non è da app seria, non entra.
 
-**Cosa entra subito:** Trasposizione — **prima una spec dedicata** (oggi è una riga in
-`01-candidati` §F), poi mezzo giro di implementazione con avviso di qualità oltre ±4 semitoni
-e tonalità di partenza presa da DNA; 1,5 giri, con **go/no-go sulla qualità percepita** prima
-di pubblicarla. Mezzo giro sparso per il Calcolatore (celle copiabili, eyebrow sulle schede).
-
-**Poi, con le risposte:** Checklist consegna (checklist riusabile con stato salvato, generatore
-di nome file con anteprima e copia, preset mix/master/stem) 1 giro. Split sheet (campi per
-autore, somma percentuali = 100 con avviso, PDF stampabile, rubrica collaboratori) 1,5 giri.
-Entrambi allo standard di T2 dal primo commit: archivio, sincronizzazione, aiuto, e2e.
-
-**Come si valida:** stessi criteri di T2, più: zero rete in Checklist e Split sheet; lo split
-sheet stampato sta in una pagina e la somma non torna → avviso visibile; trasposizione di ±2
-semitoni su un file di prova senza artefatti udibili nel banco `scripts/eval-dna/`.
-
-**Genna:** per Trasposizione, commit e push. Per gli altri due, le risposte (sue o di Ponz).
+**Come si valida:** trasposizione di ±2 semitoni su un file di prova senza artefatti udibili
+nel banco `scripts/eval-dna/`; stessi criteri di T2.
 
 ## T4 — Lancio · 1 giro
 
@@ -135,16 +126,15 @@ Safari e da Chrome, offline dopo la prima visita, nessuna violazione CSP.
 5. **GitHub Actions attivo sul repo** e **token a permessi minimi** per gli agenti → **deciso:
    sì a entrambi** (21/09), con il branch `dev` escluso dai deploy Cloudflare per non consumare
    le 500 build mensili del piano gratuito (guida §6).
-6. **Mezz'ora con Ponz** prima di T3: le domande sono in `contenuti/domande-per-ponz.md`,
-   Genna scrive due righe per risposta, il resto lo trasformano gli agenti.
+6. ~~Mezz'ora con Ponz~~ → **non serve più**: Checklist e Split sheet sono fuori (22/09).
 
 ## Cosa NON faremo
 
 Account, login, email, recupero del codice perduto. Condivisione di un quaderno fra persone
 diverse. Fusione automatica dei testi (CRDT) e cronologia delle versioni. Sincronizzazione di
 file audio. Riconoscimento di brani noti, energy/danceability, pareri artistici. Notifiche
-push (il Pianificatore esporta `.ics` e basta). Libreria di accordi e diagrammi. Firma
-digitale sullo split sheet: si stampa e si firma. App nativa o store. Analytics, cookie,
+push (il Pianificatore esporta `.ics` e basta). Libreria di accordi e diagrammi. Checklist
+consegna e Split sheet (tagliati sul flusso di uno studio, non utili a tutti). App nativa o store. Analytics, cookie,
 servizi di terzi. Build step, framework, backend proprio, qualunque cosa che si paghi a
 consumo. Sentinel, già rimandato. Polyritmi e vibrazione nel metronomo, preset per plugin nel
 calcolatore: nicchie che invecchiano.

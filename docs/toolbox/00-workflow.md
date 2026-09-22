@@ -88,8 +88,7 @@ indipendenti possono avere spec in parallelo.
 - [x] Penna v2 "quaderno" (spec 16): elenco dei testi, router `#t=<id>`, foglio impostazioni, esporta/importa `.json`, `.txt`/condividi, stampa, gutter misurato sul mirror; validato in Chromium col testo di prova (`contenuti/testo-prova-canto.txt`)
 - [x] Penna sync (spec 17): codice di sei parole, AES-GCM lato client, Pages Function `toolbox/functions/api/quaderno/` + D1 `QUADERNO`; **da attivare da Genna** (guida-genna.md §3c) e informative Iubenda prima di annunciarla
 - [ ] Da provare su iPhone: Penna v2 (download in standalone, condividi `.txt`, tastiera aperta, stampa) e PBKDF2 200k iterazioni (spec 17 §6.9)
-- [ ] Strumenti 7-9: Checklist consegna, Split sheet, Trasposizione
-- [ ] Contenuti da validare con Ponz: `docs/toolbox/contenuti/pianificatore-tappe.md`
+- [ ] Trasposizione (T3, solo se la qualità regge). Checklist consegna e Split sheet: **scartati** il 22/09 (utili solo al flusso dello studio)
 - [ ] Prima del merge su `main`: informative Iubenda, prova completa su iPhone (vedi `guida-genna.md` §2)
 
 ## 7. Stato aggiornato al 20 settembre 2026

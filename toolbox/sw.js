@@ -30,7 +30,7 @@
  * quindi cache-first e' sicuro senza bisogno di `cache:'reload'`.
  */
 
-const VERSION = 'tb-v31';
+const VERSION = 'tb-v33';
 const CACHE = 'toolbox-' + VERSION;
 const VENDOR_CACHE = 'toolbox-vendor';
 const RIMARIO_CACHE = 'toolbox-rimario';
@@ -102,11 +102,11 @@ const SHELL = [
     '/assets/fonts/inter-500-latin-ext.woff2',
     '/assets/fonts/tiny-ampersand.woff',
 
-    '/assets/icons/icon-192.png',
-    '/assets/icons/icon-512.png',
-    '/assets/icons/icon-maskable-512.png',
-    '/assets/icons/apple-touch-icon.png',
-    '/assets/icons/favicon.ico'
+    '/assets/icons/icon-192-v2.png',
+    '/assets/icons/icon-512-v2.png',
+    '/assets/icons/icon-maskable-512-v2.png',
+    '/assets/icons/apple-touch-icon-v2.png',
+    '/assets/icons/favicon-v2.ico'
 ];
 
 /* File degli strumenti pubblicati, aggiunti strumento per strumento:

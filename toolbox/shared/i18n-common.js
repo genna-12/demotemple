@@ -61,10 +61,6 @@ export default {
         'tool-penna-desc': 'Rimario e blocco testi.',
         'tool-pianificatore-uscita': 'Pianificatore Uscita',
         'tool-pianificatore-uscita-desc': 'Organizza i passi per pubblicare il tuo brano.',
-        'tool-checklist-consegna': 'Checklist Consegna',
-        'tool-checklist-consegna-desc': 'Cosa preparare e come chiamare le tracce.',
-        'tool-split-sheet': 'Split Sheet',
-        'tool-split-sheet-desc': 'Dividi le quote e scarica il PDF da firmare.',
 
         'idx-ios-title': 'Su iPhone',
         'idx-ios-step1': 'Apri questa pagina in Safari.',
@@ -158,10 +154,6 @@ export default {
         'tool-penna-desc': 'Rhymes and a notebook for lyrics.',
         'tool-pianificatore-uscita': 'Release Planner',
         'tool-pianificatore-uscita-desc': 'Plan every step to release your track.',
-        'tool-checklist-consegna': 'Delivery Checklist',
-        'tool-checklist-consegna-desc': 'What to prepare and how to name your stems.',
-        'tool-split-sheet': 'Split Sheet',
-        'tool-split-sheet-desc': 'Split the shares, download a PDF to sign.',
 
         'idx-ios-title': 'On iPhone',
         'idx-ios-step1': 'Open this page in Safari.',
