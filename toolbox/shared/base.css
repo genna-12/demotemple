@@ -40,6 +40,9 @@ body::-webkit-scrollbar {
 html {
     height: 100%;
     background-color: var(--bg-color);
+    /* niente zoom al doppio tocco (su iOS ingrandiva la pagina toccando due
+       volte un bottone); il pinch resta possibile, l'accessibilita' non cambia */
+    touch-action: manipulation;
 }
 
 /* Safe-area in alto: solo su logo/hamburger fissi (.tb-logo/.tb-menu-toggle).
@@ -179,6 +182,17 @@ button {
         left: 40px;
         transform: translate(-50%, -50%) scale(0.6);
     }
+}
+
+/* Il logo in volo non si tocca (spec 18 §7.1, audit §1 causa B): fra i
+   900 ms del battito e la fine dell'aggancio (1.2s) attraversa in diagonale
+   l'area delle prime tile con z-index 10020, e un tocco li' ricaricava la
+   dashboard. `is-flying` la mette e la toglie shared/intro.js; deve venire
+   DOPO `.tb-logo.in-nav` (stessa specificita': vince l'ultima). Le pagine
+   senza intro nascono `in-nav` senza `is-flying`: li' non cambia nulla. */
+.tb-logo.is-pulse,
+.tb-logo.is-flying {
+    pointer-events: none;
 }
 
 .tb-logo.is-pressed img,
@@ -345,6 +359,10 @@ button {
      Pagine senza #tb-intro (es. 404.html): .tb-logo parte gia' 'in-nav' e
      .tb-menu-toggle gia' 'is-visible' nell'HTML statico (= .static-nav
      della vetrina): intro.js non ha nulla da fare li'. */
+/* `pointer-events: none` SEMPRE, non solo con .is-complete (spec 18 §7.1,
+   audit §1 causa B): lo sfondo opaco copre lo stesso, ma per i primi 900 ms
+   l'overlay si mangiava ogni tocco sulle tile e la dashboard sembrava
+   bloccata. Qui non c'e' niente da toccare: e' solo un fondale. */
 .tb-intro {
     position: fixed;
     inset: 0;
@@ -354,6 +372,7 @@ button {
     align-items: center;
     justify-content: center;
     transition: background-color 1.5s ease-out;
+    pointer-events: none;
 }
 
 .tb-intro.is-complete {

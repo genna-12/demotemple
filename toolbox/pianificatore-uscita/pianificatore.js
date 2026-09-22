@@ -55,6 +55,7 @@
  * =====================================================================
  *   pia-untitled pia-saved pia-save-fail pia-date-bad pia-done-count
  *   pia-progress-aria pia-due pia-late pia-today pia-in-days pia-days-ago
+ *   pia-in-day pia-day-ago
  *   pia-custom pia-step-menu-aria pia-name pia-date pia-ok pia-cancel
  *   pia-add pia-add-title pia-rename pia-move pia-restore pia-delete-step
  *   pia-delete-step-ask pia-delete-ask pia-deleted pia-recalc
@@ -279,6 +280,10 @@ export function mountPianificatore() {
     function fmtGiorni(n) {
         if (!Number.isFinite(n)) return '';
         if (n === 0) return t('pia-today');
+        /* singolare (spec 18 §7.8): "fra 1 giorno"/"1 giorno fa", non il
+           plurale con {n}=1. Le chiavi -in-days/-days-ago restano per n >= 2. */
+        if (n === 1) return t('pia-in-day');
+        if (n === -1) return t('pia-day-ago');
         return n > 0 ? t('pia-in-days', { n }) : t('pia-days-ago', { n: -n });
     }
 

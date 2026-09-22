@@ -607,7 +607,6 @@ export function mountMetronome() {
         ticks: WHEEL_TICKS,
         tickPx: TICK_PX,
         pxPerBpm: WHEEL_PX,
-        edgeSelector: '.met-wheel-edge',
         classes: { tick: 'met-tick', major: 'is-major', dragging: 'is-dragging' },
         onChange: (v) => setBpm(v, { fromControl: true })
     });

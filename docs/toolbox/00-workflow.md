@@ -95,5 +95,10 @@ indipendenti possono avere spec in parallelo.
 ## 7. Stato aggiornato al 20 settembre 2026
 
 Routine di Genna e istruzioni pratiche (rimario, cookie, merge): `docs/toolbox/guida-genna.md`.
-Validazione: ogni giro passa da `scripts/check.mjs` e da un test in Chromium headless
-(touch reale a 390×844, microfono simulato) prima della consegna.
+Validazione: ogni giro passa da `scripts/check.mjs` e dai test e2e (`scripts/e2e/`, 124 test,
+tocchi reali a 390×844 e 1366×768) prima della consegna; su GitHub girano da soli a ogni push.
+Consegna (finché il token non consente il push dal container): i file arrivano nella cartella
+TEMPLE di Genna; il ponte a volte riscrive la versione precedente di un file già consegnato e
+altera i binari `.wav` (CRLF): dopo ogni consegna si verificano le impronte md5 sul PC, e i
+binari passano come testo base64 da decodificare lì. La cartella `.github/` non si scrive col
+ponte: si scrive da shell sul PC.

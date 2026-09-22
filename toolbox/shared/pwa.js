@@ -64,7 +64,8 @@ function isInAppBrowser() {
 
 function showUpdate(worker) {
     toast('pwa-update', {
-        timeout: 0, // resta finche' l'utente non sceglie
+        timeout: 0,      // resta finche' l'utente non sceglie...
+        dismiss: true,   // ...ma si puo' anche mandare via (spec 18 §7.11)
         action: {
             key: 'pwa-update-action',
             onClick: () => {

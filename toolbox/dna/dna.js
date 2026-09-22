@@ -7,7 +7,9 @@
  * =====================================================================
  * CONTRATTO CON IL MARKUP (spec 13 §5; dove la spec tace, vale questo)
  * =====================================================================
- *   #dna            <main> con data-dna-state="empty|recording|working|result|none|error"
+ *   #dna            <main> con data-dna-state="empty|recording|working|result|none"
+ *                   ("error" non si usa piu': l'errore resta nello stato
+ *                   "empty" e si vede in #dna-error, spec 18 §7.7)
  *   #dna-drop       zona di rilascio (vuoto); dentro:
  *                     <input type="file" id="dna-file" accept="audio/*" class="sr-only">
  *                     <label for="dna-file" class="tb-btn tb-btn--primary">Scegli file</label>
@@ -268,6 +270,7 @@ export function mountDna() {
     const targetSelect = document.getElementById('dna-target');
     const historyBox = document.getElementById('dna-history');
     const statusOut = document.getElementById('dna-status');
+    const errorBox = document.getElementById('dna-error');
     const copyBtn = document.getElementById('dna-copy');
     const againBtn = document.getElementById('dna-again');
     const foldBox = document.getElementById('dna-bpm-alt');
@@ -334,9 +337,24 @@ export function mountDna() {
         }
     }
 
+    /**
+     * Un errore NON svuota la pagina (spec 18 §7.7, audit §2.2): si resta
+     * nello stato "vuoto" - zona di rilascio, «Scegli file», «Registra» e
+     * «Recenti» dove sono - e il messaggio compare SOPRA, in #dna-error,
+     * che al primo errore si sposta in cima a #dna. Cosi' chi ha sbagliato
+     * file legge cos'e' successo e riprova senza ricaricare.
+     */
     function fail(key) {
-        setState('error');
-        setStatus(statusOut, { kind: 'error', key });
+        setState('empty');
+        if (statusOut) statusOut.textContent = ''; // il messaggio sta sopra, non due volte
+        if (!errorBox) { setStatus(statusOut, { kind: 'error', key }); return; }
+        if (errorBox.parentElement === root && errorBox !== root.firstElementChild) {
+            root.insertBefore(errorBox, root.firstElementChild);
+        }
+        errorBox.setAttribute('role', 'status');
+        errorBox.setAttribute('aria-live', 'polite');
+        errorBox.hidden = false;
+        setStatus(errorBox, { kind: 'error', key });
     }
 
     /* ---------------- Worker (con ripiego sul thread principale) ---------------- */
@@ -695,6 +713,17 @@ export function mountDna() {
         const recent = all.slice(-HISTORY).reverse();
         if (clearBtn) clearBtn.hidden = recent.length === 0;
         if (clearConfirm && !recent.length) clearConfirm.hidden = true;
+        if (!recent.length) {
+            /* la riga che il markup si aspetta da sempre (CONTRATTO in
+               index.html): senza, «Recenti» e' un elenco alto zero e chi
+               apre lo strumento non capisce se manca qualcosa */
+            const vuoto = document.createElement('li');
+            vuoto.className = 'dna-history-none';
+            vuoto.setAttribute('data-i18n', 'dna-history-empty');
+            vuoto.textContent = t('dna-history-empty');
+            historyBox.appendChild(vuoto);
+            return;
+        }
         recent.forEach((rec) => {
             const id = rec.id || (rec.value && rec.value.at) || '';
             const r = migrate(rec, id);

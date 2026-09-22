@@ -9,11 +9,19 @@
  * resta con `met-tick`/`is-major`/`is-dragging` e il suo CSS, il
  * calcolatore usa `tb-tick` e il blocco `.tb-wheel*`.
  *
+ * TUTTA la rotella trascina (spec 18 §7.6, audit §2.1). I due <button>
+ * invisibili ai bordi non ci sono piu': con un dito (raggio 12 px)
+ * l'aggiustamento del bersaglio di Chromium li agganciava molto oltre i
+ * loro 44 px e circa il 40 % della rotella non rispondeva. Ora i bordi
+ * sono solo ZONE misurate qui (`edgePx` per lato) e contano solo a dito
+ * FERMO: tap nella zona = ±1, tap sul valore = editor numerico, tutto il
+ * resto - valore compreso - fa partire il trascinamento.
+ *
  * createBpmControl({
  *   wheel, drum, readout, input,        elementi (drum: dove nascono le tacche)
  *   min, max, value,                    limiti e valore iniziale
  *   ticks, tickPx, pxPerBpm,            quante tacche per lato e quanto distano
- *   edgeSelector,                       cosa NON fa partire il trascinamento
+ *   edgePx,                             larghezza delle zone ±1 ai due bordi
  *   classes: { tick, major, dragging },
  *   onChange(value, { fromWheel }),     un solo punto di verita' per chi usa
  *   onEditKeydown(e)                    tasti nel campo numerico (facoltativo)
@@ -27,11 +35,12 @@ const DEFAULTS = {
     ticks: 12,
     tickPx: 26,
     pxPerBpm: 8,
-    edgeSelector: '.tb-wheel-edge',
+    edgePx: 44,
     classes: { tick: 'tb-tick', major: 'is-major', dragging: 'is-dragging' }
 };
 const INERTIA_K = 5;      // decelerazione esponenziale: ferma entro 1 s
 const INERTIA_MIN = 0.6;  // BPM/s sotto cui si aggancia all'intero
+const TAP_PX = 6;         // sotto questo spostamento il dito e' fermo: e' un tap
 
 const now = () => (typeof performance !== 'undefined' && performance.now ? performance.now() : Date.now());
 
@@ -161,13 +170,29 @@ export function createBpmControl(options = {}) {
         buildTicks();
         renderWheel();
         let drag = null;
+
+        /** -1 = zona sinistra, +1 = zona destra, 0 = in mezzo. */
+        function edgeZone(x) {
+            const r = wheel.getBoundingClientRect();
+            const edge = Math.min(cfg.edgePx, r.width / 3); // rotelle strette: mai piu' di un terzo
+            if (x - r.left <= edge) return -1;
+            if (r.right - x <= edge) return 1;
+            return 0;
+        }
+
         on(wheel, 'pointerdown', (e) => {
             if (e.button !== undefined && e.button !== 0) return;
-            const onEdge = e.target.closest && cfg.edgeSelector && e.target.closest(cfg.edgeSelector);
-            const onReadout = e.target === readout || e.target === input;
-            if (onEdge || onReadout) return;
+            if (input && !input.hidden && e.target === input) return; // editor aperto: si scrive
             stopInertia();
-            drag = { id: e.pointerId, x0: e.clientX, v0: wheelValue, x: e.clientX, t: now(), vel: 0 };
+            drag = {
+                id: e.pointerId, x0: e.clientX, v0: wheelValue, x: e.clientX,
+                t: now(), vel: 0, moved: false,
+                zone: edgeZone(e.clientX),
+                /* il valore fa partire il trascinamento come tutto il resto:
+                   qui si ricorda solo per aprire l'editor a dito fermo */
+                onReadout: !!readout && (e.target === readout
+                    || (readout.contains && readout.contains(e.target)))
+            };
             wheel.classList.add(cfg.classes.dragging);
             e.preventDefault(); // niente selezione ne' scroll della pagina
             if (wheel.setPointerCapture) {
@@ -177,6 +202,10 @@ export function createBpmControl(options = {}) {
         on(wheel, 'pointermove', (e) => {
             if (!drag || e.pointerId !== drag.id) return;
             e.preventDefault();
+            if (!drag.moved) {
+                if (Math.abs(e.clientX - drag.x0) < TAP_PX) return; // ancora un tap
+                drag.moved = true;
+            }
             const t = now();
             const dt = t - drag.t;
             if (dt > 0) drag.vel = ((e.clientX - drag.x) / pxPerBpm) / (dt / 1000);
@@ -188,10 +217,14 @@ export function createBpmControl(options = {}) {
         ['pointerup', 'pointercancel'].forEach((ev) => {
             on(wheel, ev, (e) => {
                 if (!drag || (e.pointerId !== undefined && e.pointerId !== drag.id)) return;
-                const vel = ev === 'pointerup' ? drag.vel : 0;
+                const gesto = drag;
                 drag = null;
                 wheel.classList.remove(cfg.classes.dragging);
-                startInertia(vel);
+                if (gesto.moved) { startInertia(ev === 'pointerup' ? gesto.vel : 0); return; }
+                if (ev !== 'pointerup') return;      // annullato: niente tap
+                /* dito fermo: ±1 ai bordi, editor sul valore, niente altrove */
+                if (gesto.zone) { set(value + gesto.zone); return; }
+                if (gesto.onReadout) openEditor();
             });
         });
         on(wheel, 'wheel', (e) => {
@@ -212,12 +245,6 @@ export function createBpmControl(options = {}) {
             e.preventDefault();
             stopInertia();
             set(v);
-        });
-        /* bordi della rotella: ±1 (chi non ha data-bpm-step se li gestisce da se') */
-        on(wheel, 'click', (e) => {
-            const step = e.target.closest && e.target.closest('[data-bpm-step]');
-            if (!step) return;
-            set(value + Number(step.getAttribute('data-bpm-step')));
         });
     }
 
@@ -243,7 +270,9 @@ export function createBpmControl(options = {}) {
         if (readout) readout.hidden = false;
     }
 
-    if (readout) on(readout, 'click', openEditor);
+    /* niente listener di `click` sul valore: un trascinamento che finisce
+       sopra al numero genera un click, e l'editor si sarebbe aperto da solo.
+       Lo apre il tap fermo, gestito nel pointerup qui sopra. */
     if (input) {
         on(input, 'keydown', (e) => {
             if (e.key === 'Enter') {

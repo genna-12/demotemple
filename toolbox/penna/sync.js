@@ -10,8 +10,11 @@
  * con due `info` diverse: chi conosce l'id non ha nessun pezzo della chiave.
  *
  * Il server (`functions/api/quaderno/[[route]].js`) conserva per ogni riga
- * l'id del quaderno, un id di documento casuale (`sid`), la data e un blocco
- * base64 illeggibile. Il confronto e' per documento e vince **l'ultimo
+ * l'id del quaderno, la COLLEZIONE, un id di documento casuale (`sid`), la
+ * data e un blocco base64 illeggibile. La collezione (schema definitivo,
+ * spec 18 §4) separa dentro lo stesso quaderno cifrato i testi di Penna dalle
+ * uscite, dalle impostazioni e da quello che verra': qui si usa solo `penna`
+ * e il manifest, che le porta tutte, si filtra su quella. Il confronto e' per documento e vince **l'ultimo
  * salvataggio**: nessuna fusione di testo, mai (spec 17 §7).
  *
  * =====================================================================
@@ -40,6 +43,7 @@ const TOOL = 'penna';
 const TOMBE = 'penna-tomb';
 const SYNC = 'penna-sync';
 const BASE = '/api/quaderno/';
+const COLLEZIONE = 'penna';     // la nostra fetta del quaderno (spec 18 §4)
 
 const SALE = 'tt-quaderno-v1';
 const ITERAZIONI = 200000;
@@ -203,7 +207,7 @@ function daB64(testo) {
     return out;
 }
 
-/* i campi che viaggiano: il `sid` no, e' gia' nell'AAD */
+/* i campi che viaggiano: collezione e `sid` no, sono gia' nell'AAD */
 function corpoDi(doc) {
     const d = doc || {};
     return {
@@ -217,9 +221,14 @@ function corpoDi(doc) {
     };
 }
 
-export async function cifra(k, id, sid, doc) {
+/**
+ * AAD = `<id>|<collezione>|<sid>` (spec 17 §4, forma della 18 §4): il blocco
+ * cifrato e' legato al quaderno, alla collezione E al documento, quindi una
+ * riga spostata fra collezioni o fra documenti non si decifra piu'.
+ */
+export async function cifra(k, id, coll, sid, doc) {
     const iv = casuali(12);
-    const aad = enc.encode(id + '|' + sid);
+    const aad = enc.encode(id + '|' + coll + '|' + sid);
     const ct = await subtle().encrypt({ name: 'AES-GCM', iv, additionalData: aad }, k,
         enc.encode(JSON.stringify(corpoDi(doc))));
     const tutto = new Uint8Array(12 + ct.byteLength);
@@ -228,11 +237,11 @@ export async function cifra(k, id, sid, doc) {
     return b64(tutto);
 }
 
-/** Butta (throw) se il blob, l'id o il sid non sono quelli di prima: AAD + tag GCM. */
-export async function decifra(k, id, sid, blob) {
+/** Butta (throw) se blob, id, collezione o sid non sono quelli di prima: AAD + tag GCM. */
+export async function decifra(k, id, coll, sid, blob) {
     const tutto = daB64(String(blob || ''));
     if (tutto.length <= 12) throw new Error('blob troppo corto');
-    const aad = enc.encode(id + '|' + sid);
+    const aad = enc.encode(id + '|' + coll + '|' + sid);
     const chiaro = await subtle().decrypt(
         { name: 'AES-GCM', iv: tutto.subarray(0, 12), additionalData: aad }, k, tutto.subarray(12));
     return corpoDi(JSON.parse(dec.decode(chiaro)));
@@ -420,7 +429,10 @@ async function giroVero() {
     /* --- quel che c'e' sul server --- */
     const remoti = new Map();
     for (const v of (manifest && manifest.voci) || []) {
-        if (v && typeof v.doc === 'string') remoti.set(v.doc, { aggiornato: Number(v.aggiornato) || 0, cancellato: !!v.cancellato });
+        /* il manifest porta tutte le collezioni del quaderno: qui interessa
+           solo la nostra, le altre sono di strumenti diversi (spec 18 §4) */
+        if (!v || typeof v.doc !== 'string' || v.collezione !== COLLEZIONE) continue;
+        remoti.set(v.doc, { aggiornato: Number(v.aggiornato) || 0, cancellato: !!v.cancellato });
     }
 
     /* --- che cosa fare, in ordine di urgenza --- */
@@ -489,7 +501,7 @@ async function esegui(lavoro, k, id, esito) {
         return;
     }
     if (lavoro.tipo === 'cancella') {
-        await chiedi(id + '/' + lavoro.sid, {
+        await chiedi(id + '/' + COLLEZIONE + '/' + lavoro.sid, {
             method: 'DELETE',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ aggiornato: lavoro.morto })
@@ -506,11 +518,11 @@ async function esegui(lavoro, k, id, esito) {
         return;
     }
     if (lavoro.tipo === 'scarica') {
-        const voce = await chiedi(id + '/' + lavoro.sid);
+        const voce = await chiedi(id + '/' + COLLEZIONE + '/' + lavoro.sid);
         if (!voce || voce.cancellato || !voce.blob) return;
         let doc;
         try {
-            doc = await decifra(k, id, lavoro.sid, voce.blob);
+            doc = await decifra(k, id, COLLEZIONE, lavoro.sid, voce.blob);
         } catch (e) {
             /* codice sbagliato o riga corrotta: si lascia stare quel documento */
             return;
@@ -535,11 +547,11 @@ async function esegui(lavoro, k, id, esito) {
  * nel record locale. Cosi' il giro successivo non trova piu' niente da fare.
  */
 async function invia(k, id, sid, idLocale, doc) {
-    const blob = await cifra(k, id, sid, doc);
+    const blob = await cifra(k, id, COLLEZIONE, sid, doc);
     if (blob.length > MAX_BLOB) { const e = new Error('grande'); e.codice = 'grande'; throw e; }
     const adesso = Date.now();
     const aggiornato = Math.min(quando(doc) || adesso, adesso + AVANTI);
-    const r = await chiedi(id + '/' + sid, {
+    const r = await chiedi(id + '/' + COLLEZIONE + '/' + sid, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ aggiornato, blob })

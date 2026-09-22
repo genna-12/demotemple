@@ -65,8 +65,9 @@
    (vetro + sfumatura ai bordi, decorativa). Posa delle tacche con
    element.style.transform (translateX/translateZ/rotateY, come
    .carousel-item in style.css/portfolio.js): mai un attributo style="" nel
-   markup. .met-wheel-edge.is-left/.is-right: bordi 44px per il tap ±1
-   (data-met-step, stesso attributo dei bottoni sotto). .met-bpm-readout
+   markup. Il tap ±1 sui bordi (data-met-step, spec 18 §7.6) lo gestisce
+   bpm-control.js sulla stessa .met-wheel, non piu' due bottoni a parte.
+   .met-bpm-readout
    sta sopra a tutto (pointer-events:none, tranne su #met-bpm/#met-bpm-input
    stessi, cosi' il drag in mezzo raggiunge comunque .met-wheel). */
 .met-wheel {
@@ -137,23 +138,6 @@
     -webkit-mask-image: linear-gradient(90deg, transparent 0%, #000 18%, #000 82%, transparent 100%);
     mask-image: linear-gradient(90deg, transparent 0%, #000 18%, #000 82%, transparent 100%);
     pointer-events: none;
-}
-
-.met-wheel-edge {
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    width: 44px;
-    background: transparent;
-    z-index: 1;
-}
-
-.met-wheel-edge.is-left {
-    left: 0;
-}
-
-.met-wheel-edge.is-right {
-    right: 0;
 }
 
 .met-bpm-readout {

@@ -10,3 +10,10 @@ Claude outputs/
 
 # sorgenti scaricate dal build del rimario (grosse, si riscaricano)
 scripts/input/
+
+# test end-to-end (scripts/e2e): dipendenze, referto e tracce non si versionano.
+# Il package.json e il package-lock.json SI', e stanno li' dentro apposta:
+# alla radice del repository Cloudflare Pages li scambierebbe per una build.
+scripts/e2e/node_modules/
+scripts/e2e/report/
+scripts/e2e/test-results/

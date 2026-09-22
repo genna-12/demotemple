@@ -20,7 +20,12 @@ function walk(dir, out = []) {
 }
 function isBinary(buf) { const len = Math.min(buf.length, 4096); for (let i = 0; i < len; i++) if (buf[i] === 0) return true; return false; }
 const rel = (p) => path.relative(ROOT, p).split(path.sep).join('/');
-const allFiles = walk(ROOT);
+// scripts/e2e/ e' l'imbracatura dei test (spec 18 §8): non finisce mai sul sito, ha un
+// suo package.json/package-lock.json scritti da npm, e report/ e test-results/ nascono e
+// muoiono a ogni giro (con dentro HTML di Playwright, che non c'entrano niente con la CSP
+// della Toolbox). Fuori da ogni controllo, non solo dal fine riga.
+const FUORI_PERIMETRO = ['scripts/e2e/'];
+const allFiles = walk(ROOT).filter((f) => !FUORI_PERIMETRO.some((d) => rel(f).startsWith(d)));
 // git: helper unico; safecrlf=false + stderr scartato evita i warning "LF will be replaced by CRLF" (Windows, autocrlf attivo)
 function git(args, raw) { return execFileSync('git', ['-c', 'core.safecrlf=false', ...args], { cwd: ROOT, encoding: raw ? undefined : 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }); }
 let gitOk = true, autocrlf = false; try { git(['rev-parse', '--is-inside-work-tree']); } catch { gitOk = false; }
@@ -44,7 +49,7 @@ const EOL_MAP = { LF: 'lf', CRLF: 'crlf', MISTO: 'mixed' };
 function headStyleOf(r) { try { return EOL_MAP[actualEol(git(['show', `HEAD:${r}`], true))] || null; } catch { return null; } }
 // 1. FINE RIGA
 section('1. Fine riga (LF/CRLF)');
-const LF_DIRS = ['toolbox/', 'docs/', 'scripts/', '.claude/']; // fallback (solo se git non c'e'): mappa statica, sw.js/pwa.js LF
+const LF_DIRS = ['toolbox/', 'docs/', 'scripts/', '.claude/', '.github/']; // fallback (solo se git non c'e'): mappa statica, sw.js/pwa.js LF
 const LF_EXACT = new Set(['main.js', '_headers', 'site.webmanifest', 'robots.txt', 'sitemap.xml', 'CLAUDE.md', 'sw.js', 'pwa.js']);
 const CRLF_EXACT = new Set(['style.css', 'preload.js', 'page.js', 'consent.js', 'contact.js', 'home.js', 'portfolio.js']);
 function fallbackExpected(r) {

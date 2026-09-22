@@ -32,12 +32,18 @@ export default {
         'fam-release': 'Lancio',
 
         'idx-title': 'Toolbox',
+        'dash-subtitle': 'Sei strumenti per scrivere, provare e pubblicare. Funzionano offline, i dati restano sul telefono.',
         'dash-edit': 'Modifica',
         'dash-done': 'Fine',
         'dash-add': 'Aggiungi strumento',
         'dash-remove-aria': 'Togli {tool}',
         'dash-move-aria': 'Sposta {tool} con le frecce',
         'dash-moved': '{tool}: posizione {n}',
+        'dash-editing': 'Stai riordinando',
+        'dash-locked': 'In Modifica le tile si spostano, non si aprono.',
+        'dash-removed': 'Tolto {tool}',
+        'dash-restored': 'Rimesso {tool}',
+        'dash-undo': 'Annulla',
         'picker-title': 'Aggiungi alla dashboard',
         'picker-close-aria': 'Chiudi',
         'picker-empty': 'Sono già tutti qui.',
@@ -91,6 +97,7 @@ export default {
 
         'pwa-update': 'Nuova versione disponibile.',
         'pwa-update-action': 'Aggiorna',
+        'toast-close-aria': 'Chiudi l’avviso',
 
         'tb-footer-privacy': 'Privacy',
         'footer-designed': 'Designed by Genna',
@@ -122,12 +129,18 @@ export default {
         'fam-release': 'Release',
 
         'idx-title': 'Toolbox',
+        'dash-subtitle': 'Six tools to write, try out and release. They work offline, your data stays on your phone.',
         'dash-edit': 'Edit',
         'dash-done': 'Done',
         'dash-add': 'Add tool',
         'dash-remove-aria': 'Remove {tool}',
         'dash-move-aria': 'Move {tool} with the arrow keys',
         'dash-moved': '{tool}: position {n}',
+        'dash-editing': 'You are reordering',
+        'dash-locked': 'In Edit mode tiles move instead of opening.',
+        'dash-removed': 'Removed {tool}',
+        'dash-restored': '{tool} is back',
+        'dash-undo': 'Undo',
         'picker-title': 'Add to the dashboard',
         'picker-close-aria': 'Close',
         'picker-empty': 'They’re all here already.',
@@ -181,6 +194,7 @@ export default {
 
         'pwa-update': 'New version available.',
         'pwa-update-action': 'Update',
+        'toast-close-aria': 'Dismiss',
 
         'tb-footer-privacy': 'Privacy',
         'footer-designed': 'Designed by Genna',

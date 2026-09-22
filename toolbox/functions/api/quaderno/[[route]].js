@@ -5,11 +5,21 @@
  * quindi questa cartella `functions/` e' li' dentro). Il doppio parentesi
  * cattura ogni profondita': `context.params.route` e' un array di segmenti.
  *
- *   GET    /api/quaderno/<id>          -> { ora, voci:[{doc, aggiornato, cancellato}] }
- *   GET    /api/quaderno/<id>/<doc>    -> { doc, aggiornato, cancellato, blob }
- *   PUT    /api/quaderno/<id>/<doc>    <- { aggiornato, blob }   -> { ok, aggiornato }
- *   DELETE /api/quaderno/<id>/<doc>    <- { aggiornato }          lapide
- *   DELETE /api/quaderno/<id>                                     svuota il quaderno
+ * Lo SCHEMA e' quello definitivo della spec 18 §4: `voci` ha una colonna
+ * `collezione` e la chiave primaria e' (quaderno, collezione, doc). Un solo
+ * quaderno cifrato tiene i testi di Penna, le uscite, le impostazioni... e
+ * ogni strumento parla solo della propria collezione. Oggi la usa solo Penna
+ * (`penna`): meglio una riga di SQL in piu' adesso che una migrazione dopo.
+ *
+ *   GET    /api/quaderno/<id>                -> { ora, voci:[{collezione, doc, aggiornato, cancellato}] }
+ *   GET    /api/quaderno/<id>/<coll>/<doc>   -> { collezione, doc, aggiornato, cancellato, blob }
+ *   PUT    /api/quaderno/<id>/<coll>/<doc>   <- { aggiornato, blob }   -> { ok, aggiornato }
+ *   DELETE /api/quaderno/<id>/<coll>/<doc>   <- { aggiornato }          lapide
+ *   DELETE /api/quaderno/<id>                                          svuota il quaderno
+ *
+ * Il PUT a LOTTI `PUT /api/quaderno/<id>/<coll>` (spec 18 §4, un solo
+ * `env.QUADERNO.batch()`) NON e' ancora qui: arriva in T1. Fino ad allora
+ * quel percorso risponde 404 `{errore:"rotta"}`.
  *
  * Il server NON sa leggere niente: `id` e `doc` sono casuali, `blob` e' un
  * AES-GCM che nasce e muore sul dispositivo. Qui si conservano solo un
@@ -23,10 +33,13 @@
 
 const ID_RE = /^[0-9a-f]{32}$/;
 const DOC_RE = /^[0-9a-f]{16}$/;
+/* nome di collezione: minuscole, cifre e trattini, iniziale di lettera
+   (spec 18 §4; qui la forma stretta concordata, max 32 caratteri) */
+const COLL_RE = /^[a-z][a-z0-9-]{1,31}$/;
 
 const MAX_BLOB = 262144;          // caratteri base64 (~192 KB cifrati)
 const MAX_CORPO = 300 * 1024;     // Content-Length
-const MAX_DOC = 1000;             // documenti per quaderno
+const MAX_DOC = 1000;             // documenti per collezione
 const AVANTI = 60 * 1000;         // quanto puo' essere avanti l'orologio del client
 const FINESTRA = 60 * 1000;       // rate limit: finestra
 const COLPI = 60;                 // rate limit: scritture per finestra
@@ -112,14 +125,16 @@ function database(context) {
     return db;
 }
 
-/** Le due chiavi del percorso, gia' validate. */
+/** Le chiavi del percorso, gia' validate: <id> oppure <id>/<coll>/<doc>. */
 function chiavi(parti, { conDoc }) {
     const id = parti[0] || '';
     if (!ID_RE.test(id)) { const e = new Error('id'); e.codice = 'id'; e.stato = 400; throw e; }
-    if (!conDoc) return { id, doc: null };
-    const doc = parti[1] || '';
+    if (!conDoc) return { id, coll: null, doc: null };
+    const coll = parti[1] || '';
+    if (!COLL_RE.test(coll)) { const e = new Error('collezione'); e.codice = 'collezione'; e.stato = 400; throw e; }
+    const doc = parti[2] || '';
     if (!DOC_RE.test(doc)) { const e = new Error('doc'); e.codice = 'doc'; e.stato = 400; throw e; }
-    return { id, doc };
+    return { id, coll, doc };
 }
 
 /* Gli handler veri stanno dentro `prova()`: un errore con `.codice` diventa
@@ -142,23 +157,28 @@ export function onRequestGet(context) {
         const adesso = Date.now();
         if (parti.length === 1) {
             const { id } = chiavi(parti, { conDoc: false });
+            /* il manifest di TUTTE le collezioni in una query sola: il
+               client filtra quella che gli interessa (spec 18 §4) */
             const res = await db.prepare(
-                'SELECT doc, aggiornato, cancellato FROM voci WHERE quaderno = ?1'
+                'SELECT collezione, doc, aggiornato, cancellato FROM voci WHERE quaderno = ?1'
             ).bind(id).all();
             const voci = ((res && res.results) || []).map((r) => ({
+                collezione: r.collezione,
                 doc: r.doc,
                 aggiornato: Number(r.aggiornato) || 0,
                 cancellato: Number(r.cancellato) ? 1 : 0
             }));
             return risposta({ ora: adesso, voci });
         }
-        if (parti.length === 2) {
-            const { id, doc } = chiavi(parti, { conDoc: true });
+        if (parti.length === 3) {
+            const { id, coll, doc } = chiavi(parti, { conDoc: true });
             const r = await db.prepare(
-                'SELECT doc, aggiornato, cancellato, blob FROM voci WHERE quaderno = ?1 AND doc = ?2'
-            ).bind(id, doc).first();
+                'SELECT collezione, doc, aggiornato, cancellato, blob FROM voci '
+                + 'WHERE quaderno = ?1 AND collezione = ?2 AND doc = ?3'
+            ).bind(id, coll, doc).first();
             if (!r) return errore('assente', 404);
             return risposta({
+                collezione: r.collezione,
                 doc: r.doc,
                 aggiornato: Number(r.aggiornato) || 0,
                 cancellato: Number(r.cancellato) ? 1 : 0,
@@ -173,8 +193,9 @@ export function onRequestPut(context) {
     return prova(async () => {
         const db = database(context);
         const parti = segmenti(context);
-        if (parti.length !== 2) return errore('rotta', 404);
-        const { id, doc } = chiavi(parti, { conDoc: true });
+        /* `PUT /<id>/<coll>` e' il lotto della spec 18 §4: arriva in T1 */
+        if (parti.length !== 3) return errore('rotta', 404);
+        const { id, coll, doc } = chiavi(parti, { conDoc: true });
         const adesso = Date.now();
 
         /* ordine: tetto del Content-Length, poi rate limit, e SOLO ALLORA si
@@ -191,20 +212,26 @@ export function onRequestPut(context) {
         if (blob.length > MAX_BLOB) return errore('grande', 413);
         if (!blobValido(blob)) return errore('blob', 400);
 
-        /* il conteggio costa: si fa solo quando il documento e' davvero nuovo */
-        const c = await db.prepare('SELECT 1 AS c FROM voci WHERE quaderno = ?1 AND doc = ?2').bind(id, doc).first();
+        /* il conteggio costa: si fa solo quando il documento e' davvero nuovo,
+           e il tetto e' PER COLLEZIONE (spec 18 §4) */
+        const c = await db.prepare(
+            'SELECT 1 AS c FROM voci WHERE quaderno = ?1 AND collezione = ?2 AND doc = ?3'
+        ).bind(id, coll, doc).first();
         if (!c) {
-            const n = await db.prepare('SELECT count(*) AS n FROM voci WHERE quaderno = ?1').bind(id).first();
+            const n = await db.prepare(
+                'SELECT count(*) AS n FROM voci WHERE quaderno = ?1 AND collezione = ?2'
+            ).bind(id, coll).first();
             if (Number((n && n.n) || 0) >= MAX_DOC) return errore('pieno', 413);
         }
 
         /* vince l'ultimo salvataggio, per documento: nessuna fusione, mai */
         await db.prepare(
-            'INSERT INTO voci (quaderno, doc, aggiornato, cancellato, blob) VALUES (?1, ?2, ?3, 0, ?4) '
-            + 'ON CONFLICT(quaderno, doc) DO UPDATE SET '
+            'INSERT INTO voci (quaderno, collezione, doc, aggiornato, cancellato, blob) '
+            + 'VALUES (?1, ?2, ?3, ?4, 0, ?5) '
+            + 'ON CONFLICT(quaderno, collezione, doc) DO UPDATE SET '
             + 'aggiornato = excluded.aggiornato, cancellato = excluded.cancellato, blob = excluded.blob '
             + 'WHERE excluded.aggiornato > voci.aggiornato'
-        ).bind(id, doc, aggiornato, blob).run();
+        ).bind(id, coll, doc, aggiornato, blob).run();
 
         return risposta({ ok: true, aggiornato });
     });
@@ -229,8 +256,8 @@ export function onRequestDelete(context) {
             await db.prepare('DELETE FROM limiti WHERE quaderno = ?1').bind(id).run();
             return risposta({ ok: true });
         }
-        if (parti.length === 2) {
-            const { id, doc } = chiavi(parti, { conDoc: true });
+        if (parti.length === 3) {
+            const { id, coll, doc } = chiavi(parti, { conDoc: true });
             controllaLunghezza(context.request);
             const attesa = await limite(db, id, adesso);
             if (attesa !== null) return errore('troppi', 429, { 'Retry-After': String(attesa) });
@@ -241,11 +268,12 @@ export function onRequestDelete(context) {
 
             /* la lapide e' una riga come le altre: cancellato=1, blob vuoto */
             await db.prepare(
-                'INSERT INTO voci (quaderno, doc, aggiornato, cancellato, blob) VALUES (?1, ?2, ?3, 1, \'\') '
-                + 'ON CONFLICT(quaderno, doc) DO UPDATE SET '
+                'INSERT INTO voci (quaderno, collezione, doc, aggiornato, cancellato, blob) '
+                + 'VALUES (?1, ?2, ?3, ?4, 1, \'\') '
+                + 'ON CONFLICT(quaderno, collezione, doc) DO UPDATE SET '
                 + 'aggiornato = excluded.aggiornato, cancellato = 1, blob = \'\' '
                 + 'WHERE excluded.aggiornato > voci.aggiornato'
-            ).bind(id, doc, aggiornato).run();
+            ).bind(id, coll, doc, aggiornato).run();
 
             return risposta({ ok: true, aggiornato });
         }

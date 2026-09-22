@@ -15,6 +15,10 @@ git push
 ```
 
 Se `check.mjs` dice FALLITO, non committare: incolla l'output nella chat.
+I test veri (quelli che aprono le pagine in un browser finto) **girano da soli
+su GitHub a ogni push**: guarda la spunta verde o la croce rossa accanto al
+commit. Se proprio vuoi lanciarli anche qui — non serve mai —
+`cd scripts/e2e && npm ci && npx playwright test`.
 Cloudflare pubblica da solo dopo il push (progetto `tiny-temple-toolbox`,
 branch di produzione `toolbox` finché non facciamo il merge su `main`).
 Chi ha già la Toolbox aperta vede il toast "Nuova versione — Aggiorna".
@@ -82,7 +86,7 @@ cartella del sito per toglierlo: Cloudflare lo userebbe per avviare una build.
 ## 3c. Attivare la sincronizzazione di Penna (una volta, spec 17)
 
 Penna v2 sincronizza i testi fra PC e telefono con un "codice del quaderno" di
-sei parole: i testi partono cifrati dal dispositivo e il server (una Pages
+sei parole (lo stesso codice servirà poi per tutti i dati della Toolbox: spec 18): i testi partono cifrati dal dispositivo e il server (una Pages
 Function + un database D1 dello stesso progetto Cloudflare, costo zero) vede
 solo un identificatore e blocchi illeggibili. Il codice è già nel repo
 (`toolbox/functions/api/quaderno/[[route]].js`) e parte col push; manca solo
@@ -92,20 +96,50 @@ il database, che si crea dalla dashboard:
    nome `quaderno`.
 2. Nel database, scheda **Console**, incolla ed esegui:
    ```
-   CREATE TABLE voci (quaderno TEXT, doc TEXT, aggiornato INTEGER, cancellato INTEGER,
-     blob TEXT, PRIMARY KEY (quaderno, doc));
-   CREATE TABLE limiti (quaderno TEXT PRIMARY KEY, finestra INTEGER, colpi INTEGER);
+   CREATE TABLE voci (
+     quaderno TEXT NOT NULL, collezione TEXT NOT NULL, doc TEXT NOT NULL,
+     aggiornato INTEGER NOT NULL, cancellato INTEGER NOT NULL DEFAULT 0,
+     blob TEXT NOT NULL DEFAULT '',
+     PRIMARY KEY (quaderno, collezione, doc));
+   CREATE TABLE limiti (
+     quaderno TEXT PRIMARY KEY, finestra INTEGER NOT NULL, colpi INTEGER NOT NULL);
    ```
+   Se avevi già creato `voci` con lo schema vecchio (senza `collezione`):
+   prima `DROP TABLE voci;`, poi l'SQL qui sopra.
 3. **Workers & Pages → tiny-temple-toolbox → Settings → Bindings → Add → D1
    database**: Variable name `QUADERNO`, database `quaderno`. Salva.
 4. **Deployments → Retry deployment** (o un nuovo push): i binding valgono dal
    deploy successivo.
 5. Prova: apri `https://toolbox.tinytemplestudio.it/api/quaderno/00000000000000000000000000000000`
    → deve rispondere `{"ora":…,"voci":[]}`. Se risponde 500, il binding non c'è.
-6. **Informative Iubenda**: aggiungi la sezione "Sincronizzazione del quaderno"
-   (testo IT+EN pronto in `docs/toolbox/specs/17-penna-sync.md`, §4 Deploy,
-   punto 6) **prima** di dire agli artisti che la sincronizzazione esiste.
-   Finché non la attivano loro, Penna non fa nessuna richiesta di rete.
+6. **Informative Iubenda** (a fine T1, quando ti dico che la sincronizzazione è
+   accesa per tutti i dati): in Iubenda, privacy policy, aggiungi una sezione
+   personalizzata con questo testo, in italiano e in inglese. Copia-incolla.
+
+   > **Sincronizzazione dei dati della Toolbox (facoltativa).** Se la attivi,
+   > i tuoi dati (testi, piani di uscita, analisi, accordature, preferenze)
+   > vengono cifrati sul tuo dispositivo con una chiave ricavata dal codice
+   > di sei parole, che conosci solo tu, e copiati sui server di Cloudflare
+   > Inc. (fornitore di hosting, UE/USA). Di quelle copie conserviamo solo un
+   > identificatore casuale, la data dell'ultima modifica e il contenuto
+   > cifrato: senza il tuo codice nessuno, noi compresi, può leggerlo. Non
+   > usiamo cookie e non registriamo il contenuto. Per cancellare tutto:
+   > Impostazioni → Sincronizza fra dispositivi → Scollega ed elimina dal
+   > server; le copie cifrate spariscono subito e i dati restano solo sul
+   > tuo dispositivo.
+
+   > **Toolbox data sync (optional).** When you turn it on, your data (lyrics,
+   > release plans, analyses, tunings, preferences) is encrypted on your
+   > device with a key derived from your six-word code, which only you know,
+   > and copied to servers operated by Cloudflare Inc. (hosting provider,
+   > EU/USA). Of those copies we keep only a random identifier, the
+   > last-modified date and the encrypted content: without your code nobody,
+   > including us, can read it. We use no cookies and never record the
+   > content. To erase everything: Settings → Sync across devices → Unlink
+   > and delete from the server; the encrypted copies are removed
+   > immediately and the data stays only on your device.
+
+   Finché gli artisti non la attivano, la Toolbox non fa nessuna richiesta di rete.
 
 Se il database non c'è ancora, Penna funziona lo stesso: chi prova ad attivare
 la sincronizzazione vede "Errore del server: riprovo dopo" e nient'altro.
@@ -118,6 +152,28 @@ la sincronizzazione vede "Errore del server: riprovo dopo" e nient'altro.
 - `docs/toolbox/contenuti/` — testi da validare con Ponz (tappe del pianificatore).
 - `scripts/check.mjs` — controlli deterministici; `scripts/eval-dna/` — banco di prova di DNA
   (`node scripts/eval-dna/run.mjs --limit 60`); `scripts/build-rimario.mjs` — rimario.
+
+## 6. Branch di lavoro, token e limite dei deploy (T0 in poi)
+
+Cloudflare Pages gratuito costruisce al massimo **500 volte al mese**, e i due
+progetti (vetrina e Toolbox) leggono lo stesso repo. Per non consumarle:
+
+1. Su Cloudflare, in **entrambi** i progetti Pages: Settings → Builds &
+   deployments → **Preview branches → None**. Così si costruisce solo il
+   branch di produzione (`main` per la vetrina, `toolbox` per la Toolbox).
+2. Gli agenti lavorano sul branch **`dev`**: pushano lì quante volte vogliono,
+   Cloudflare non lo vede, GitHub Actions lo prova (gratis, repo pubblico).
+   A fine giro `dev` viene unito in `toolbox` (una build sola).
+3. Token per far pushare gli agenti: GitHub → foto profilo → Settings →
+   Developer settings → Personal access tokens → **Fine-grained tokens →
+   Generate new token**: nome `agenti-toolbox`, scadenza 30 giorni, Repository
+   access → Only select repositories → `demotemple`, Permissions → Repository
+   permissions → **Contents: Read and write** (nient'altro). Genera, copia,
+   incolla in chat. Il token resta scritto nella conversazione: se non ti va
+   bene, revocalo da quella stessa pagina in qualsiasi momento, e la
+   consegna torna a passare dalla cartella come oggi.
+4. Il segno verde/rosso accanto a ogni commit su GitHub (scheda Actions) è
+   `check.mjs` + i test end-to-end: rosso = non unire.
 
 ## 5. Regole per non dover mai mettere il banner dei cookie
 

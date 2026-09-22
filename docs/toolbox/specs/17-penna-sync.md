@@ -74,7 +74,7 @@ NFKD, una spaziatura) → 256 bit; poi HKDF-SHA256 sugli stessi bit, **due deriv
 `info="quaderno-chiave"` → **AES-GCM 256 non estraibile**, `info="quaderno-id"` → 16 byte → **id
 hex 32**. Gira una volta per sessione, in `requestIdleCallback`.
 
-**Cifratura per documento:** IV 12 byte casuali a ogni salvataggio, **AAD = `<id>|<sid>`**,
+**Cifratura per documento:** IV 12 byte casuali a ogni salvataggio, **AAD = `<id>|<collezione>|<sid>`** (forma della 18 §4: una riga spostata di collezione o di documento non si decifra più),
 `blob = base64(IV ‖ ciphertext)` del JSON del record (titolo, testo, date, lingua, emuet,
 dialefe). `sid` = 16 hex casuali, assegnato al primo invio e salvato nel record; un documento
 che arriva dal server entra con un `id` locale nuovo e il `sid` ricevuto. Le eliminazioni
@@ -90,19 +90,24 @@ profondità e `context.params.route` è un array
 `onRequestPut`, `onRequestDelete`; binding via `context.env.QUADERNO.prepare(...).bind(...)`
 (`.../pages/functions/api-reference/`, `.../pages/functions/bindings/`).
 
+**Lo schema e le rotte stanno nella spec 18 §4, non qui** (deciso il 21/09/2026, prima che il
+database esistesse). `voci` ha una colonna **`collezione`** e chiave primaria
+`(quaderno, collezione, doc)`: un solo quaderno cifrato tiene i testi di Penna, le uscite, le
+impostazioni, e ogni strumento parla solo della propria fetta. Penna usa `penna` e **filtra il
+manifest** su quella. Una riga di SQL in più oggi, zero migrazioni dopo. **L'SQL da eseguire è
+quello della 18 §4**, non quello di questa tabella.
+
 | metodo | percorso | corpo | risposta |
 |---|---|---|---|
-| GET | `/api/quaderno/<id>` | — | `{ora, voci:[{doc, aggiornato, cancellato}]}` (una query) |
-| GET | `/api/quaderno/<id>/<doc>` | — | `{doc, aggiornato, cancellato, blob}` |
-| PUT | `/api/quaderno/<id>/<doc>` | `{aggiornato, blob}` | `{ok, aggiornato}` |
-| DELETE | `/api/quaderno/<id>/<doc>` | `{aggiornato}` | lapide: `cancellato=1`, `blob=''` |
-| DELETE | `/api/quaderno/<id>` | — | cancella davvero tutte le righe |
+| GET | `/api/quaderno/<id>` | — | `{ora, voci:[{collezione, doc, aggiornato, cancellato}]}` (una query, tutte le collezioni) |
+| GET | `/api/quaderno/<id>/<coll>/<doc>` | — | `{collezione, doc, aggiornato, cancellato, blob}` |
+| PUT | `/api/quaderno/<id>/<coll>/<doc>` | `{aggiornato, blob}` | `{ok, aggiornato}` |
+| DELETE | `/api/quaderno/<id>/<coll>/<doc>` | `{aggiornato}` | lapide: `cancellato=1`, `blob=''` |
+| DELETE | `/api/quaderno/<id>` | — | cancella davvero tutto (anche la riga in `limiti`) |
 
-```sql
-CREATE TABLE voci (quaderno TEXT, doc TEXT, aggiornato INTEGER, cancellato INTEGER,
-  blob TEXT, PRIMARY KEY (quaderno, doc));
-CREATE TABLE limiti (quaderno TEXT PRIMARY KEY, finestra INTEGER, colpi INTEGER);
-```
+`PUT /api/quaderno/<id>/<coll>` (il **lotto** della 18 §4, un solo `env.QUADERNO.batch()`) non è
+ancora implementato: arriva in T1 e fino ad allora risponde `404 {errore:"rotta"}`. `collezione`
+va in `^[a-z][a-z0-9-]{1,31}$`; il tetto di 1000 documenti è **per collezione**.
 
 PUT/DELETE sono **last-write-wins per documento**: `ON CONFLICT(quaderno,doc) DO UPDATE SET …
 WHERE excluded.aggiornato > voci.aggiornato`. Nessuna fusione di testo, mai.
@@ -110,7 +115,7 @@ WHERE excluded.aggiornato > voci.aggiornato`. Nessuna fusione di testo, mai.
 **Controlli:** `id` `^[0-9a-f]{32}$`, `doc` `^[0-9a-f]{16}$`, `aggiornato` intero **clampato a
 min(client, adesso+60 s)** (un orologio sbagliato non vince per sempre), `blob` base64 ≤ **262 144
 caratteri** (~192 KB cifrati: sotto i 2 MB della riga D1, e sempre come **parametro legato**, mai
-dentro l'SQL, che ha un tetto di 100 KB), `Content-Length` ≤ 300 KB, ≤ **1000 doc** per quaderno
+dentro l'SQL, che ha un tetto di 100 KB), `Content-Length` ≤ 300 KB, ≤ **1000 doc** per collezione
 (`SELECT count(*)` solo se il doc è nuovo). **Rate limit** solo sulle scritture: finestra 60 s,
 60 colpi per quaderno nella tabella `limiti`, oltre → `429` con `Retry-After`. Ogni risposta:
 JSON, `Cache-Control: no-store`, `Content-Type: application/json; charset=utf-8`,
@@ -132,7 +137,9 @@ Function e serve tutto il resto come statico.
 
 1. Dashboard Cloudflare → **Storage & Databases → D1 SQL Database → Create database**, nome
    `quaderno`.
-2. Nel database, scheda **Console**: incollare le due `CREATE TABLE` qui sopra ed eseguire.
+2. Nel database, scheda **Console**: incollare le due `CREATE TABLE` **della spec 18 §4** (quelle
+   con la colonna `collezione`) ed eseguire. Se esiste già la vecchia `voci` della 17, la 18 §4
+   dice come sostituirla.
 3. **Workers & Pages → il progetto Pages della Toolbox → Settings → Bindings → Add → D1 database
    binding**: Variable name `QUADERNO`, database `quaderno`, salvare.
 4. **Ridistribuire** (un push su `main`, oppure Deployments → Retry deployment): i binding valgono

@@ -40,13 +40,23 @@
 //   Uno strumento nuovo in tools.js si accoda da solo, anche su dashboard personalizzata.
 //
 // CHIAVI i18n USATE QUI: dash-edit, dash-done, dash-add, dash-remove-aria,
-//   dash-move-aria, dash-moved, picker-title, picker-empty, picker-reset,
+//   dash-move-aria, dash-moved, dash-editing, dash-locked, dash-removed,
+//   dash-restored, dash-undo, picker-title, picker-empty, picker-reset,
 //   pill-soon, fam-<id>, tool-<slug>.
+//
+// MODIFICA VISIBILE (spec 18 §7.4, audit §1 causa A): finche' e' attiva,
+//   una barra fissa `.tb-dash-bar` in fondo allo schermo dice «Stai
+//   riordinando» e offre «Fine» sotto il pollice; il tocco su una tile
+//   mostra un toast invece di non fare niente; si esce anche toccando il
+//   fondo vuoto della pagina. La barra la crea questo modulo in
+//   document.body (stili in linea: non ha un foglio suo) e vive solo
+//   sulla dashboard.
 
 import { t, apply } from './i18n.js';
 import { TOOLS, FAMILIES } from './tools.js';
 import { prefs } from './storage.js';
 import { toolIcon } from './nav.js';
+import { toast } from './ui.js';
 
 /* icona dallo sprite di pagina, come toolIcon ma per le icone di servizio */
 const icon_ = (id) => toolIcon(id.replace(/^tb-icon-/, ''));
@@ -187,9 +197,49 @@ export function mountDash() {
         apply(grid);
     }
 
+    /* ---------- avvisi ---------- */
+
+    /* un avviso alla volta: il secondo scalza il primo, cosi' non si
+       impilano tre toast uguali toccando tre tile di fila */
+    let closeToast = null;
+    function avvisa(key, options = {}) {
+        if (closeToast) { try { closeToast(); } catch (e) { /* gia' chiuso */ } }
+        closeToast = toast(key, options);
+        return closeToast;
+    }
+
+    /* ---------- barra della modifica ---------- */
+
+    /* Classi in shared/components.css (.tb-dash-bar/-text/-done): niente
+       style.* in linea, la barra e' nel design system come tutto il resto. */
+    function buildBar() {
+        const bar = document.createElement('div');
+        bar.className = 'tb-dash-bar';
+        bar.hidden = true;
+
+        const label = document.createElement('span');
+        label.className = 'tb-dash-bar-text';
+        label.setAttribute('data-i18n', 'dash-editing');
+        label.textContent = t('dash-editing');
+
+        const done = document.createElement('button');
+        done.type = 'button';
+        done.className = 'tb-btn tb-dash-bar-done';
+        done.setAttribute('data-i18n', 'dash-done');
+        done.textContent = t('dash-done');
+        done.addEventListener('click', () => setEditing(false));
+
+        bar.append(label, done);
+        document.body.appendChild(bar);
+        return bar;
+    }
+
+    const bar = buildBar();
+
     /* ---------- modifica ---------- */
 
     function setEditing(on) {
+        endDrag(); // spec 18 §7.2: niente trascinamenti lasciati a mezzo
         editing = !!on;
         document.documentElement.classList.toggle('tb-dash-editing', editing);
         if (editBtn) {
@@ -199,6 +249,7 @@ export function mountDash() {
             editBtn.textContent = t(key);
         }
         if (addBtn) addBtn.hidden = !editing;
+        if (bar) bar.hidden = !editing;
         if (!editing) drop(false);
         [...grid.children].forEach(applyEditState);
     }
@@ -211,16 +262,59 @@ export function mountDash() {
             e.preventDefault();
             const li = remove.closest('li');
             const slug = li.getAttribute('data-slug');
+            /* si tiene una copia dello stato di prima: l'«Annulla» del toast
+               rimette tutto com'era, ordine compreso (spec 18 §7.5) */
+            const wasOrder = order.slice();
+            const wasHidden = hidden.slice();
             if (!hidden.includes(slug)) hidden.push(slug);
             save();
             render();
             const tool = bySlug(slug);
-            say('dash-remove-aria', { tool: tool ? t(tool.key) : slug });
+            const nome = tool ? t(tool.key) : slug;
+            say('dash-removed', { tool: nome });
+            avvisa('dash-removed', {
+                vars: { tool: nome },
+                timeout: 8000,
+                action: {
+                    key: 'dash-undo',
+                    onClick: () => {
+                        order = wasOrder;
+                        hidden = wasHidden;
+                        save();
+                        render();
+                        say('dash-restored', { tool: nome });
+                    }
+                }
+            });
             return;
         }
         if (!editing) return;
         const tile = e.target.closest ? e.target.closest('.tb-tile') : null;
-        if (tile) e.preventDefault(); // in modifica non si naviga
+        if (!tile) return;
+        e.preventDefault(); // in modifica non si naviga...
+        avvisa('dash-locked'); // ...ma lo si dice (spec 18 §7.4)
+        say('dash-locked');
+    });
+
+    /* Uscita dalla Modifica toccando il fondo vuoto (spec 18 §7.4): vale
+       solo se anche il dito e' SCESO fuori dai comandi, altrimenti il
+       `click` sintetico che chiude un trascinamento finito oltre la griglia
+       spegnerebbe la Modifica da solo. */
+    const COMANDI = '#tb-tiles, #tb-edit, #tb-tile-add, #tb-picker, .tb-dash-bar, '
+        + '.tb-toast-region, .tb-bar, .tb-menu, .tb-menu-toggle, .tb-logo, '
+        + '.tb-footer, a, button, input, select, textarea, label';
+    let downFuori = false;
+    const fuoriDaiComandi = (target) => !!target && (!target.closest || !target.closest(COMANDI));
+
+    document.addEventListener('pointerdown', (e) => {
+        downFuori = editing && fuoriDaiComandi(e.target);
+    });
+    document.addEventListener('click', (e) => {
+        const giu = downFuori;
+        downFuori = false;
+        if (!editing || !giu) return;
+        if (!fuoriDaiComandi(e.target)) return;
+        setEditing(false);
     });
 
     /* ---------- riordino: modello ---------- */
@@ -422,7 +516,12 @@ export function mountDash() {
         say('dash-moved', { tool: tool ? t(tool.key) : '', n: [...grid.children].indexOf(li) + 1 });
     }
 
-    ['pointerup', 'pointercancel'].forEach((ev) => grid.addEventListener(ev, endDrag));
+    /* su `window`, non sulla griglia (spec 18 §7.3, audit §1 causa C): il
+       dito che si alza fuori dalle tile - o il pointer capture che salta
+       perche' il nodo e' stato ridisegnato - lasciava il <li> con
+       `is-dragging`, `transform` e `z-index: 5` addosso alla vicina. */
+    ['pointerup', 'pointercancel', 'lostpointercapture']
+        .forEach((ev) => window.addEventListener(ev, endDrag));
 
     /* ---------- riordino da tastiera ---------- */
 

@@ -1,0 +1,73 @@
+# Tiny Temple Toolbox - la verifica automatica (spec 18 §8).
+#
+# Gira a ogni push e a ogni pull request, su QUALUNQUE ramo. Genna non deve
+# fare niente: vede una spunta verde o una croce rossa accanto al commit su
+# GitHub, e lo stato del deploy su Cloudflare come sempre.
+#
+# Due passaggi: i controlli meccanici (`scripts/check.mjs`, nessuna
+# dipendenza) e i test end-to-end con Playwright (`scripts/e2e/`). Il
+# referto e le tracce si conservano SOLO quando qualcosa e' rosso: un giro
+# verde non lascia niente.
+#
+# I minuti sono gratis perche' il repository e' pubblico.
+
+name: verifica
+
+on:
+  push:
+  pull_request:
+
+# un giro per ramo: se arriva un commit nuovo, quello prima si annulla
+concurrency:
+  group: verifica-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  verifica:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Scarica il repository
+        uses: actions/checkout@v4
+
+      - name: Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Controlli meccanici (check.mjs)
+        run: node scripts/check.mjs
+
+      - name: Dipendenze dei test
+        working-directory: scripts/e2e
+        run: npm ci
+
+      - name: Chromium per Playwright
+        working-directory: scripts/e2e
+        run: npx playwright install --with-deps chromium
+
+      - name: Test end-to-end
+        working-directory: scripts/e2e
+        run: npx playwright test
+
+      - name: Referto (solo se qualcosa e' rosso)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: referto-playwright
+          path: scripts/e2e/report/
+          retention-days: 7
+          if-no-files-found: ignore
+
+      - name: Tracce e schermate (solo se qualcosa e' rosso)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tracce-playwright
+          path: scripts/e2e/test-results/
+          retention-days: 7
+          if-no-files-found: ignore

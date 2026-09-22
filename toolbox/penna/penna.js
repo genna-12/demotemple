@@ -1720,6 +1720,17 @@ export function mountPenna() {
        titolo"): apply() del cambio lingua non le vede, si rifanno qui */
     onChange(() => { renderElenco(); applicaSegnaposto(); renderSync(); });
     if (downloadBtn) downloadBtn.addEventListener('click', () => scarica());
+    /* Il rimario della lingua gia' installata (l'italiano lo e' sempre) si
+       prepara da solo quando si apre il foglio: e' un file nostro, resta
+       nella cache del browser, nessun consenso da chiedere. Il bottone
+       resta solo come ripiego (offline, errore). I pacchetti delle altre
+       lingue continuano a partire solo da "Scarica" (spec 14b §2). */
+    const rhymeToggle = el('pen-rhyme-toggle');
+    if (rhymeToggle) {
+        rhymeToggle.addEventListener('change', () => {
+            if (rhymeToggle.checked && !pronto && !caricando && installato(ui.lingua)) scarica();
+        });
+    }
     if (queryIn) {
         let attesa = null;
         queryIn.addEventListener('input', () => {

@@ -30,7 +30,7 @@
  * quindi cache-first e' sicuro senza bisogno di `cache:'reload'`.
  */
 
-const VERSION = 'tb-v27';
+const VERSION = 'tb-v31';
 const CACHE = 'toolbox-' + VERSION;
 const VENDOR_CACHE = 'toolbox-vendor';
 const RIMARIO_CACHE = 'toolbox-rimario';

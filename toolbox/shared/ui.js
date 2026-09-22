@@ -33,12 +33,15 @@ function getToastRegion() {
 }
 
 /**
- * Mostra un toast (aria-live polite). `key` e' una chiave i18n.
+ * Mostra un toast (aria-live polite). `key` e' una chiave i18n, `vars` i
+ * segnaposto del testo ({tool} e simili, come t()).
  * `action`, se presente, e' { key, onClick } per un pulsante secondario
- * (es. "Aggiorna" del toast di nuova versione). Ritorna una funzione
- * per chiudere subito il toast.
+ * (es. "Aggiorna" del toast di nuova versione).
+ * `dismiss` aggiunge la «×» che chiude e basta: serve ai toast senza
+ * scadenza (timeout: 0), che altrimenti non si tolgono piu' (spec 18 §7.11).
+ * Ritorna una funzione per chiudere subito il toast.
  */
-export function toast(key, { action, timeout = 4000 } = {}) {
+export function toast(key, { action, dismiss = false, timeout = 4000, vars } = {}) {
     const region = getToastRegion();
     const el = document.createElement('div');
     el.className = 'tb-toast';
@@ -46,7 +49,7 @@ export function toast(key, { action, timeout = 4000 } = {}) {
 
     const msg = document.createElement('span');
     msg.className = 'tb-toast-msg';
-    msg.textContent = t(key);
+    msg.textContent = t(key, vars);
     el.appendChild(msg);
 
     let timer = null;
@@ -69,6 +72,21 @@ export function toast(key, { action, timeout = 4000 } = {}) {
             }
         });
         el.appendChild(btn);
+    }
+
+    if (dismiss) {
+        const x = document.createElement('button');
+        x.type = 'button';
+        /* .tb-toast-action da' misura (44 px) e stile: la «×» e' un'azione
+           come le altre, solo che non fa niente oltre a chiudere.
+           .tb-toast-close (shared/components.css) allarga il bersaglio,
+           stretto per via del solo glifo. */
+        x.className = 'tb-toast-close tb-toast-action';
+        x.setAttribute('data-i18n-aria', 'toast-close-aria');
+        x.setAttribute('aria-label', t('toast-close-aria'));
+        x.textContent = '×';
+        x.addEventListener('click', close);
+        el.appendChild(x);
     }
 
     region.appendChild(el);

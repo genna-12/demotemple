@@ -1,0 +1,14 @@
+{
+  "name": "tiny-temple-e2e",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Imbracatura di test end-to-end della Toolbox (spec 18 §8). Vive QUI e non alla radice del repository: un package.json alla radice farebbe partire una build su Cloudflare Pages.",
+  "type": "module",
+  "scripts": {
+    "test": "playwright test",
+    "report": "playwright show-report report"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.56.0"
+  }
+}

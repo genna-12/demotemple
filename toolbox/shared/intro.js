@@ -9,6 +9,8 @@
 //     dello schermo, con .in-nav si aggancia all'angolo (1.2s).
 //   <button class="tb-menu-toggle">              compare con .is-visible
 //   Classi usate: .tb-logo.is-pulse (battito 0.8s), .tb-logo.in-nav,
+//   .tb-logo.is-flying (dura quanto l'aggancio: il logo in volo non e'
+//   cliccabile, spec 18 §7.1),
 //   .tb-intro.is-complete (sfondo trasparente in 1.5s, pointer-events:none),
 //   .tb-menu-toggle.is-visible. Su <body> si toglie 'loading-state' (se c'e').
 //
@@ -32,6 +34,7 @@ const VIBRATED_KEY = 'tbVibrated';
 const PULSE_MS = 900;
 const VIBRATE_MS = 400;
 const FADE_MS = 1600; // 1.5s di dissolvenza + margine
+const DOCK_MS = 1300; // 1.2s di aggancio del logo + margine
 
 function session(key) {
     try {
@@ -94,12 +97,20 @@ export function startIntro({ isHome = true } = {}) {
         layer.remove();
     };
 
+    /* il logo in volo non deve prendersi i tocchi destinati alle tile
+       (spec 18 §7.1, audit §1 causa B): finche' l'aggancio non e' finito
+       porta 'is-flying', che in base.css lo rende non cliccabile */
+    const land = () => { if (logo) logo.classList.remove('is-flying'); };
+
     setTimeout(() => {
         if (logo) {
             logo.classList.remove('is-pulse');
+            logo.classList.add('is-flying');
             void logo.offsetWidth; // reflow: il battito non si somma all'aggancio
         }
         dock(logo, toggle, layer);
+        if (logo) logo.addEventListener('transitionend', land, { once: true });
+        setTimeout(land, DOCK_MS); // ripiego se la transizione non parte
         layer.addEventListener('transitionend', drop);
         setTimeout(drop, FADE_MS);
     }, PULSE_MS);
@@ -108,6 +119,7 @@ export function startIntro({ isHome = true } = {}) {
     const finish = () => {
         if (logo) logo.classList.remove('is-pulse');
         dock(logo, toggle, layer);
+        land();
         drop();
     };
     window.addEventListener('pagehide', finish);
