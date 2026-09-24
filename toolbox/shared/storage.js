@@ -61,6 +61,14 @@ async function run(mode, fn) {
     });
 }
 
+/* Una transazione sola sullo store `records`, per chi deve fare piu' passi
+   atomici (le migrazioni di shared/archivio.js, spec 18 §3). `fn(store)`
+   usa le callback delle richieste, non await: una transazione IndexedDB si
+   chiude da sola appena resta senza richieste in corso. */
+export function transazione(mode, fn) {
+    return run(mode, fn);
+}
+
 /* tutte le chiavi [tool, *]: un array piu' lungo e' sempre maggiore del prefisso,
    e un array vuoto e' maggiore di qualunque id numero/data/stringa */
 const toolRange = (tool) => IDBKeyRange.bound([tool], [tool, []]);

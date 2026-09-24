@@ -25,7 +25,7 @@ import { init, t, lang, onChange } from '/shared/i18n.js';
 import { pressFeedback, toast } from '/shared/ui.js';
 import { mountBar } from '/shared/nav.js';
 import { initPwa } from '/shared/pwa.js';
-import { prefs } from '/shared/storage.js';
+import { prefs } from '/shared/archivio.js';
 import { mountSelects } from '/shared/select.js';
 import { mountInfos } from '/shared/sheet.js';
 import { mountRanges } from '/shared/range.js';

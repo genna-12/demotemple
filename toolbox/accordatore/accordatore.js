@@ -88,7 +88,8 @@
  *    acc-custom-name-empty Dai un nome all'accordatura / Give the tuning a name
  *    acc-custom-default    La mia accordatura / My tuning
  *
- * 7) Dati: prefs `tt.accordatore.custom` = [{ id, name, strings: [{ note, oct }] }].
+ * 7) Dati: archivio, collezione `accordature` = { name, strings: [{ note, oct }] }
+ *    per id (spec 18 §3); copia in prefs `tt.accordatore.custom` = [{ id, name, strings }].
  *    Le accordature standard non si toccano; le personalizzate valgono in
  *    entrambe le modalita' (corda piu' vicina in Ascolto, suono in Riferimento).
  */
@@ -101,7 +102,7 @@ import { mountBar } from '/shared/nav.js';
 import { initPwa } from '/shared/pwa.js';
 import { getContext, unlock, needsGesture, onStateChange } from '/shared/audio.js';
 import * as mic from '/shared/mic.js';
-import { prefs } from '/shared/storage.js';
+import { prefs, elenca, scrivi, elimina, onChange as onArchivio, inSolaLettura, LIMITI } from '/shared/archivio.js';
 import { createPitchTracker, noteInfo, noteToHz, nearestIndex } from '/shared/pitch.js';
 import { createStringVoices, voiceFor } from '/shared/strings.js';
 import { mountSelects, mountSelect } from '/shared/select.js';
@@ -137,10 +138,15 @@ export const TUNINGS = {
     chromatic: { key: 'acc-inst-chromatic', strings: [] }
 };
 
-/* Accordature salvate: prefs `tt.accordatore.custom`. Forma tollerante:
-   quello che non torna si scarta invece di rompere la pagina. */
-export function readCustom() {
-    const raw = prefs.get(TOOL, 'custom', []);
+/* Accordature salvate: la verita' e' l'archivio (spec 18 §3), collezione
+   `accordature`, un record { name, strings } per accordatura, id `c<n>`.
+   La prefs `tt.accordatore.custom` resta scritta ancora per una versione
+   (copia veloce per il primo disegno, e chi torna indietro la ritrova).
+   Forma tollerante: quello che non torna si scarta invece di rompere la
+   pagina. */
+const ACCORDATURE = 'accordature';
+
+function cleanCustom(raw) {
     if (!Array.isArray(raw)) return [];
     return raw.filter((x) => x && x.id && Array.isArray(x.strings) && x.strings.length)
         .map((x) => ({
@@ -153,12 +159,56 @@ export function readCustom() {
         .filter((x) => x.strings.length >= CUSTOM_MIN);
 }
 
-export function writeCustom(list) {
-    prefs.set(TOOL, 'custom', list);
+export function readCustom() {
+    return cleanCustom(prefs.get(TOOL, 'custom', []));
 }
 
+const customOrder = (a, b) => (Number(String(a.id).slice(1)) || 0) - (Number(String(b.id).slice(1)) || 0)
+    || String(a.id).localeCompare(String(b.id));
+
+/** Le accordature dell'archivio, nell'ordine in cui sono nate. */
+export async function loadCustom() {
+    const recs = await elenca(ACCORDATURE);
+    return cleanCustom(recs.map((r) => ({ id: r.id, ...(r.dati || {}) }))).sort(customOrder);
+}
+
+const sameEntry = (a, b) => !!a && !!b && a.name === b.name && JSON.stringify(a.strings) === JSON.stringify(b.strings);
+
+let customQueue = Promise.resolve();
+
+function queueCustom(job) {
+    customQueue = customQueue.then(job)
+        .catch((e) => { console.warn('[accordatore] accordature non salvate nell\'archivio:', e && e.message); });
+    return customQueue;
+}
+
+/* Scrive nell'archivio SOLO le voci della lista nuove o cambiate: non mette
+   mai lapidi a quello che la lista non ha (un'altra scheda puo' aver
+   aggiunto un'accordatura che questa lista non conosce ancora). */
+async function storeCustom(list) {
+    const before = await loadCustom();
+    for (const entry of list) {
+        const prev = before.find((x) => x.id === entry.id);
+        if (!sameEntry(prev, entry)) await scrivi(ACCORDATURE, entry.id, { name: entry.name, strings: entry.strings });
+    }
+}
+
+export function writeCustom(list) {
+    prefs.set(TOOL, 'custom', list);
+    return queueCustom(() => storeCustom(list));
+}
+
+/** Elimina UNA accordatura (lapide nell'archivio): solo quella scelta dall'utente. */
+export function deleteCustom(id, list) {
+    prefs.set(TOOL, 'custom', list);
+    return queueCustom(() => elimina(ACCORDATURE, id));
+}
+
+/* id dal tempo: mai riusato, nemmeno quello di un'accordatura eliminata (la
+   sua lapide resta nell'archivio) ne' uno nato nello stesso istante in
+   un'altra scheda; `customOrder` li mette comunque in ordine di nascita */
 const customId = (list) => {
-    let n = 1;
+    let n = Date.now();
     while (list.some((x) => x.id === 'c' + n)) n += 1;
     return 'c' + n;
 };
@@ -919,6 +969,14 @@ export function mountTuner() {
             if (nameInput && nameInput.focus) nameInput.focus();
             return null;
         }
+        if (!editing.id && custom.length >= LIMITI[ACCORDATURE].voci) {
+            if (errorOut) {
+                errorOut.hidden = false;
+                errorOut.setAttribute('data-i18n', 'acc-custom-limit');
+                errorOut.textContent = t('acc-custom-limit');
+            }
+            return null;
+        }
         const entry = {
             id: editing.id || customId(custom),
             name,
@@ -936,7 +994,7 @@ export function mountTuner() {
 
     function removeCustom(id) {
         custom = custom.filter((x) => x.id !== id);
-        writeCustom(custom);
+        deleteCustom(id, custom);
         syncCustomOptions();
         if (confirmBox) confirmBox.hidden = true;
         setInstrument('guitar');
@@ -1016,6 +1074,28 @@ export function mountTuner() {
     root.setAttribute('data-acc-mode', 'reference');
     if (prefs.get(TOOL, 'mode', 'reference') === 'listen') setMode('listen');
 
+    /* la prefs ha disegnato subito; poi vince l'archivio, dopo le scritture
+       gia' in coda di questa scheda. Di nuovo a ogni cambio fatto da
+       un'altra scheda. In sola lettura (migrazione fallita) resta la prefs. */
+    function refreshCustom() {
+        return customQueue.then(() => loadCustom()).then((stored) => {
+            if (inSolaLettura() || JSON.stringify(stored) === JSON.stringify(custom)) return;
+            custom = stored;
+            prefs.set(TOOL, 'custom', custom);
+            syncCustomOptions();
+            const wanted = prefs.get(TOOL, 'instrument', 'guitar');
+            if (isCustom(wanted) && customById(wanted) && ui.instrument !== wanted) setInstrument(wanted);
+            else if (isCustom(ui.instrument) && !customById(ui.instrument)) setInstrument('guitar');
+            else {
+                if (instrument) instrument.value = ui.instrument;
+                if (instrumentSelect) instrumentSelect.set(ui.instrument);
+                renderCustomButtons();
+            }
+        }).catch(() => { /* senza IndexedDB resta la prefs */ });
+    }
+    const customReady = refreshCustom();
+    onArchivio(ACCORDATURE, () => { refreshCustom(); });
+
     return {
         ui,
         setMode,
@@ -1036,7 +1116,8 @@ export function mountTuner() {
         closeEditor,
         saveEditor,
         removeCustom,
-        customList: () => custom
+        customList: () => custom,
+        customReady
     };
 }
 

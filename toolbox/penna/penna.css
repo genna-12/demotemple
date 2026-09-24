@@ -24,6 +24,14 @@
     --pen-c3: #d8a6f0;
     --pen-c4: #e8d268;
     --pen-c5: #f0a0bc;
+    /* Collaudo 23/09 #4/#5: buffer riservato ai due lati di ogni verso per
+       la barra colorata di rima (sinistra) e la lettera di rima (destra),
+       cosi' il testo non ci finisce mai sotto. Stesso valore su .pen-text
+       (textarea) e .pen-line (mirror): sono le due colonne che devono
+       andare a capo negli stessi punti (test "textarea <-> mirror"), quindi
+       ogni pixel di riserva qui va aggiunto identico a entrambe. */
+    --pen-edge-l: 0.4em;
+    --pen-edge-r: 1.6em;
 }
 
 .tb-page-header {
@@ -211,13 +219,21 @@
     height: var(--pen-h, 1.6em);
 }
 
+/* Collaudo 23/09 #7: un <button> allinea il suo contenuto al centro per
+   conto proprio (layout dei controlli nativi), a differenza di uno <span>
+   in display:block che parte dall'alto; quando il verso va a capo (altezza
+   > 1.6em) il numero-bottone finiva quindi a meta' riga invece che sulla
+   prima riga del verso, come lo <span> senza sinalefi. display:flex con
+   align-items:flex-start forza lo stesso allineamento in alto per entrambi. */
 button.pen-n {
     position: relative;
+    display: flex;
+    align-items: flex-start;
+    justify-content: flex-end;
     padding: 0;
     border: none;
     background: none;
     color: inherit;
-    text-align: right;
     text-decoration: underline dotted;
     text-underline-offset: 3px;
     cursor: pointer;
@@ -272,10 +288,18 @@ button.pen-n::before {
     overflow-wrap: anywhere;
 }
 
+/* Collaudo 23/09 #4/#5: padding proprio della riga (non solo del
+   contenitore .pen-lines), cosi' il testo resta dentro il riquadro colorato
+   ma non tocca ne' il bordo sinistro (dove sta la barra, sotto) ne' quello
+   destro (dove sta la lettera, .pen-lettera qui sotto): entrambe sono
+   position:absolute rispetto al riquadro di .pen-line e restano quindi
+   nella fascia di padding, mai sopra ai caratteri. */
 .pen-line {
     position: relative;
     display: block;
     min-height: calc(1.6em);
+    padding-right: var(--pen-edge-r);
+    padding-left: var(--pen-edge-l);
     border-radius: 3px;
 }
 
@@ -333,14 +357,24 @@ button.pen-n::before {
     border: none;
     background: transparent;
     color: var(--text-primary);
-    padding-right: var(--sp-3);
-    padding-left: var(--sp-3);
+    /* Stesso buffer di .pen-line (--pen-edge-l/--pen-edge-r), sommato al
+       padding di base: se cambia solo da una parte il testo va a capo in
+       punti diversi fra textarea e mirror (collaudo 23/09 #4/#5). */
+    padding-right: calc(var(--sp-3) + var(--pen-edge-r));
+    padding-left: calc(var(--sp-3) + var(--pen-edge-l));
     overflow-y: hidden;
     overflow-wrap: anywhere;
 }
 
+/* Collaudo 23/09 #6: senza questa eccezione mirata vince la regola generale
+   di shared/base.css (:focus-visible{outline:...!important}) e mentre si
+   scrive resta un rettangolo arancione alto quanto il testo, sopra al
+   caret. Qui il focus e' gia' evidente (caret lampeggiante + riquadro di
+   .pen-body), quindi lo spegniamo solo su .pen-text invece di alzare la
+   specificita' della regola generale in base.css (fuori dal perimetro di
+   questo giro). */
 .pen-text:focus-visible {
-    outline: none;
+    outline: none !important;
 }
 
 /* Monospazio (spec 14 §3, toggle #pen-mono): stesso font su tutti e tre i

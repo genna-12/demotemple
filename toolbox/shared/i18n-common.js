@@ -104,7 +104,11 @@ export default {
         'e404-title': 'Pagina non trovata',
         'e404-intro': 'Il link che hai seguito non porta da nessuna parte: la pagina è stata spostata oppure non è mai esistita.',
 
-        'audio-resume-msg': 'Tocca per riprendere'
+        'audio-resume-msg': 'Tocca per riprendere',
+
+        'store-migrate-fail': 'Non riesco ad aggiornare i dati salvati: li vedi, ma le modifiche non si salvano. Riprova riaprendo la pagina.',
+        'store-pref-fail': 'Questa impostazione resta solo su questo dispositivo: non entra nei dati della Toolbox.',
+        'store-limit': 'Spazio pieno per questi dati: elimina qualcosa per salvarne altri.'
     },
     en: {
         'tb-back': 'Toolbox',
@@ -197,6 +201,10 @@ export default {
         'e404-title': 'Page not found',
         'e404-intro': 'The link you followed leads nowhere: the page has been moved or never existed.',
 
-        'audio-resume-msg': 'Tap to resume'
+        'audio-resume-msg': 'Tap to resume',
+
+        'store-migrate-fail': 'I cannot update your saved data: you can see it, but changes are not saved. Try reopening the page.',
+        'store-pref-fail': 'This setting stays on this device only: it is not part of your Toolbox data.',
+        'store-limit': 'Storage full for this data: delete something to save more.'
     }
 };

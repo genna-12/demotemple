@@ -34,7 +34,7 @@
 //   z-index) e le tile che si spostano hanno `is-moving`, che in CSS porta la
 //   transizione del FLIP: `.tb-tiles > li.is-moving { transition: transform 180ms }`.
 //
-// PERSISTENZA (storage.prefs, localStorage):
+// PERSISTENZA (archivio.prefs: localStorage + `impostazioni` dell'archivio):
 //   prefs 'dash'/'order'  = [slug...] ordine completo (anche dei nascosti)
 //   prefs 'dash'/'hidden' = [slug...] tolti dalla griglia (stanno nel picker)
 //   Uno strumento nuovo in tools.js si accoda da solo, anche su dashboard personalizzata.
@@ -54,7 +54,7 @@
 
 import { t, apply } from './i18n.js';
 import { TOOLS, FAMILIES } from './tools.js';
-import { prefs } from './storage.js';
+import { prefs } from './archivio.js';
 import { toolIcon } from './nav.js';
 import { toast } from './ui.js';
 

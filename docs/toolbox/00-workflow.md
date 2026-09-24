@@ -87,6 +87,10 @@ indipendenti possono avere spec in parallelo.
 - [x] Editor di Penna: conteggio metrico con sillabe e accenti veri del rimario (Worker, a lotti) quando la lingua del rimario e' quella del testo
 - [x] Penna v2 "quaderno" (spec 16): elenco dei testi, router `#t=<id>`, foglio impostazioni, esporta/importa `.json`, `.txt`/condividi, stampa, gutter misurato sul mirror; validato in Chromium col testo di prova (`contenuti/testo-prova-canto.txt`)
 - [x] Penna sync (spec 17): codice di sei parole, AES-GCM lato client, Pages Function `toolbox/functions/api/quaderno/` + D1 `QUADERNO`; **da attivare da Genna** (guida-genna.md §3c) e informative Iubenda prima di annunciarla
+- [x] T0 (22/09): imbracatura e2e (scripts/e2e, GitHub Actions) e i 13 bloccanti dell'audit; icone v2
+- [x] Penna: stress test con 12 testi (32 prove) e correzioni (23/09)
+- [x] T1 giro 1 (23/09): archivio unico `shared/archivio.js` con 6 migrazioni, tutti gli strumenti migrati, 184 e2e verdi
+- [ ] T1 giro 2: pagina `/impostazioni/`; giro 3: sync generalizzata (schema D1 già definitivo); giro 4: aiuto in-app
 - [ ] Da provare su iPhone: Penna v2 (download in standalone, condividi `.txt`, tastiera aperta, stampa) e PBKDF2 200k iterazioni (spec 17 §6.9)
 - [ ] Trasposizione (T3, solo se la qualità regge). Checklist consegna e Split sheet: **scartati** il 22/09 (utili solo al flusso dello studio)
 - [ ] Prima del merge su `main`: informative Iubenda, prova completa su iPhone (vedi `guida-genna.md` §2)

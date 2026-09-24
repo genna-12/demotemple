@@ -24,7 +24,7 @@ import { getContext, unlock, needsGesture, onStateChange } from '/shared/audio.j
 import { createScheduler } from '/shared/scheduler.js';
 import { createBpmControl } from '/shared/bpm-control.js';
 import { mountRanges } from '/shared/range.js';
-import { prefs } from '/shared/storage.js';
+import { prefs } from '/shared/archivio.js';
 
 const TOOL = 'metronomo';
 const BPM_MIN = 30;

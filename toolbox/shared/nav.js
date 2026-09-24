@@ -80,7 +80,8 @@ import { t, lang, setLang, apply, onChange } from './i18n.js';
 import { TOOLS, FAMILIES } from './tools.js';
 import { FOCUSABLE, focusables, createScrollLock, createInert } from './focus.js';
 import * as mic from './mic.js';
-import { prefs } from './storage.js';
+import { prefs, onAvviso } from './archivio.js';
+import { toast } from './ui.js';
 import { LINGUE, normalizzaCodice, cartella } from './testo/lingue.js';
 
 const MENU_ID = 'tb-menu';
@@ -230,6 +231,11 @@ function fillGroups(groups, current) {
 
 export function mountBar({ page = 'home', titleKey, current } = {}) {
     if (api) return api; // idempotente
+    /* gli avvisi dell'archivio (spec 18 §3) arrivano su ogni pagina con la barra */
+    onAvviso((a) => {
+        if (a.codice === 'migrazione') toast('store-migrate-fail', { timeout: 8000 });
+        else if (a.codice === 'preferenza') toast('store-pref-fail');
+    });
     const cur = current !== undefined ? current : (page === 'home' ? 'home' : null);
 
     const { logo, toggle } = ensureShell();

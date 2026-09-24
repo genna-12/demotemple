@@ -30,7 +30,7 @@
  * quindi cache-first e' sicuro senza bisogno di `cache:'reload'`.
  */
 
-const VERSION = 'tb-v33';
+const VERSION = 'tb-v36';
 const CACHE = 'toolbox-' + VERSION;
 const VENDOR_CACHE = 'toolbox-vendor';
 const RIMARIO_CACHE = 'toolbox-rimario';
@@ -58,6 +58,8 @@ const SHELL = [
     '/shared/i18n.js',
     '/shared/i18n-common.js',
     '/shared/storage.js',
+    '/shared/archivio.js',
+    '/shared/limiti.js',
     '/shared/ui.js',
     '/shared/pwa.js',
     '/shared/range.js',

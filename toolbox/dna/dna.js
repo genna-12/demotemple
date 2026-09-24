@@ -185,13 +185,21 @@ import { mountInfos } from '/shared/sheet.js';
 import { mountRanges } from '/shared/range.js';
 import { getContext, unlock, decode, needsGesture, addWorklet } from '/shared/audio.js';
 import * as mic from '/shared/mic.js';
-import { prefs, get, put, list, del } from '/shared/storage.js';
+import { prefs, leggi, scrivi, elenca, elimina } from '/shared/archivio.js';
 import { fold } from '/shared/analysis/bpm.js';
 import { compatibleWith } from '/shared/analysis/key.js';
 import { gainToTarget, TARGETS } from '/shared/analysis/loudness.js';
 import { readTags, coverBlob } from '/shared/tags.js';
 
 const TOOL = 'dna';
+
+/* Lo storico sta nell'archivio (spec 18 §3), collezione `dna`, id = istante
+   dell'analisi. Stesse forme di storage.js di prima: `list` -> [{ id, value }],
+   `del` lascia la lapide che servira' alla sincronizzazione. */
+const get = (coll, id) => leggi(coll, id);
+const put = (coll, id, value) => scrivi(coll, id, value);
+const list = (coll) => elenca(coll).then((rs) => rs.map((r) => ({ id: r.id, value: r.dati })));
+const del = (coll, id) => elimina(coll, id);
 const WORKER_URL = '/dna/dna-worker.js';
 const CAPTURE_URL = '/shared/capture-worklet.js';
 const CAPTURE_BLOCK = 4096;   // campioni per messaggio dal worklet
@@ -602,9 +610,15 @@ export function mountDna() {
             await put(TOOL, result.at, historyRecord(result));
             const all = await list(TOOL);
             const extra = all.slice(0, Math.max(0, all.length - HISTORY));
-            await Promise.all(extra.map((rec) => del(TOOL, rec.id)));
+            /* taglio automatico oltre HISTORY: cancellazione dura, niente
+               lapidi (non e' un'eliminazione dell'utente, spec 18 §3) */
+            await Promise.all(extra.map((rec) => elimina(TOOL, rec.id, { lapide: false })));
             renderHistory();
-        } catch (e) { /* IndexedDB non disponibile: si vive senza storico */ }
+        } catch (e) {
+            /* archivio pieno o record troppo grande: lo si dice (spec 18 §3);
+               IndexedDB non disponibile: si vive senza storico */
+            if (e && (e.codice === 'limite' || e.codice === 'grande')) toast('store-limit');
+        }
     }
 
     async function removeHistory(id) {
@@ -676,7 +690,10 @@ export function mountDna() {
         try {
             const prev = migrate(await get(TOOL, id), id);
             await put(TOOL, id, { ...prev, name: value, renamed: true });
-        } catch (e) { /* IndexedDB non disponibile: il nome resta quello */ }
+        } catch (e) {
+            if (e && (e.codice === 'limite' || e.codice === 'grande')) toast('store-limit');
+            /* IndexedDB non disponibile: il nome resta quello */
+        }
         await renderHistory();
     }
 

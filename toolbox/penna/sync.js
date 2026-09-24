@@ -32,15 +32,26 @@
  *   collega(codice)         valida, deriva, salva: da qui in poi c'e' rete
  *   scollega({ elimina })   toglie chiave e codice; con elimina svuota il server
  *   sincronizza()           un giro (max 20 documenti)
- *   segnaEliminato(id)      la lapide locale, da chiamare PRIMA di del()
  *   onStato(cb)             notifica a ogni cambio di stato
  *   normalizzaCodice / codiceValido / paroleCodice
  */
 
-import { get, put, del, list } from '/shared/storage.js';
+/*
+ * ARCHIVIO (spec 18 §3). I testi sono record dell'archivio unico, collezione
+ * `penna`: `{ sid, modificato, cancellato, dati }`. Il `sid` lo assegna
+ * l'archivio alla prima scrittura, `modificato` (epoch ms) e' l'orologio che
+ * si confronta con `aggiornato` del server, e la LAPIDE e' il record stesso
+ * con `cancellato:1` (addio collezione `penna-tomb`). Dopo ogni scambio
+ * riuscito il record si segna `sincronizzato`: e' cio' che permette di
+ * potare le lapidi dopo 90 giorni. Lo stato della sincronizzazione (codice,
+ * id, ultima) resta in `penna-sync` via storage.js: e' locale, non si
+ * esporta e non si sincronizza mai.
+ * Il giro generalizzato a tutte le collezioni e' `shared/sync.js` (giro 3).
+ */
+import { get, put, del } from '/shared/storage.js';
+import { elenca, scrivi, elimina, segnaSincronizzato, ripara } from '/shared/archivio.js';
 
 const TOOL = 'penna';
-const TOMBE = 'penna-tomb';
 const SYNC = 'penna-sync';
 const BASE = '/api/quaderno/';
 const COLLEZIONE = 'penna';     // la nostra fetta del quaderno (spec 18 §4)
@@ -320,43 +331,20 @@ export async function scollega({ elimina = false } = {}) {
     derivazione = null;
     try { await del(SYNC, 'quaderno'); } catch (e) { /* niente da fare */ }
     try { await del(SYNC, 'ultima'); } catch (e) { /* niente da fare */ }
-    /* le lapidi non servono piu' a nessuno: senza codice non si sincronizza */
-    try {
-        const tombe = await list(TOMBE);
-        for (const t of tombe) await del(TOMBE, t.id);
-    } catch (e) { /* restano: non danno fastidio */ }
+    /* le lapidi restano nell'archivio: servono anche a esporta/importa, e
+       quelle gia' sincronizzate le pota l'archivio dopo 90 giorni */
     annuncia();
     return stato();
 }
 
-/**
- * La lapide di un testo che sta per essere eliminato (spec 17 §4): va
- * chiamata PRIMA di del('penna', id), perche' il `sid` vive nel documento.
- * Un testo mai sincronizzato non ha `sid` e non lascia nessuna lapide.
- */
-export async function segnaEliminato(id, doc) {
-    try {
-        const d = doc || await get(TOOL, id);
-        const sid = d && d.sid;
-        if (!sid || !/^[0-9a-f]{16}$/.test(String(sid))) return false;
-        /* la lapide deve battere la versione che si aveva sotto gli occhi:
-           con l'orologio indietro `Date.now()` da solo non basterebbe e
-           l'eliminazione non si propagherebbe mai (il server clampa il resto) */
-        await put(TOMBE, String(sid), { aggiornato: Math.max(Date.now(), quando(d) + 1) });
-        return true;
-    } catch (e) {
-        return false;
-    }
-}
+/* La lapide la scrive l'archivio (`elimina`), nel record stesso: stesso
+   `sid`, `modificato` almeno +1 sulla versione che si aveva sotto gli occhi,
+   cosi' batte anche con l'orologio indietro (il server clampa il resto). */
 
 /* ---------------- il giro ---------------- */
 
-const nuovoSid = () => esa(casuali(8));
+const SID_RE = /^[0-9a-f]{16}$/;
 const nuovoIdLocale = () => new Date().toISOString() + '-' + Math.random().toString(36).slice(2, 7);
-const quando = (doc) => {
-    const v = Date.parse((doc && doc.modificato) || '');
-    return Number.isNaN(v) ? 0 : v;
-};
 
 async function chiedi(percorso, opzioni) {
     const r = await fetch(BASE + percorso, {
@@ -411,20 +399,19 @@ async function giroVero() {
         return { ...esito, esito: e.codice === 'server' ? 'server' : (e.codice || 'offline') };
     }
 
-    /* --- quel che c'e' in casa --- */
+    /* --- quel che c'e' in casa: record vivi e lapidi dell'archivio ---
+       prima si avvolge quel che una scheda col codice di prima puo' aver
+       scritto nudo nel frattempo (record senza `v`, `penna-tomb`) */
+    try { await ripara(); } catch (e) { /* in sola lettura: si confronta quel che c'e' */ }
     let locali = [];
-    try { locali = await list(TOOL); } catch (e) { locali = []; }
-    const perSid = new Map();
-    const senzaSid = [];
+    try { locali = await elenca(TOOL, { conCancellati: true }); } catch (e) { locali = []; }
+    const perSid = new Map();      // sid -> { id, doc, mod }
+    const perTomba = new Map();    // sid -> { id, morto, sinc }
     for (const rec of locali) {
-        const doc = rec.value || {};
-        const sid = typeof doc.sid === 'string' && /^[0-9a-f]{16}$/.test(doc.sid) ? doc.sid : null;
-        if (sid) perSid.set(sid, { id: rec.id, doc });
-        else senzaSid.push({ id: rec.id, doc });
+        if (!SID_RE.test(rec.sid)) continue;       // non ancora migrato: al giro dopo
+        if (rec.cancellato) perTomba.set(rec.sid, { id: rec.id, morto: rec.modificato, sinc: rec.sincronizzato });
+        else perSid.set(rec.sid, { id: rec.id, doc: rec.dati || {}, mod: rec.modificato });
     }
-    let tombe = [];
-    try { tombe = await list(TOMBE); } catch (e) { tombe = []; }
-    const perTomba = new Map(tombe.map((t) => [String(t.id), Number((t.value && t.value.aggiornato) || 0)]));
 
     /* --- quel che c'e' sul server --- */
     const remoti = new Map();
@@ -437,21 +424,24 @@ async function giroVero() {
 
     /* --- che cosa fare, in ordine di urgenza --- */
     const lavori = [];
-    /* 1. i testi che non sono mai partiti: il `sid` nasce adesso */
-    for (const l of senzaSid) lavori.push({ tipo: 'nuovo', locale: l });
-    /* 2. le lapidi da propagare */
-    for (const [sid, morto] of perTomba) {
+    const confermate = [];
+    /* 1. le lapidi da propagare (il `sid` c'e' sempre: lo da' l'archivio) */
+    for (const [sid, tomba] of perTomba) {
         const r = remoti.get(sid);
         if (!r) continue;
-        if (r.cancellato) continue;
-        if (r.aggiornato > morto) lavori.push({ tipo: 'scarica', sid, remoto: r, risorto: true });
-        else lavori.push({ tipo: 'cancella', sid, morto });
+        if (r.cancellato) {
+            /* il server lo sa gia': la lapide e' sincronizzata, si potra' potare */
+            if (!(tomba.sinc >= tomba.morto)) confermate.push(tomba);
+            continue;
+        }
+        if (r.aggiornato > tomba.morto) lavori.push({ tipo: 'scarica', sid, remoto: r, tomba });
+        else lavori.push({ tipo: 'cancella', sid, tomba });
     }
-    /* 3. il confronto documento per documento */
+    /* 2. il confronto documento per documento */
     for (const [sid, l] of perSid) {
         if (perTomba.has(sid)) continue;
         const r = remoti.get(sid);
-        const mio = quando(l.doc);
+        const mio = l.mod;
         if (!r) { lavori.push({ tipo: 'invia', sid, locale: l }); continue; }
         if (r.cancellato) {
             if (r.aggiornato >= mio) lavori.push({ tipo: 'sparito', sid, locale: l, remoto: r });
@@ -461,10 +451,14 @@ async function giroVero() {
         if (mio > r.aggiornato) lavori.push({ tipo: 'invia', sid, locale: l });
         else if (r.aggiornato > mio) lavori.push({ tipo: 'scarica', sid, remoto: r, locale: l });
     }
-    /* 4. i testi che qui non ci sono ancora */
+    /* 3. i testi che qui non ci sono ancora */
     for (const [sid, r] of remoti) {
         if (r.cancellato || perSid.has(sid) || perTomba.has(sid)) continue;
         lavori.push({ tipo: 'scarica', sid, remoto: r });
+    }
+
+    for (const t of confermate) {
+        try { await segnaSincronizzato(TOOL, t.id, t.morto); } catch (e) { /* al giro dopo */ }
     }
 
     esito.restano = Math.max(0, lavori.length - MAX_GIRO);
@@ -474,6 +468,8 @@ async function giroVero() {
         try {
             await esegui(lavoro, k, id, esito);
         } catch (e) {
+            /* 'limite' = quaderno locale pieno (ErroreLimite dell'archivio) */
+            if (e && e.codice === 'limite') return { ...esito, esito: 'pieno' };
             if (e && (e.codice === 'pieno' || e.codice === 'troppi')) return { ...esito, esito: e.codice === 'pieno' ? 'pieno' : 'server' };
             if (e && e.codice === 'grande') { esito.esito = 'grande'; continue; }
             if (e && e.codice === 'server') return { ...esito, esito: 'server' };
@@ -486,17 +482,8 @@ async function giroVero() {
 }
 
 async function esegui(lavoro, k, id, esito) {
-    if (lavoro.tipo === 'nuovo') {
-        const sid = nuovoSid();
-        const doc = { ...lavoro.locale.doc, sid };
-        await put(TOOL, lavoro.locale.id, doc);
-        if (typeof ganci.applicaDoc === 'function') ganci.applicaDoc(lavoro.locale.id, doc);
-        await invia(k, id, sid, lavoro.locale.id, doc);
-        esito.inviati++;
-        return;
-    }
     if (lavoro.tipo === 'invia') {
-        await invia(k, id, lavoro.sid, lavoro.locale.id, lavoro.locale.doc);
+        await invia(k, id, lavoro.sid, lavoro.locale.id, lavoro.locale.doc, lavoro.locale.mod);
         esito.inviati++;
         return;
     }
@@ -504,15 +491,17 @@ async function esegui(lavoro, k, id, esito) {
         await chiedi(id + '/' + COLLEZIONE + '/' + lavoro.sid, {
             method: 'DELETE',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ aggiornato: lavoro.morto })
+            body: JSON.stringify({ aggiornato: lavoro.tomba.morto })
         });
+        try { await segnaSincronizzato(TOOL, lavoro.tomba.id, lavoro.tomba.morto); } catch (e) { /* al giro dopo */ }
         esito.eliminati++;
         return;
     }
     if (lavoro.tipo === 'sparito') {
-        /* eliminato su un altro dispositivo: sparisce anche qui, con lapide */
-        await put(TOMBE, lavoro.sid, { aggiornato: lavoro.remoto.aggiornato });
-        try { await del(TOOL, lavoro.locale.id); } catch (e) { /* gia' sparito */ }
+        /* eliminato su un altro dispositivo: sparisce anche qui, e la lapide
+           porta la data del server (gia' sincronizzata) */
+        const quandoRemoto = lavoro.remoto.aggiornato;
+        await elimina(TOOL, lavoro.locale.id, { modificato: quandoRemoto, sincronizzato: quandoRemoto });
         if (typeof ganci.rimuoviDoc === 'function') ganci.rimuoviDoc(lavoro.locale.id);
         esito.eliminati++;
         return;
@@ -527,10 +516,11 @@ async function esegui(lavoro, k, id, esito) {
             /* codice sbagliato o riga corrotta: si lascia stare quel documento */
             return;
         }
-        doc.sid = lavoro.sid;
-        const idLocale = lavoro.locale ? lavoro.locale.id : nuovoIdLocale();
-        await put(TOOL, idLocale, doc);
-        if (lavoro.risorto) { try { await del(TOMBE, lavoro.sid); } catch (e) { /* niente */ } }
+        /* il record prende sid e data del server; una lapide piu' vecchia
+           della copia remota torna viva nello stesso record */
+        const idLocale = lavoro.locale ? lavoro.locale.id : (lavoro.tomba ? lavoro.tomba.id : nuovoIdLocale());
+        const quandoRemoto = Number(voce.aggiornato) || lavoro.remoto.aggiornato;
+        await scrivi(TOOL, idLocale, doc, { sid: lavoro.sid, modificato: quandoRemoto, sincronizzato: quandoRemoto });
         if (typeof ganci.applicaDoc === 'function') ganci.applicaDoc(idLocale, doc);
         esito.ricevuti++;
     }
@@ -546,20 +536,27 @@ async function esegui(lavoro, k, id, esito) {
  * gia' qui con lo stesso criterio, e la data tornata dal server si riscrive
  * nel record locale. Cosi' il giro successivo non trova piu' niente da fare.
  */
-async function invia(k, id, sid, idLocale, doc) {
+async function invia(k, id, sid, idLocale, doc, mod) {
     const blob = await cifra(k, id, COLLEZIONE, sid, doc);
     if (blob.length > MAX_BLOB) { const e = new Error('grande'); e.codice = 'grande'; throw e; }
     const adesso = Date.now();
-    const aggiornato = Math.min(quando(doc) || adesso, adesso + AVANTI);
+    const aggiornato = Math.min(mod || adesso, adesso + AVANTI);
     const r = await chiedi(id + '/' + COLLEZIONE + '/' + sid, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ aggiornato, blob })
     });
     const scritto = Number(r && r.aggiornato);
-    if (!idLocale || !Number.isFinite(scritto) || scritto === quando(doc)) return;
-    /* il server ha clampato (o il nostro orologio era avanti): ci si allinea */
+    if (!idLocale || !Number.isFinite(scritto)) return;
+    if (scritto === mod) {
+        try { await segnaSincronizzato(TOOL, idLocale, mod); } catch (e) { /* niente di grave */ }
+        return;
+    }
+    /* il server ha clampato (o il nostro orologio era avanti): ci si allinea,
+       record e data nel documento */
     const allineato = { ...doc, modificato: new Date(scritto).toISOString() };
-    try { await put(TOOL, idLocale, allineato); } catch (e) { /* si riproverra' al giro dopo */ }
+    try {
+        await scrivi(TOOL, idLocale, allineato, { sid, modificato: scritto, sincronizzato: scritto });
+    } catch (e) { /* si riproverra' al giro dopo */ }
     if (typeof ganci.applicaDoc === 'function') ganci.applicaDoc(idLocale, allineato);
 }

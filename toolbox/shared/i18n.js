@@ -4,6 +4,8 @@
 // vetrina ma origin diverso: il valore resta separato). Default "it".
 // ?lang=it|en all'arrivo vince, si salva e si toglie dall'URL.
 
+import { impostaPref } from './archivio.js';
+
 const STORAGE_KEY = 'tinyTempleLang';
 const DEFAULT_LANG = 'it';
 
@@ -26,6 +28,9 @@ function writeStoredLang(l) {
     } catch {
         /* storage non disponibile: si ignora, la lingua resta in memoria */
     }
+    /* la verita' e' l'archivio (spec 18 §3), localStorage la copia veloce
+       che lang-boot.js legge prima del primo paint */
+    impostaPref(STORAGE_KEY, l).catch(() => { /* senza IndexedDB resta la copia */ });
 }
 
 function resolveInitialLang() {

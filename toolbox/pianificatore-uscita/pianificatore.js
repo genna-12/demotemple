@@ -63,7 +63,7 @@
  *   pia-copy-manual pia-plans-empty pia-no-upcoming pia-distro-label
  *   pia-distro-<valore> pia-all pia-upcoming, piu' `info-aria` (comune).
  *
- * SALVATAGGIO (spec §4). storage.put('pianificatore', <id>, {
+ * SALVATAGGIO (spec §4, archivio della spec 18 §3). collezione 'uscite', <id>, {
  *   titolo, tipo, data, profilo, distributore, note, rimosse,
  *   tappe: [{ id, titolo, testo, data, fatta, origine, chiaveTitolo,
  *            chiaveTesto, chiaveFoglio, vars, anticipo, spostata, peso }],
@@ -80,7 +80,7 @@ import { mountBar } from '/shared/nav.js';
 import { initPwa } from '/shared/pwa.js';
 import { mountSelects } from '/shared/select.js';
 import { openSheet, closeSheet } from '/shared/sheet.js';
-import { prefs, get, put, list, del } from '/shared/storage.js';
+import { prefs, leggi, scrivi, elenca, elimina } from '/shared/archivio.js';
 import { TIPI, PROFILI } from '/pianificatore-uscita/tappe.js';
 import {
     generaTappe, nuovaPersonale, ricalcola, decora, conteggio, prossime,
@@ -88,8 +88,16 @@ import {
 } from '/pianificatore-uscita/timeline.js';
 import { icsDaPiano, nomeFile } from '/pianificatore-uscita/ics.js';
 
-const TOOL = 'pianificatore';            // chiave di storage e prefs (spec §4)
+const TOOL = 'pianificatore';            // chiave delle prefs (spec §4)
 const SLUG = 'pianificatore-uscita';     // cartella e voce di menu
+/* I piani stanno nell'archivio (spec 18 §3), collezione `uscite`; le prefs
+   restano `tt.pianificatore.*`. Stesse forme di storage.js di prima:
+   `list` -> [{ id, value }], `del` lascia la lapide. */
+const USCITE = 'uscite';
+const get = (_tool, id) => leggi(USCITE, id);
+const put = (_tool, id, value) => scrivi(USCITE, id, value);
+const list = () => elenca(USCITE).then((rs) => rs.map((r) => ({ id: r.id, value: r.dati })));
+const del = (_tool, id) => elimina(USCITE, id);
 /* "Non ancora scelto": nessun nome da mostrare nella riga della consegna. */
 const SENZA_DISTRO = ['nessuno', 'nonscelto', ''];
 const senzaDistro = (v) => SENZA_DISTRO.indexOf(v || '') >= 0;

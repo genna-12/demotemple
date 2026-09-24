@@ -56,6 +56,7 @@ export default {
         'acc-custom-delete-yes': 'Elimina',
         'acc-custom-delete-no': 'Annulla',
         'acc-custom-name-empty': "Dai un nome all'accordatura",
+        'acc-custom-limit': "Hai raggiunto il massimo di accordature salvate: eliminane una per aggiungerne un'altra",
         'acc-custom-default': 'La mia accordatura'
     },
     en: {
@@ -105,6 +106,7 @@ export default {
         'acc-custom-delete-yes': 'Delete',
         'acc-custom-delete-no': 'Cancel',
         'acc-custom-name-empty': 'Give the tuning a name',
+        'acc-custom-limit': 'You have reached the maximum of saved tunings: delete one to add another',
         'acc-custom-default': 'My tuning'
     }
 };

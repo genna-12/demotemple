@@ -125,10 +125,10 @@
  *   penna-delete-ask, penna-deleted, penna-share-fail, penna-it-only,
  *   penna-new, penna-syllables, penna-sinalefe, penna-untitled,
  *   penna-verses, penna-list-title, penna-gone, penna-imported,
- *   penna-import-fail, penna-copy-manual, piu' le comuni
+ *   penna-import-fail, penna-copy-manual, penna-limit, penna-too-big, piu' le comuni
  *   (search, copy, share, delete, cancel, close).
  *
- * Tutto il resto (documenti in IndexedDB, salvataggio automatico, colori,
+ * Tutto il resto (documenti nell'archivio, salvataggio automatico, colori,
  * condivisione, preferenze) sta qui sotto.
  */
 
@@ -140,18 +140,26 @@ import { mountBar } from '/shared/nav.js';
 import { initPwa } from '/shared/pwa.js';
 import { mountSelects } from '/shared/select.js';
 import { mountInfos, openSheet, closeSheet } from '/shared/sheet.js';
-import { prefs, get, put, list, del } from '/shared/storage.js';
+import { prefs, leggi, scrivi, elenca, elimina as eliminaDallArchivio } from '/shared/archivio.js';
 import { filtra, fondi, riassunto, idDaHash, hashDiId } from '/penna/elenco.js';
 import { condividi as condividiFileTesto, esporta, leggiFileScelto, leggiQuaderno, stampa } from '/penna/file.js';
 import {
     avvia as avviaSync, stato as statoSync, onStato as onStatoSync, creaCodice, collega,
-    scollega, sincronizza, segnaEliminato
+    scollega, sincronizza
 } from '/penna/sync.js';
 import { versoMetrico, contaVerso, ultimaParola, parole as paroleDelVerso } from '/shared/testo/metrica.js';
 import { chiaveRima } from '/shared/testo/fonetica.js';
 import { LINGUE, CODICI, normalizzaCodice, cartella, moduli } from '/shared/testo/lingue.js';
 
 const TOOL = 'penna';
+
+/* I testi stanno nell'archivio (spec 18 §3), collezione `penna`: `sid` e
+   data del record li tiene l'archivio, qui si vede solo il documento. Stesse
+   forme di storage.js di prima: `list` -> [{ id, value }]. Oltre i limiti
+   `scrivi` butta un ErroreLimite (codice 'limite' | 'grande'). */
+const get = (coll, id) => leggi(coll, id);
+const put = (coll, id, doc) => scrivi(coll, id, doc);
+const list = (coll) => elenca(coll).then((rs) => rs.map((r) => ({ id: r.id, value: r.dati })));
 const WORKER_URL = '/penna/rimario-worker.js';
 const DATA_BASE = '/penna/data/';
 const CACHE_PACCHETTI = 'toolbox-rimario';
@@ -335,6 +343,8 @@ export function mountPenna() {
     let trattiTimer = null;
     let catalogo = CATALOGO_BASE;
     let regoleDoc = null;      // moduli della lingua del documento
+    let regoleLingua = 'it';   // la lingua a cui appartengono regoleDoc
+    let regoleGiro = 0;        // l'ultima caricaRegoleDoc() chiesta
     let scaricamento = null;   // { annulla() } mentre un pacchetto scende
 
     /* ---------------- vista e router dell'hash (spec 16 §3) ---------------- */
@@ -451,6 +461,9 @@ export function mountPenna() {
         prefs.set(TOOL, 'mono', ui.mono);
         root.classList.toggle('is-mono', ui.mono);
         if (monoTgl) monoTgl.checked = ui.mono;
+        /* un altro font va a capo altrove: le altezze dei versi cambiano
+           anche se la colonna resta larga uguale (e il ResizeObserver tace) */
+        pianificaMisura();
     }
 
     function setColori(on) {
@@ -463,27 +476,67 @@ export function mountPenna() {
 
     /* ---------------- gutter e colori ---------------- */
 
+    /* Analisi metrica per verso, in cache: a ogni tasto cambia un verso
+       solo, gli altri si ripescano da qui. La cache vale finche' non cambia
+       niente di quello che versoMetrico() legge oltre al verso e alle sue
+       dialefi (lingua, regole, rimario, classi, tratti arrivati): la firma
+       qui sotto lo controlla a ogni giro e, se cambia, la svuota. */
+    const metricaCache = new Map();
+    let metricaFirma = [];
+    let trattiGiro = 0;              // cresce a ogni tratto messo in trattiCache
+
+    function analisiVerso(riga, dial) {
+        const k = riga + '\u0001' + (dial == null ? '' : JSON.stringify(dial));
+        let a = metricaCache.get(k);
+        if (!a) {
+            a = versoMetrico(riga, { dialefe: dial, classi, ...opzioniLingua() });
+            if (metricaCache.size > 4000) metricaCache.clear();
+            metricaCache.set(k, a);
+        }
+        return a;
+    }
+
     /** Un numero per verso, con le sinalefi toccabili (spec §3). */
     function renderGutter() {
         if (!gutter || !textIn) return;
         const righe = String(textIn.value || '').split('\n');
         const dialefe = (ui.doc && ui.doc.dialefe) || {};
         chiediTratti(textIn.value || '');
-        gutter.textContent = '';
+        const firma = [ui.docLingua, ui.lingua, ui.emuet, pronto, classi, regoleDoc, rimario, trattiGiro];
+        if (firma.some((v, i) => v !== metricaFirma[i])) { metricaCache.clear(); metricaFirma = firma; }
         gutter.setAttribute('aria-hidden', 'true');
+        const stimato = t('penna-estimated');
+        const nodi = gutter.children;
+        /* i nodi che ci sono gia' si riusano (tengono il loro --pen-h): si
+           tocca solo quel che cambia, cosi' il reflow resta piccolo */
         righe.forEach((riga, i) => {
-            const a = versoMetrico(riga, { dialefe: dialefe[String(i)], classi, ...opzioniLingua() });
+            const a = analisiVerso(riga, dialefe[String(i)]);
             const n = ui.conteggio === 'grammaticale' ? a.grammaticale : a.metrico;
             const haSin = a.sinalefi.length > 0 && ui.conteggio === 'metrico';
-            const nodo = document.createElement(haSin ? 'button' : 'span');
-            if (haSin) { nodo.type = 'button'; nodo.setAttribute('data-pen-line', String(i)); }
-            nodo.className = 'pen-n' + (a.stimato ? ' is-stimato' : '') + (haSin ? ' is-sinalefe' : '');
-            nodo.setAttribute('data-riga', String(i));
-            nodo.textContent = riga.trim() ? String(n) : '';
-            if (a.stimato) nodo.setAttribute('aria-description', t('penna-estimated'));
-            gutter.appendChild(nodo);
+            const tag = haSin ? 'BUTTON' : 'SPAN';
+            let nodo = nodi[i];
+            if (!nodo || nodo.tagName !== tag) {
+                const nuovo = document.createElement(tag.toLowerCase());
+                if (haSin) nuovo.type = 'button';
+                if (nodo) {
+                    const h = nodo.style.getPropertyValue('--pen-h');
+                    if (h) nuovo.style.setProperty('--pen-h', h);
+                    gutter.replaceChild(nuovo, nodo);
+                } else gutter.appendChild(nuovo);
+                nodo = nuovo;
+            }
+            const classe = 'pen-n' + (a.stimato ? ' is-stimato' : '') + (haSin ? ' is-sinalefe' : '');
+            if (nodo.className !== classe) nodo.className = classe;
+            if (haSin && nodo.getAttribute('data-pen-line') !== String(i)) nodo.setAttribute('data-pen-line', String(i));
+            if (nodo.getAttribute('data-riga') !== String(i)) nodo.setAttribute('data-riga', String(i));
+            const testo = riga.trim() ? String(n) : '';
+            if (nodo.textContent !== testo) nodo.textContent = testo;
+            if (a.stimato) {
+                if (nodo.getAttribute('aria-description') !== stimato) nodo.setAttribute('aria-description', stimato);
+            } else if (nodo.hasAttribute('aria-description')) nodo.removeAttribute('aria-description');
         });
-        /* i .pen-n sono nuovi: hanno perso --pen-h, si rimisura */
+        while (nodi.length > righe.length) gutter.removeChild(gutter.lastChild);
+        /* i .pen-n nuovi non hanno ancora --pen-h: si rimisura */
         pianificaMisura();
         annunciaVerso();
     }
@@ -509,15 +562,24 @@ export function mountPenna() {
      */
     function renderColori() {
         if (!linesBox || !textIn) return;
-        linesBox.textContent = '';
         linesBox.setAttribute('aria-hidden', 'true');
         const righe = String(textIn.value || '').split('\n');
         const mappa = new Map();
-        gruppiDiRima(textIn.value, regoleDoc).forEach((g) => mappa.set(g.riga, g));
+        /* le regole della lingua del testo non sono ancora arrivate (o sono
+           quelle di un'altra lingua): il righello si disegna lo stesso, i
+           colori arrivano con caricaRegoleDoc(), mai quelli sbagliati */
+        if (regoleLingua === ui.docLingua) gruppiDiRima(textIn.value, regoleDoc).forEach((g) => mappa.set(g.riga, g));
+        const spans = linesBox.children;
+        /* span gia' in pagina riusati: si riscrive solo il verso cambiato */
         righe.forEach((riga, i) => {
             const g = mappa.get(i);
-            const span = document.createElement('span');
-            span.className = 'pen-line' + (g ? ' pen-rima-' + g.colore : '');
+            const classe = 'pen-line' + (g ? ' pen-rima-' + g.colore : '');
+            const firma = classe + '\u0001' + (g ? g.lettera : '') + '\u0001' + riga;
+            let span = spans[i];
+            if (!span) { span = document.createElement('span'); linesBox.appendChild(span); }
+            if (span.__penFirma === firma) return;
+            span.__penFirma = firma;
+            if (span.className !== classe) span.className = classe;
             span.textContent = riga;
             if (g) {
                 const lettera = document.createElement('i');
@@ -525,8 +587,8 @@ export function mountPenna() {
                 lettera.textContent = g.lettera;
                 span.appendChild(lettera);
             }
-            linesBox.appendChild(span);
         });
+        while (spans.length > righe.length) linesBox.removeChild(linesBox.lastChild);
         pianificaMisura();
     }
 
@@ -564,17 +626,47 @@ export function mountPenna() {
            di sfasamento in fondo alla pagina. */
         const alte = new Array(n);
         for (let i = 0; i < n; i++) alte[i] = versi[i].getBoundingClientRect().height;
-        const totale = linesBox.getBoundingClientRect().height;
-        const minimo = bodyBox ? bodyBox.clientHeight : 0;
-        if (!totale) return;                    // non ancora in pagina
-        /* --- scritture --- */
+        const box = linesBox.getBoundingClientRect();
+        if (!box.height) return;                // non ancora in pagina
+        /* Altezza del CONTENUTO, non del box: #pen-lines sta nella stessa
+           cella di griglia della textarea e ne viene stirato, quindi la sua
+           altezza non scende mai sotto quella della textarea (23/09: 300
+           versi cancellati, 9000 px rimasti). Dal bordo alto al fondo
+           dell'ultimo verso, piu' il padding sotto. */
+        const ultimo = versi[versi.length - 1].getBoundingClientRect();
+        const contenuto = ultimo.bottom - box.top + (parseFloat(getComputedStyle(linesBox).paddingBottom) || 0);
+        const attuale = parseFloat(textIn.style.height) || 0;
+        /* --- scritture --- (solo quel che cambia: niente invalidazioni a vuoto) */
         for (let i = 0; i < n; i++) {
             /* .pen-gutter e' una colonna flex: senza flex-shrink:0 i numeri
                si comprimerebbero quando il testo supera il riquadro */
-            numeri[i].style.setProperty('--pen-h', alte[i].toFixed(3) + 'px');
-            numeri[i].style.flexShrink = '0';
+            const h = alte[i].toFixed(3) + 'px';
+            if (numeri[i].style.getPropertyValue('--pen-h') !== h) numeri[i].style.setProperty('--pen-h', h);
+            if (numeri[i].style.flexShrink !== '0') numeri[i].style.flexShrink = '0';
         }
-        textIn.style.height = Math.max(totale, minimo) + 'px';
+        /* Il minimo e' il riquadro (la textarea lo riempie, un tocco sotto
+           l'ultimo verso ci scrive dentro). Ma .pen-body cresce con la
+           textarea: se questa e' piu' alta del testo, la misura del riquadro
+           e' falsata da lei. Allora si toglie l'altezza, si legge, si
+           rimette: il mirror resta in pagina, quindi lo scroll non puo'
+           accorciarsi sotto il testo; lo si conserva comunque. */
+        let minimo = 0;
+        if (bodyBox) {
+            if (attuale > contenuto + 0.5) {
+                const pagina = document.scrollingElement;
+                const suBody = bodyBox.scrollTop;
+                const suPagina = pagina ? pagina.scrollTop : 0;
+                textIn.style.height = '0px';
+                minimo = bodyBox.clientHeight;
+                textIn.style.height = Math.max(contenuto, minimo) + 'px';
+                if (bodyBox.scrollTop !== suBody) bodyBox.scrollTop = suBody;
+                if (pagina && pagina.scrollTop !== suPagina) pagina.scrollTop = suPagina;
+                return;
+            }
+            minimo = bodyBox.clientHeight;
+        }
+        const alta = Math.max(contenuto, minimo) + 'px';
+        if (textIn.style.height !== alta) textIn.style.height = alta;
     }
 
     /** ResizeObserver sulla colonna di scrittura, con quiete di 100 ms. */
@@ -585,6 +677,9 @@ export function mountPenna() {
             misuraTimer = setTimeout(() => { misuraTimer = null; pianificaMisura(); }, MISURA_DOPO);
         });
         osservatore.observe(wrapBox);
+        /* il riquadro cambia altezza col viewport anche quando la colonna
+           no: il minimo della textarea va ricalcolato */
+        if (bodyBox) osservatore.observe(bodyBox);
     }
 
     /* ---------------- documenti ---------------- */
@@ -609,7 +704,7 @@ export function mountPenna() {
                (spec 17 §3); senza sincronizzazione attiva non fa niente */
             pianificaGiro();
         } catch (e) {
-            setStatus(statusOut, { kind: 'error', key: 'penna-save-fail' });
+            setStatus(statusOut, { kind: 'error', key: e && e.codice === 'grande' ? 'penna-too-big' : 'penna-save-fail' });
         }
     }
 
@@ -625,15 +720,16 @@ export function mountPenna() {
         ui.docLingua = normalizzaCodice(ui.doc.lingua || ui.lingua);
         ui.emuet = !!ui.doc.emuet;
         ui.doc.lingua = ui.docLingua;
-        caricaRegoleDoc();
         renderLingue();
         if (titleIn) titleIn.value = ui.doc.titolo || '';
         if (textIn) textIn.value = ui.doc.testo || '';
         /* setVista annuncia il titolo in aria-live (spec 16 §6.11); la riga
            diventa "Salvato" al primo salvataggio, non prima. */
         setVista('editor');
-        renderGutter();
-        renderColori();
+        /* disegna numeri e mirror col testo gia' in pagina: in italiano
+           subito, nelle altre lingue il righello subito e i colori appena
+           arrivano le regole giuste */
+        caricaRegoleDoc();
         prefs.set(TOOL, 'ultimo', id);
         dopoEditor();
     }
@@ -654,7 +750,15 @@ export function mountPenna() {
     async function nuovo() {
         const id = nuovoId();
         const doc = documentoVuoto('', ui.lingua);
-        try { await put(TOOL, id, doc); } catch (e) { /* si apre lo stesso, si risalva dopo */ }
+        try {
+            await put(TOOL, id, doc);
+        } catch (e) {
+            /* quaderno pieno (spec 18 §3): lo si dice, e il testo non nasce */
+            if (e && e.codice === 'limite') { toast('penna-limit'); return; }
+            /* archivio in sola lettura (migrazione fallita): niente testi che non si salvano */
+            if (e && e.codice === 'migrazione') { toast('store-migrate-fail'); return; }
+            /* altrimenti si apre lo stesso, si risalva dopo */
+        }
         aggiornaRecord(id, doc);
         focusTitolo = true;
         vai(id);
@@ -784,11 +888,9 @@ export function mountPenna() {
         if (si) { try { si.focus({ preventScroll: true }); } catch (e) { /* niente fuoco */ } }
     }
     async function elimina(id) {
-        /* la lapide va scritta PRIMA: il `sid` vive dentro il documento
-           (spec 17 §4). Senza sincronizzazione attiva non c'e' `sid` e non
-           succede niente. */
-        await segnaEliminato(id, ui.id === id ? ui.doc : null);
-        try { await del(TOOL, id); } catch (e) { /* niente da fare */ }
+        /* l'archivio lascia la lapide nel record stesso (spec 18 §3): la
+           sincronizzazione la porta agli altri dispositivi */
+        try { await eliminaDallArchivio(TOOL, id); } catch (e) { /* niente da fare */ }
         const box = el('pen-delete-confirm');
         if (box) box.hidden = true;
         daEliminare = null;
@@ -1058,7 +1160,13 @@ export function mountPenna() {
         const lista = [...nuove];
         if (rimario) {
             /* sul thread principale la risposta e' sincrona */
-            lista.forEach((parola) => trattiCache.set(lingua + '|' + parola, rimario.trattiDiParola(parola)));
+            let nuovo = false;
+            lista.forEach((parola) => {
+                const tr = rimario.trattiDiParola(parola);
+                if (tr) nuovo = true;
+                trattiCache.set(lingua + '|' + parola, tr);
+            });
+            if (nuovo) trattiGiro++;     // l'analisi in cache dei versi e' vecchia
             return;
         }
         if (!worker) return;
@@ -1076,6 +1184,7 @@ export function mountPenna() {
                 if (tr) nuovo = true;
                 trattiCache.set(k, tr);
             });
+            if (nuovo) trattiGiro++;
             if (nuovo && dove === ui.lingua) {
                 clearTimeout(trattiTimer);
                 trattiTimer = setTimeout(() => { renderGutter(); }, 30);
@@ -1098,13 +1207,29 @@ export function mountPenna() {
         };
     }
 
-    async function caricaRegoleDoc() {
-        try {
-            regoleDoc = ui.docLingua === 'it' ? null : await moduli(ui.docLingua);
-        } catch (e) {
-            regoleDoc = null;          // niente regole: si conta all'italiana
-        }
+    /**
+     * Carica i moduli della lingua del testo e ridisegna numeri E colori
+     * (23/09: si rifaceva solo il gutter, le rime restavano quelle della
+     * lingua di prima fino al tasto successivo). L'italiano e' in pagina:
+     * niente attesa. Se nel frattempo la lingua cambia di nuovo, vince
+     * l'ultima richiesta.
+     */
+    function caricaRegoleDoc() {
+        const lingua = ui.docLingua;
+        const giro = ++regoleGiro;
+        const fatto = (regole) => {
+            if (giro !== regoleGiro) return;
+            regoleDoc = regole;
+            regoleLingua = lingua;
+            renderGutter();
+            renderColori();
+        };
+        if (lingua === 'it') { fatto(null); return Promise.resolve(); }
+        /* intanto il righello: colori spenti finche' le regole non arrivano */
         renderGutter();
+        renderColori();
+        /* niente regole: si conta all'italiana */
+        return moduli(lingua).then(fatto, () => fatto(null));
     }
 
     function installato(codice) {
@@ -1546,9 +1671,13 @@ export function mountPenna() {
         try { tutti = await list(TOOL); } catch (e) { tutti = []; }
         const locali = tutti.map((rec) => ({ id: rec.id, ...(rec.value || {}) }));
         const esito = fondi(locali, testi);
+        let pieno = false;
         for (const rec of esito.daScrivere) {
             const { id, ...doc } = rec;
-            try { await put(TOOL, id, doc); } catch (e) { /* un record in meno, gli altri passano */ }
+            try { await put(TOOL, id, doc); } catch (e) {
+                /* un record in meno, gli altri passano; il quaderno pieno si dice */
+                if (e && e.codice === 'limite') pieno = true;
+            }
         }
         await caricaElenco();
         /* il testo aperto puo' essere stato sovrascritto: si rilegge */
@@ -1558,7 +1687,7 @@ export function mountPenna() {
                 if (doc && ui.vista === 'editor') apri(ui.id, doc);
             } catch (e) { /* si tiene quello in memoria */ }
         }
-        toast(t('penna-imported', { n: esito.nuovi, m: esito.aggiornati }));
+        toast(pieno ? 'penna-limit' : t('penna-imported', { n: esito.nuovi, m: esito.aggiornati }));
         return esito;
     }
 
@@ -1798,6 +1927,12 @@ export function mountPenna() {
     /* ---------------- avvio ---------------- */
 
     mountSelects(document);
+    /* i font arrivano dopo il primo disegno: a capo e altezze dei versi
+       cambiano, la colonna no (il ResizeObserver non lo vede) */
+    if (document.fonts) {
+        if (document.fonts.ready) document.fonts.ready.then(() => pianificaMisura(), () => {});
+        if (typeof document.fonts.addEventListener === 'function') document.fonts.addEventListener('loadingdone', () => pianificaMisura());
+    }
     mountInfos(document);
     applicaSegnaposto();
     /* il catalogo e' un modulo precacheato: nessuna richiesta di rete */

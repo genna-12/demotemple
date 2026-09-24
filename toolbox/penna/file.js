@@ -14,6 +14,8 @@
 
 export const MARCA = 'tiny-temple-penna';
 export const VERSIONE_FILE = 1;
+/* la busta di tutto l'archivio (spec 18 §3/§5, `esportaTutto()`) */
+export const MARCA_ARCHIVIO = 'tiny-temple-toolbox';
 
 const due = (n) => String(n).padStart(2, '0');
 
@@ -61,6 +63,10 @@ function ripulisci(v) {
  * Legge un file esportato. -> [{ id, ...documento }] (anche vuoto, se il
  * quaderno lo era) oppure null se non e' un quaderno: allora non si tocca
  * niente e si dice `penna-import-fail` (spec 16 §6.7).
+ * Accetta tre forme: la busta del quaderno (`tipo: tiny-temple-penna`, quella
+ * che Penna esporta, anche dai file gia' scaricati), un array nudo di testi,
+ * e la busta di tutto l'archivio della spec 18 (`app: tiny-temple-toolbox`),
+ * di cui prende i testi vivi della collezione `penna`.
  */
 export function leggiQuaderno(testoJson) {
     let dati = null;
@@ -70,6 +76,14 @@ export function leggiQuaderno(testoJson) {
         return fuori.length ? fuori : null;      // un array qualunque non basta
     }
     if (!dati || typeof dati !== 'object') return null;
+    if (dati.app === MARCA_ARCHIVIO && dati.collezioni && typeof dati.collezioni === 'object') {
+        const recs = dati.collezioni.penna;
+        if (!Array.isArray(recs)) return null;
+        return recs
+            .filter((r) => r && !r.cancellato && r.dati && typeof r.dati === 'object')
+            .map((r) => ripulisci({ ...r.dati, id: typeof r.id === 'string' ? r.id : '' }))
+            .filter(Boolean);
+    }
     if (dati.tipo !== MARCA || !Array.isArray(dati.testi)) return null;
     return dati.testi.map(ripulisci).filter(Boolean);
 }
