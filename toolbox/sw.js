@@ -12,6 +12,9 @@
  * resta IN ATTESA finche' l'utente non tocca "Aggiorna" (pwa.js): mai
  * cambiare codice sotto un metronomo che sta suonando.
  * `node scripts/check.mjs` segnala le VERSION dimenticate.
+ * VERSION e' ripetuta in `shared/versione.js` (la mostra la pagina
+ * Impostazioni: questo e' uno script classico e non si puo' importare):
+ * si alzano insieme, e check.mjs controlla che coincidano.
  *
  * Cosa NON passa di qui: richieste verso altri domini e richieste non GET.
  * `/vendor/*` ha una cache a parte (`toolbox-vendor`) che sopravvive ai
@@ -30,7 +33,7 @@
  * quindi cache-first e' sicuro senza bisogno di `cache:'reload'`.
  */
 
-const VERSION = 'tb-v36';
+const VERSION = 'tb-v39';
 const CACHE = 'toolbox-' + VERSION;
 const VENDOR_CACHE = 'toolbox-vendor';
 const RIMARIO_CACHE = 'toolbox-rimario';
@@ -60,6 +63,8 @@ const SHELL = [
     '/shared/storage.js',
     '/shared/archivio.js',
     '/shared/limiti.js',
+    '/shared/versione.js',
+    '/shared/pacchetti-lingua.js',
     '/shared/ui.js',
     '/shared/pwa.js',
     '/shared/range.js',
@@ -69,6 +74,7 @@ const SHELL = [
     '/shared/focus.js',
     '/shared/select.js',
     '/shared/sheet.js',
+    '/shared/aiuto.js',
     '/shared/tempo-math.js',
     '/shared/bpm-control.js',
     '/shared/intro.js',
@@ -119,41 +125,53 @@ const TOOLS = [
     '/metronomo/metronomo.js',
     '/metronomo/metronomo.css',
     '/metronomo/i18n.js',
+    '/metronomo/aiuto.js',
 
     '/accordatore/',
     '/accordatore/accordatore.js',
     '/accordatore/accordatore.css',
     '/accordatore/i18n.js',
+    '/accordatore/aiuto.js',
 
     '/calcolatore-tempo/',
     '/calcolatore-tempo/calcolatore-tempo.js',
     '/calcolatore-tempo/calcolatore-tempo.css',
     '/calcolatore-tempo/i18n.js',
+    '/calcolatore-tempo/aiuto.js',
 
     '/dna/',
     '/dna/dna.js',
     '/dna/dna.css',
     '/dna/i18n.js',
+    '/dna/aiuto.js',
     '/dna/dna-worker.js',
 
     '/penna/',
     '/penna/penna.js',
     '/penna/penna.css',
     '/penna/i18n.js',
+    '/penna/aiuto.js',
     '/penna/elenco.js',
     '/penna/file.js',
     '/penna/rimario-worker.js',
     '/penna/pacchetti.js',
-    '/penna/sync.js',
+    '/shared/sync.js',
     '/penna/parole-codice.js',
 
     '/pianificatore-uscita/',
     '/pianificatore-uscita/pianificatore.js',
     '/pianificatore-uscita/pianificatore.css',
     '/pianificatore-uscita/i18n.js',
+    '/pianificatore-uscita/aiuto.js',
     '/pianificatore-uscita/tappe.js',
     '/pianificatore-uscita/timeline.js',
-    '/pianificatore-uscita/ics.js'
+    '/pianificatore-uscita/ics.js',
+
+    '/impostazioni/',
+    '/impostazioni/impostazioni.js',
+    '/impostazioni/impostazioni.css',
+    '/impostazioni/i18n.js',
+    '/impostazioni/aiuto.js'
 ];
 
 const PRECACHE = SHELL.concat(TOOLS);

@@ -53,20 +53,22 @@
 //   consenso c'e'; "Revoca" chiama mic.revoke() e ferma le tracce.
 //   Sprite: serve il simbolo #tb-icon-mic.
 //
-//   PACCHETTI DEL RIMARIO (spec 14b §3), accanto alla riga del microfono:
-//     <div id="tb-packs-row" class="tb-packs-row" hidden>
-//       <span data-i18n="pack-installed">Pacchetti del rimario</span>
-//       <ul id="tb-pack-list"></ul>
-//       <div id="tb-pack-confirm" hidden><span data-i18n="pack-remove-ask">Rimuovo?</span>
-//         <button type="button" id="tb-pack-yes" class="tb-btn">Rimuovi</button>
-//         <button type="button" id="tb-pack-no" class="tb-btn tb-btn--ghost">Annulla</button></div></div>
-//   nav.js riempie #tb-pack-list (nome, peso, "Rimuovi"), svuota la cache
-//   `toolbox-rimario` e aggiorna le preferenze; la riga resta nascosta se
-//   non c'e' nessun pacchetto installato.
+//   PACCHETTI DEL RIMARIO: dal giro 2 della spec 18 stanno nella pagina
+//   Impostazioni (§5). Se una pagina ha ancora il vecchio #tb-packs-row nel
+//   menu, nav.js lo toglie dal DOM: niente due posti per la stessa cosa.
+//
+//   IMPOSTAZIONI (spec 18 §5): in fondo alla lista degli strumenti, nav.js
+//   aggiunge da solo
+//     <section class="tb-menu-group tb-menu-group--settings"><ul class="tb-menu-list">
+//       <li><a class="tb-menu-link tb-menu-settings" href="/impostazioni/">
+//             svg.tb-menu-link-icon (ingranaggio: #tb-icon-impostazioni se la
+//             pagina ce l'ha nello sprite, altrimenti disegnato qui)
+//             <span class="tb-menu-link-name" data-i18n = menu-impostazioni></span></a>
+//   con aria-current="page" quando current === 'impostazioni'.
 //
 // CHIAVI i18n USATE QUI: bar-logo-aria, bar-menu-open, bar-menu-close, menu-all,
 //   fam-<id> e tool-<slug> (da tools.js), pill-soon, mic-live-aria,
-//   mic-state-granted, mic-state-unasked, mic-revoke.
+//   mic-state-granted, mic-state-unasked, mic-revoke, menu-impostazioni.
 //
 // L'installazione NON e' gestita qui: il blocco nel menu (#tb-menu-install,
 // #tb-menu-ios, .tb-menu-manual dentro .tb-menu-install-group) e' passato a
@@ -80,9 +82,8 @@ import { t, lang, setLang, apply, onChange } from './i18n.js';
 import { TOOLS, FAMILIES } from './tools.js';
 import { FOCUSABLE, focusables, createScrollLock, createInert } from './focus.js';
 import * as mic from './mic.js';
-import { prefs, onAvviso } from './archivio.js';
+import { onAvviso } from './archivio.js';
 import { toast } from './ui.js';
-import { LINGUE, normalizzaCodice, cartella } from './testo/lingue.js';
 
 const MENU_ID = 'tb-menu';
 const SVG_NS = 'http://www.w3.org/2000/svg';
@@ -99,9 +100,11 @@ function el(tag, cls, attrs) {
     return n;
 }
 
+/* `tb-ridotte` su <html>: "Animazioni ridotte" delle Impostazioni (lang-boot.js) */
 function reducedMotion() {
-    return typeof window.matchMedia === 'function'
-        && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    return document.documentElement.classList.contains('tb-ridotte')
+        || (typeof window.matchMedia === 'function'
+            && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
 }
 
 /** Icona dallo sprite di pagina (<symbol id="tb-icon-<slug>">). */
@@ -223,6 +226,57 @@ function fillGroups(groups, current) {
         section.append(eyebrow, list);
         groups.appendChild(section);
     });
+    groups.appendChild(settingsGroup(current));
+}
+
+/* Ingranaggio (tratto 2, come le icone dello sprite): pagine senza il
+   simbolo #tb-icon-impostazioni lo ricevono disegnato qui. */
+const GEAR = 'M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 '
+    + '1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83'
+    + 'l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82'
+    + 'l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 '
+    + '1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09'
+    + 'a1.65 1.65 0 0 0-1.51 1z';
+
+function gearIcon() {
+    if (document.getElementById('tb-icon-impostazioni')) return toolIcon('impostazioni', 'tb-menu-link-icon');
+    const svg = document.createElementNS(SVG_NS, 'svg');
+    svg.setAttribute('class', 'tb-menu-link-icon');
+    svg.setAttribute('aria-hidden', 'true');
+    svg.setAttribute('focusable', 'false');
+    svg.setAttribute('viewBox', '0 0 24 24');
+    svg.setAttribute('fill', 'none');
+    svg.setAttribute('stroke', 'currentColor');
+    svg.setAttribute('stroke-width', '2');
+    svg.setAttribute('stroke-linecap', 'round');
+    svg.setAttribute('stroke-linejoin', 'round');
+    const c = document.createElementNS(SVG_NS, 'circle');
+    c.setAttribute('cx', '12');
+    c.setAttribute('cy', '12');
+    c.setAttribute('r', '3');
+    const p = document.createElementNS(SVG_NS, 'path');
+    p.setAttribute('d', GEAR);
+    svg.append(c, p);
+    return svg;
+}
+
+/** La voce "Impostazioni" (spec 18 §5), in fondo agli strumenti. */
+function settingsGroup(current) {
+    const section = el('section', 'tb-menu-group tb-menu-group--settings');
+    const list = el('ul', 'tb-menu-list');
+    const li = document.createElement('li');
+    const link = el('a', 'tb-menu-link tb-menu-settings', { href: '/impostazioni/' });
+    const name = el('span', 'tb-menu-link-name', { 'data-i18n': 'menu-impostazioni' });
+    name.textContent = 'Impostazioni';
+    link.append(gearIcon(), name);
+    if (current === 'impostazioni') {
+        link.setAttribute('aria-current', 'page');
+        link.classList.add('is-current');
+    }
+    li.appendChild(link);
+    list.appendChild(li);
+    section.appendChild(list);
+    return section;
 }
 
 /* ---------- blocco scroll (iOS compreso) ---------- */
@@ -424,93 +478,14 @@ export function mountBar({ page = 'home', titleKey, current } = {}) {
     mic.onStateChange(renderMic);
     renderMic();
 
-    /* ---- pacchetti del rimario: riga nel menu, accanto al microfono ----
-       Stessa idea della revoca del microfono: quello che l'utente ha
-       scaricato deve potersi togliere da qualsiasi pagina, senza andare a
-       cercarlo. La riga sparisce se non c'e' niente da rimuovere. */
+    /* ---- pacchetti del rimario: ora stanno in Impostazioni (spec 18 §5).
+       Il vecchio markup nel menu, se una pagina lo ha ancora, se ne va. */
     const packsRow = document.getElementById('tb-packs-row');
-    const packList = document.getElementById('tb-pack-list');
-    const PESI = { it: 1215000, en: 1612000, fr: 1072000, es: 449000 };
-
-    const installati = () => {
-        const v = prefs.get('penna', 'pacchetti', []);
-        return Array.isArray(v) ? v.filter((c) => !!LINGUE[c]) : [];
-    };
-
-    async function rimuoviPacchetto(codice) {
-        const lang = normalizzaCodice(codice);
-        try {
-            if (typeof caches !== 'undefined') {
-                const cache = await caches.open('toolbox-rimario');
-                const dir = cartella(lang, '/penna/data/');
-                const chiavi = await cache.keys();
-                await Promise.all(chiavi
-                    .filter((req) => String(req.url).indexOf(dir) !== -1)
-                    .map((req) => cache.delete(req)));
-            }
-        } catch (e) { /* niente Cache Storage: restano le preferenze */ }
-        const resta = installati().filter((c) => c !== lang);
-        prefs.set('penna', 'pacchetti', resta);
-        if (normalizzaCodice(prefs.get('penna', 'lingua', 'it')) === lang) {
-            prefs.set('penna', 'lingua', resta[0] || 'it');
-        }
-        renderPacks();
-        return resta;
-    }
-
-    function renderPacks() {
-        if (!packsRow) return;
-        const lista = installati();
-        packsRow.hidden = lista.length === 0;
-        if (!packList) return;
-        packList.textContent = '';
-        lista.forEach((codice) => {
-            const spec = LINGUE[codice];
-            const li = document.createElement('li');
-            li.className = 'tb-pack';
-            li.setAttribute('data-tb-pack', codice);
-            const nome = document.createElement('span');
-            nome.className = 'tb-pack-name';
-            const mb = (PESI[codice] || 0) / 1048576;
-            nome.textContent = spec.nome + (mb ? ' · ' + mb.toFixed(1) + ' MB' : '');
-            const via = document.createElement('button');
-            via.type = 'button';
-            via.className = 'tb-btn tb-btn--ghost tb-pack-remove';
-            via.setAttribute('data-tb-pack-remove', codice);
-            via.setAttribute('data-i18n', 'pack-remove');
-            via.textContent = t('pack-remove');
-            via.addEventListener('click', () => {
-                const conferma = document.getElementById('tb-pack-confirm');
-                if (!conferma) { rimuoviPacchetto(codice); return; }
-                conferma.hidden = false;
-                conferma.setAttribute('data-tb-pack', codice);
-            });
-            li.append(nome, via);
-            packList.appendChild(li);
-        });
-    }
-
-    const packYes = document.getElementById('tb-pack-yes');
-    const packNo = document.getElementById('tb-pack-no');
-    if (packYes) {
-        packYes.addEventListener('click', () => {
-            const conferma = document.getElementById('tb-pack-confirm');
-            const codice = conferma ? conferma.getAttribute('data-tb-pack') : null;
-            if (conferma) conferma.hidden = true;
-            if (codice) rimuoviPacchetto(codice);
-        });
-    }
-    if (packNo) {
-        packNo.addEventListener('click', () => {
-            const conferma = document.getElementById('tb-pack-confirm');
-            if (conferma) conferma.hidden = true;
-        });
-    }
-    renderPacks();
+    if (packsRow) packsRow.remove();
 
     apply(document); // logo/hamburger sono radici a se': si traduce tutto il documento
     setToggle(false);
 
-    api = { open, close, isOpen: () => isOpen, renderPacks, rimuoviPacchetto };
+    api = { open, close, isOpen: () => isOpen };
     return api;
 }

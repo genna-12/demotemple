@@ -1,0 +1,433 @@
+/* ========================================================
+   TINY TEMPLE TOOLBOX - IMPOSTAZIONI (spec 18 §5)
+   Pagina lunga a sezioni, non una tile: card di vetro una sotto l'altra,
+   colonna centrale stretta (640px) anche dentro il .tb-shell da 1100px
+   delle altre pagine. Richiede tokens.css/base.css/components.css
+   (stesso ordine di ogni altro <slug>.css).
+   ======================================================== */
+
+.imp-list {
+    max-width: 640px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-5);
+}
+
+/* Card di vetro (stessa ricetta di .pen-sync-code/.tb-menu-panel): un
+   riquadro per sezione, cosi' ognuna resta leggibile a se' scorrendo. */
+.imp-sezione {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-3);
+    padding: var(--sp-5);
+    border-radius: var(--r-xl);
+    background: var(--glass-bg);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    border: 1px solid var(--glass-border);
+    border-top: 1px solid var(--glass-border-top);
+    box-shadow: var(--glass-shadow);
+}
+
+/* Titolo di sezione eyebrow, stessa resa di .pen-settings-heading
+   (penna/penna.css): maiuscolo, piccolo, muted, non un vero h2 visivo
+   anche se lo e' nel markup (ordine dei titoli per chi naviga a schema). */
+.imp-sezione-title {
+    margin: 0;
+    font-family: var(--font-text);
+    font-size: 0.78rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-muted);
+}
+
+/* --- Aspetto: righe con toggle --- */
+.imp-toggle-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-3);
+    min-height: var(--tap);
+}
+
+.imp-toggle-label {
+    font-size: 0.95rem;
+    color: var(--text-primary);
+}
+
+/* Bersaglio da 44 px (spec 18 §7.9) senza cambiare il disegno della pillola
+   di components.css (52x32): 6 px di bordo trasparente tutt'intorno, lo
+   sfondo resta dentro (padding-box). Il pomello si sposta come prima. */
+.imp-toggle-row .tb-toggle {
+    box-sizing: border-box;
+    width: 64px;
+    height: 44px;
+    border: 6px solid transparent;
+    background-clip: padding-box;
+}
+
+/* --- Microfono --- */
+.imp-mic-stato {
+    margin: 0;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+}
+
+/* --- Sincronizzazione (spec 18 §4/§5): markup e flusso portati da Penna
+   (spec 17 §3/§5, prima #pen-sync/penna.css). Il riquadro del codice e'
+   condiviso con Penna via .tb-sync-code (shared/components.css); qui restano
+   solo gli stili specifici di questa pagina. --- */
+.imp-sync-state {
+    min-height: 20px;
+    margin: 0;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+.imp-sync-view {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-3);
+}
+
+.imp-sync-view[hidden] {
+    display: none;
+}
+
+.imp-sync-intro {
+    margin: 0;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+}
+
+.imp-sync-warn {
+    margin: 0;
+    font-size: 0.78rem;
+    color: var(--text-muted);
+}
+
+.imp-sync-input-row {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-1);
+}
+
+.imp-sync-input-label {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
+
+.imp-sync-input {
+    width: 100%;
+    min-height: var(--tap);
+    padding: 0 var(--sp-3);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--r-pill);
+    background: var(--surface-1);
+    color: var(--text-primary);
+    font-size: 1rem;
+}
+
+.imp-sync-input:focus-visible {
+    border-color: var(--accent-orange);
+}
+
+.imp-sync-last {
+    margin: 0;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
+
+/* Stessa griglia a due colonne di .imp-dati-actions: una coppia di azioni
+   per riga, ognuna a larghezza piena. */
+.imp-sync-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--sp-2);
+}
+
+.imp-sync-actions .tb-btn {
+    width: 100%;
+}
+
+/* Bottone unico di una vista (es. "Collega" nella vista have): a tutta
+   riga invece di meta'. */
+.imp-sync-actions--single .tb-btn {
+    grid-column: 1 / -1;
+}
+
+/* Annulla (vista create/have): sempre a tutta riga, sotto la coppia di
+   azioni primarie quando ce n'e' una (create) o sotto Collega (have, dove
+   .imp-sync-actions--single lo fa gia', qui e' ridondante ma innocuo). */
+.imp-sync-actions .imp-sync-cancel {
+    grid-column: 1 / -1;
+}
+
+/* Vista "on": Sincronizza/Mostra codice in coppia, Scollega (terzo item)
+   a tutta riga. */
+.imp-sync-actions > #imp-sync-unlink {
+    grid-column: 1 / -1;
+}
+
+/* #imp-sync-wipe sta fuori dalla griglia (azione distruttiva, mai in
+   coppia con le altre): a tutta riga, font e spaziatura ridotti perche'
+   "Scollega ed elimina dal server" non vada a capo a 390px. */
+.imp-sync-wipe-btn {
+    width: 100%;
+    font-size: 0.72rem;
+    letter-spacing: 1px;
+    padding-left: var(--sp-3);
+    padding-right: var(--sp-3);
+}
+
+/* Conferma inline dello scollega-ed-elimina (niente confirm() del
+   browser), stessa ricetta di .pen-delete-confirm in Penna. */
+.imp-sync-wipe-confirm {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--sp-2);
+    padding: var(--sp-3);
+    border-radius: var(--r-md);
+    background: var(--surface-1);
+    font-size: 0.85rem;
+    color: var(--text-primary);
+}
+
+.imp-sync-wipe-confirm[hidden] {
+    display: none;
+}
+
+.imp-sync-wipe-confirm span {
+    flex: 1;
+    min-width: 140px;
+}
+
+/* "Cosa sincronizzare": un interruttore per collezione, stessa riga
+   .imp-toggle-row usata in Aspetto. */
+.imp-sync-coll-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-2);
+}
+
+/* --- Pacchetti lingua --- */
+.imp-pacchetti-vuoto {
+    margin: 0;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+}
+
+.imp-pacchetti-vuoto[hidden] {
+    display: none;
+}
+
+.imp-pacchetti-lista {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-3);
+    list-style: none;
+}
+
+/* Griglia a due colonne, non flex-wrap: il testo (nome + peso/stato) puo'
+   essere lungo quanto vuole ("Français", "1022 KB") senza spingere mai il
+   bottone a capo. Le quattro righe restano allineate: colonna azioni a
+   larghezza fissa, uguale per tutte. */
+.imp-pack-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: var(--sp-3);
+    padding: var(--sp-3);
+    border-radius: var(--r-md);
+    background: var(--surface-1);
+    border: 1px solid var(--glass-border);
+}
+
+.imp-pack-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.imp-pack-nome {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 0.95rem;
+    color: var(--text-primary);
+}
+
+.imp-pack-meta {
+    display: flex;
+    gap: var(--sp-2);
+    min-width: 0;
+    font-size: 0.78rem;
+    color: var(--text-muted);
+}
+
+.imp-pack-meta > * {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Colonna fissa della griglia (solo un bottone alla volta e' visibile:
+   larghezza fissa cosi' non cambia da riga a riga se una mostra "Scarica"
+   e l'altra "Rimuovi"). */
+.imp-pack-actions {
+    display: flex;
+    justify-content: flex-end;
+    flex-shrink: 0;
+}
+
+.imp-pack-actions .tb-btn {
+    min-width: 108px;
+}
+
+/* Solo uno dei due bottoni e' presente alla volta per riga (impostazioni.js
+   mette [hidden] su quello che non serve: un pacchetto o si scarica o si
+   rimuove, mai entrambi insieme). */
+.imp-pack-scarica[hidden],
+.imp-pack-rimuovi[hidden] {
+    display: none;
+}
+
+/* --- Dati --- */
+.imp-dati-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--sp-2);
+}
+
+.imp-dati-actions .tb-btn {
+    width: 100%;
+}
+
+.imp-campo {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-2);
+}
+
+.imp-campo-label {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+}
+
+.imp-sep {
+    margin: 0;
+    border: none;
+    border-top: 1px solid var(--glass-border);
+}
+
+.imp-cancella-apri {
+    align-self: flex-start;
+}
+
+.imp-cancella-box {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-3);
+    padding: var(--sp-4);
+    border-radius: var(--r-md);
+    background: var(--surface-1);
+    border: 1px solid var(--glass-border);
+}
+
+.imp-cancella-box[hidden] {
+    display: none;
+}
+
+.imp-cancella-box > p {
+    margin: 0;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+}
+
+.imp-cancella-etichetta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-1);
+    margin: 0;
+    font-size: 0.85rem;
+    color: var(--text-primary);
+}
+
+.imp-cancella-parola {
+    font-family: var(--font-title);
+    letter-spacing: 0.05em;
+    color: var(--accent-orange);
+}
+
+/* Campo di testo generico (stessa ricetta di .tb-input nel pianificatore,
+   ripetuta qui: ogni pagina definisce la propria, niente classe condivisa
+   fuori da components.css). */
+.imp-input {
+    box-sizing: border-box;
+    width: 100%;
+    min-height: var(--tap);
+    padding: 0 var(--sp-3);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--r-md);
+    background: var(--bg-color);
+    color: var(--text-primary);
+    font-family: var(--font-text);
+    font-size: 0.95rem;
+}
+
+.imp-input:focus-visible {
+    border-color: var(--accent-orange);
+}
+
+.imp-cancella-actions {
+    display: flex;
+    gap: var(--sp-2);
+    flex-wrap: wrap;
+}
+
+/* --- Informative --- */
+.imp-informative-links {
+    display: flex;
+    gap: var(--sp-4);
+    flex-wrap: wrap;
+}
+
+.imp-informative-links a {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--tap);
+    color: var(--text-primary);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .imp-informative-links a:hover {
+        color: var(--accent-orange);
+    }
+}
+
+/* --- Versione dell'app --- */
+.imp-versione-testo {
+    margin: 0;
+    font-size: 0.85rem;
+    font-variant-numeric: tabular-nums;
+    color: var(--text-muted);
+}
+
+/* --- Mobile: meno padding laterale nelle card, stesso principio di
+   .tb-shell sotto 768px in base.css --- */
+@media (max-width: 480px) {
+    .imp-sezione {
+        padding: var(--sp-4);
+    }
+
+    .imp-dati-actions {
+        grid-template-columns: 1fr;
+    }
+}

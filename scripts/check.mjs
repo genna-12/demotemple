@@ -311,6 +311,68 @@ else {
     if (notCached.length === 0) ok('toolbox/sw.js: script e import delle voci in precache sono tutti in precache');
     else bad('toolbox/sw.js: script/import non in precache (offline si romperebbero)', [...new Set(notCached)]);
     checkVersion(`${TB}/sw.js`, files, tbVersion);
+    // spec 18 §5: la versione mostrata in Impostazioni sta in shared/versione.js (sw.js e' classico, non la importa)
+    if (!tbExists('shared/versione.js')) infos.push('toolbox/shared/versione.js assente: controllo parita\' VERSION saltato');
+    else {
+      const vSrc = fs.readFileSync(path.join(ROOT, TB, 'shared/versione.js'), 'utf8');
+      const shown = (vSrc.match(/export\s+const\s+VERSIONE\s*=\s*'([^']+)'/) || [])[1], day = (vSrc.match(/export\s+const\s+DATA_VERSIONE\s*=\s*'([^']+)'/) || [])[1];
+      if (shown !== tbVersion) bad('toolbox/shared/versione.js: VERSIONE diversa da VERSION di toolbox/sw.js', [`versione.js: ${shown ?? 'non trovata'}`, `sw.js: ${tbVersion}`]);
+      else if (!day || !/^\d{4}-\d{2}-\d{2}$/.test(day)) bad('toolbox/shared/versione.js: DATA_VERSIONE assente o non AAAA-MM-GG');
+      else ok(`toolbox/shared/versione.js: VERSIONE=${shown} coincide con sw.js (${day})`);
+    }
+  }
+}
+// spec 18 §3-4: la Function del quaderno tiene una COPIA dei limiti (niente import fuori da functions/)
+{
+  const limRel = 'shared/limiti.js', fnRel = 'functions/api/quaderno/[[route]].js';
+  const tabella = (rel, nome) => {
+    const src = fs.readFileSync(path.join(ROOT, TB, rel), 'utf8');
+    const m = new RegExp('const\\s+' + nome + '\\s*=\\s*Object\\.freeze\\(\\{').exec(src);
+    if (!m) return null;
+    const open = m.index + m[0].length - 1;
+    let depth = 0, close = -1;
+    for (let i = open; i < src.length; i++) { if (src[i] === '{') depth++; else if (src[i] === '}' && --depth === 0) { close = i; break; } }
+    if (close < 0) return null;
+    try { return vm.runInContext('(' + src.slice(open, close + 1) + ')', vm.createContext({ KB: 1024, Object }), { timeout: 2000 }); } catch { return null; }
+  };
+  if (!tbExists(limRel) || !tbExists(fnRel)) infos.push('toolbox: limiti.js o la Function del quaderno assenti: confronto dei limiti saltato');
+  else {
+    const client = tabella(limRel, 'LIMITI'), server = tabella(fnRel, 'LIMITI_SERVER');
+    if (!client || !server) bad('toolbox: tabella dei limiti non leggibile', [`${limRel}: ${client ? 'ok' : 'LIMITI non trovata'}`, `${fnRel}: ${server ? 'ok' : 'LIMITI_SERVER non trovata'}`]);
+    else {
+      const diff = [];
+      for (const c of new Set([...Object.keys(client), ...Object.keys(server)])) {
+        const a = client[c], b = server[c];
+        if (!a || !b) diff.push(`"${c}": solo in ${a ? limRel : fnRel}`);
+        else if (a.voci !== b.voci || a.byte !== b.byte) diff.push(`"${c}": limiti.js ${a.voci}/${a.byte} B, Function ${b.voci}/${b.byte} B`);
+      }
+      if (diff.length) bad('toolbox: LIMITI_SERVER della Function diversa da LIMITI di shared/limiti.js', diff);
+      else ok(`toolbox: LIMITI_SERVER della Function coincide con shared/limiti.js (${Object.keys(client).length} collezioni)`);
+      // MAX_BLOB / MAX_CORPO: stessi valori, e il record piu' grande di ogni collezione deve starci cifrato
+      const costante = (rel, nome) => {
+        const src = fs.readFileSync(path.join(ROOT, TB, rel), 'utf8');
+        const m = new RegExp('const\\s+' + nome + '\\s*=\\s*([^;]+);').exec(src);
+        if (!m) return null;
+        try { return vm.runInContext('(' + m[1] + ')', vm.createContext({ KB: 1024 }), { timeout: 1000 }); } catch { return null; }
+      };
+      const tetti = [];
+      for (const nome of ['MAX_BLOB', 'MAX_CORPO']) {
+        const a = costante(limRel, nome), b = costante(fnRel, nome);
+        if (!Number.isFinite(a) || !Number.isFinite(b)) tetti.push(`${nome}: non trovata (${limRel}: ${a}, ${fnRel}: ${b})`);
+        else if (a !== b) tetti.push(`${nome}: limiti.js ${a}, Function ${b}`);
+      }
+      const maxBlob = costante(limRel, 'MAX_BLOB'), maxCorpo = costante(limRel, 'MAX_CORPO');
+      if (Number.isFinite(maxBlob) && Number.isFinite(maxCorpo)) {
+        /* base64 di IV(12) + JSON {"id":…,"dati":…} (margine 128 byte) + tag(16) */
+        for (const [c, l] of Object.entries(client)) {
+          const cifrato = 4 * Math.ceil((l.byte + 128 + 28) / 3);
+          if (cifrato > maxBlob) tetti.push(`"${c}": ${l.byte} B di record diventano ~${cifrato} caratteri base64, oltre MAX_BLOB ${maxBlob}`);
+        }
+        if (maxCorpo < maxBlob + 1024) tetti.push(`MAX_CORPO ${maxCorpo} non tiene un PUT con un blob da MAX_BLOB ${maxBlob}`);
+      }
+      if (tetti.length) bad('toolbox: tetti del blob cifrato non allineati fra client, Function e limiti per collezione', tetti);
+      else ok(`toolbox: MAX_BLOB=${maxBlob} e MAX_CORPO=${maxCorpo} coincidono e tengono il record piu' grande di ogni collezione`);
+    }
   }
 }
 if (tbExists('_headers')) checkHeaders(`${TB}/_headers`, parseHeaders(`${TB}/_headers`));

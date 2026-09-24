@@ -25,6 +25,7 @@ import { init, t, lang, onChange } from '/shared/i18n.js';
 import { pressFeedback, toast } from '/shared/ui.js';
 import { mountBar } from '/shared/nav.js';
 import { initPwa } from '/shared/pwa.js';
+import { mountAiuto } from '/shared/aiuto.js';
 import { prefs } from '/shared/archivio.js';
 import { mountSelects } from '/shared/select.js';
 import { mountInfos } from '/shared/sheet.js';
@@ -409,4 +410,6 @@ if (typeof document !== 'undefined' && document.getElementById('calc')) {
         installSection: document.querySelector('.tb-menu-install-group')
     });
     mountCalculator();
+    /* «Come funziona», riga del primo avvio, tip dei pulsanti icona (spec 18 §6) */
+    try { mountAiuto({ slug: TOOL }); } catch (e) { console.warn('[aiuto] non montato:', e && e.message); }
 }

@@ -29,9 +29,11 @@
  * (`tt.archivio.potatura` in localStorage, locale e mai sincronizzata).
  *
  * CANCELLAZIONE DURA: `elimina(coll, id, { lapide: false })` toglie il record
- * senza lapide. Solo per le potature locali automatiche (es. lo storico del
- * DNA oltre le 200 voci), mai per un'eliminazione chiesta dall'utente: quella
- * deve arrivare agli altri dispositivi.
+ * senza lapide, ma SOLO se non e' mai stato sincronizzato (il server non lo
+ * ha). Un record gia' sincronizzato riceve invece una lapide "silenziosa"
+ * (origine 'potatura'): senza, il giro dopo lo riscaricherebbe. Mai per
+ * un'eliminazione chiesta dall'utente. Lo storico del DNA oltre le 200 voci
+ * usa ormai una lapide normale.
  *
  * VERSIONE DELLO SCHEMA in `impostazioni/schema` (dentro IndexedDB, non in
  * localStorage: se l'utente svuota quello, le migrazioni non ripartono).
@@ -84,10 +86,14 @@
  *   scrivi(coll, id|null, dati, opz)      -> id   (opz: sid, modificato, sincronizzato)
  *   elenca(coll, { conCancellati })       -> [{ id, sid, modificato, cancellato, dati }] per id
  *   elimina(coll, id, opz)                lapide; -> true se c'era un record vivo
- *                                         (opz.lapide:false = cancellazione dura)
+ *                                         (opz.lapide:false = cancellazione dura, ma
+ *                                         solo se il record non e' mai stato
+ *                                         sincronizzato; se no lapide "silenziosa")
  *   svuota(coll?)                         cancella DAVVERO (niente lapidi): serve a
  *                                         "Cancella tutto" e a importa/sostituisci
- *   onChange(coll|'*', cb)                cambi fatti da ALTRE schede (BroadcastChannel)
+ *   onChange(coll|'*', cb, { locali })    cambi fatti da ALTRE schede (BroadcastChannel);
+ *                                         con locali:true anche quelli di questa
+ *   (scrivi ed elimina accettano opz.origine: 'sync' la mette la sincronizzazione)
  *   esportaTutto()                        -> { app, schema, esportato, collezioni, preferenze }
  *   importaTutto(json, { strategia })     'unisci' (per sid, vince il `modificato`
  *                                         piu' recente) | 'sostituisci' (quel che
@@ -648,7 +654,7 @@ export async function scrivi(coll, id, dati, opz = {}) {
         : (prec ? numero(prec.sincronizzato) : NaN);
     const idFinale = chiave === null ? sid : chiave;
     await sPut(coll, idFinale, avvolgi(dati, { sid, modificato, sincronizzato }));
-    annuncia(coll, idFinale, 'scrivi');
+    annuncia(coll, idFinale, 'scrivi', opz.origine);
     return idFinale;
 }
 
@@ -674,20 +680,29 @@ export async function elimina(coll, id, opz = {}) {
     const prima = await sGet(coll, id);
     if (prima === undefined) return false;
     const prec = comeRecord(prima, 0);
-    if (opz.lapide === false) {
-        /* potatura locale automatica: niente lapide, niente propagazione */
+    if (opz.lapide === false && !Number.isFinite(numero(prec.sincronizzato))) {
+        /* potatura locale automatica di un record che il server non ha mai
+           avuto: niente lapide, niente propagazione */
         await sDel(coll, id);
-        annuncia(coll, id, 'elimina');
+        annuncia(coll, id, 'elimina', 'potatura');
         return !prec.cancellato;
     }
+    /* un record gia' sincronizzato non si toglie mai "in silenzio": senza
+       lapide il giro dopo lo riscaricherebbe dal server. La lapide della
+       potatura e' normale (sparisce ovunque), ma "silenziosa": origine
+       'potatura', gli strumenti non la trattano come un'eliminazione
+       dell'utente. */
+    const origine = opz.lapide === false ? 'potatura' : opz.origine;
     if (prec.cancellato && !Number.isFinite(opz.modificato)) return false;
     const modificato = Number.isFinite(opz.modificato)
         ? opz.modificato
         : Math.max(Date.now(), prec.modificato + 1);
+    /* `opz.sid`: la sincronizzazione riporta al sid "di chiave" una lapide
+       delle impostazioni nata col sid a caso (vedi shared/sync.js) */
     await sPut(coll, id, avvolgi(null, {
-        sid: prec.sid, modificato, cancellato: 1, sincronizzato: numero(opz.sincronizzato)
+        sid: sidValido(opz.sid) ? opz.sid : prec.sid, modificato, cancellato: 1, sincronizzato: numero(opz.sincronizzato)
     }));
-    annuncia(coll, id, 'elimina');
+    annuncia(coll, id, 'elimina', origine);
     return !prec.cancellato;
 }
 
@@ -757,23 +772,36 @@ function apriCanale() {
     return canale;
 }
 
-function annuncia(coll, id, tipo) {
+function annuncia(coll, id, tipo, origine) {
+    const m = { coll, id: id === undefined ? null : id, tipo };
+    if (origine) m.origine = String(origine);
     try {
         const c = apriCanale();
-        if (c) c.postMessage({ coll, id: id === undefined ? null : id, tipo });
+        if (c) c.postMessage(m);
     } catch (e) { /* nessun'altra scheda da avvisare */ }
+    /* e a chi, in QUESTA scheda, ha chiesto anche i cambi di qui: dopo, in
+       un microtask, cosi' chi scrive finisce il suo giro prima */
+    const locale = { ...m, locale: true };
+    ascolti.forEach((a) => {
+        if (!a.locali || (a.coll !== '*' && a.coll !== coll)) return;
+        Promise.resolve().then(() => a.cb(locale)).catch(() => { /* un ascoltatore rotto non ferma gli altri */ });
+    });
 }
 
 /**
- * `cb({ coll, id, tipo })` a ogni cambio fatto da un'ALTRA scheda dello
- * stesso browser (tipo: scrivi | elimina | svuota | importa). Le scritture di
- * questa scheda non tornano indietro: chi scrive sa gia' che cosa ha fatto.
+ * `cb({ coll, id, tipo, origine? })` a ogni cambio fatto da un'ALTRA scheda
+ * dello stesso browser (tipo: scrivi | elimina | svuota | importa). Le
+ * scritture di questa scheda non tornano indietro: chi scrive sa gia' che
+ * cosa ha fatto. Con `{ locali: true }` arrivano ANCHE quelle di questa
+ * scheda, con `locale: true`: servono alla sincronizzazione (che parte 3 s
+ * dopo un salvataggio) e agli strumenti, che ridisegnano quando un documento
+ * lo scrive la sincronizzazione (`origine: 'sync'`) e non la loro interfaccia.
  * `coll` '*' = tutte. -> funzione per smettere di ascoltare.
  */
-export function onChange(coll, cb) {
+export function onChange(coll, cb, { locali = false } = {}) {
     if (typeof cb !== 'function') return () => {};
     apriCanale();
-    const a = { coll: coll || '*', cb };
+    const a = { coll: coll || '*', cb, locali: !!locali };
     ascolti.add(a);
     return () => { ascolti.delete(a); };
 }
@@ -977,12 +1005,16 @@ export async function importaTutto(json, { strategia = 'unisci' } = {}) {
 
 const LINGUA = 'tinyTempleLang';
 /* locali e mai sincronizzate anche se il prefisso le farebbe portabili */
-const LOCALI = new Set(['tt.penna.pacchetti', 'tt.penna.rimario', 'tt.penna.ultimo']);
-const PORTABILI = /^(tinyTempleLang|tt\.shared\.a4|tt\.dna\.target|tt\.(dash|penna|metronomo|calcolatore-tempo)\.[^.]+)$/;
+/* e locali per scelta (giro 3 di T1): la disposizione della dashboard
+   (`tt.dash.*`) e il volume del metronomo dipendono dal dispositivo */
+const LOCALI = new Set(['tt.penna.pacchetti', 'tt.penna.rimario', 'tt.penna.ultimo', 'tt.metronomo.volume']);
+const PORTABILI = /^(tinyTempleLang|tt\.shared\.(?:a4|animazioni-ridotte|salta-intro)|tt\.dna\.target|tt\.(penna|metronomo|calcolatore-tempo)\.[^.]+)$/;
 
 /** Vero per le preferenze che vanno nell'archivio (spec 18 §3 punto 6). */
 export function portabile(chiave) {
-    return typeof chiave === 'string' && PORTABILI.test(chiave) && !LOCALI.has(chiave);
+    /* `tt.<slug>.hint` (riga del primo avvio, shared/aiuto.js): per dispositivo */
+    return typeof chiave === 'string' && PORTABILI.test(chiave) && !LOCALI.has(chiave)
+        && !/^tt\.[^.]+\.hint$/.test(chiave);
 }
 
 /* in localStorage la lingua e' una stringa nuda, le `tt.*` sono JSON */

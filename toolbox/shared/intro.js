@@ -26,7 +26,11 @@
 // <html> ha la classe 'tb-no-intro' (la mette shared/lang-boot.js prima del
 // primo paint, cosi' il logo non parte dal centro),
 // l'intro e' gia' stata vista in questa sessione (sessionStorage.tbIntro),
-// prefers-reduced-motion, pagina diversa dalla dashboard o overlay assente
+// prefers-reduced-motion, "Animazioni ridotte" o "Salta l'intro" nelle
+// Impostazioni (spec 18 §5: `tt.shared.animazioni-ridotte`,
+// `tt.shared.salta-intro`; lang-boot.js mette gia' 'tb-ridotte' e
+// 'tb-no-intro', qui si rilegge per chi non passa da li'),
+// pagina diversa dalla dashboard o overlay assente
 // (es. 404.html, dove il logo parte gia' 'in-nav' nell'HTML statico).
 
 const KEY = 'tbIntro';
@@ -51,8 +55,22 @@ function markSession(key) {
 }
 
 function reducedMotion() {
-    return typeof window.matchMedia === 'function'
-        && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    return document.documentElement.classList.contains('tb-ridotte')
+        || (typeof window.matchMedia === 'function'
+            && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+}
+
+/** Preferenza booleana delle Impostazioni (copia veloce in localStorage). */
+function preferenza(key) {
+    try {
+        return window.localStorage.getItem(key) === 'true';
+    } catch (e) {
+        return false;
+    }
+}
+
+function saltaIntro() {
+    return preferenza('tt.shared.salta-intro') || preferenza('tt.shared.animazioni-ridotte');
 }
 
 /** Stato finale: logo in alto a sinistra, hamburger visibile, sfondo via. */
@@ -70,7 +88,7 @@ export function startIntro({ isHome = true } = {}) {
     const toggle = document.querySelector('.tb-menu-toggle');
 
     const noIntro = document.documentElement.classList.contains('tb-no-intro'); // deciso da lang-boot.js
-    if (!layer || !isHome || noIntro || session(KEY) || reducedMotion()) {
+    if (!layer || !isHome || noIntro || session(KEY) || reducedMotion() || saltaIntro()) {
         dock(logo, toggle, layer);
         markSession(KEY);
         if (layer) layer.remove();

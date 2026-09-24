@@ -7,7 +7,7 @@
  * LISTA CONGELATA (v1, 21/09/2026). NON si rigenera: una parola che entra o
  * esce sposta tutte le altre e i quaderni gia' creati diventano illeggibili,
  * senza recupero (non c'e' account). Per una lista nuova servono un sale e
- * una versione nuovi in penna/sync.js.
+ * una versione nuovi in shared/sync.js.
  */
 
 export const PAROLE = [

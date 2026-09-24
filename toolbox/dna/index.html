@@ -107,6 +107,13 @@
             <path d="M12 5v14"></path>
             <path d="M5 12h14"></path>
         </symbol>
+        <!-- Icona del bottone .tb-help (spec 18 §6, aiuto in-app): punto
+             interrogativo in cerchio, stesso stile a tratto delle altre. -->
+        <symbol id="tb-icon-help" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="9"></circle>
+            <path d="M9.2 9.5a3 3 0 0 1 5.6 1.3c0 1.8-2.4 2.3-2.7 3.7"></path>
+            <path d="M12 17.5v.01"></path>
+        </symbol>
         <symbol id="tb-icon-grip" viewBox="0 0 24 24">
             <circle cx="9" cy="6" r="1.6" fill="currentColor"></circle>
             <circle cx="15" cy="6" r="1.6" fill="currentColor"></circle>
@@ -154,21 +161,6 @@
                     <span id="tb-mic-state" data-i18n="mic-state-granted">Microfono: consentito</span>
                     <button type="button" id="tb-mic-revoke" class="tb-btn tb-btn--ghost" data-i18n="mic-revoke">Revoca</button>
                 </div>
-                <!-- CONTRATTO shared/nav.js (spec 14b, riga "PACCHETTI DEL
-                     RIMARIO" nel commento in testa a nav.js): riga dei
-                     pacchetti lingua scaricati, accanto a quella del
-                     microfono; [hidden] finche' non ce n'e' nessuno. nav.js
-                     riempie #tb-pack-list (nome, peso, "Rimuovi") e gestisce
-                     la conferma. -->
-                <div id="tb-packs-row" class="tb-packs-row" hidden>
-                    <span data-i18n="pack-installed">Pacchetti del rimario</span>
-                    <ul id="tb-pack-list" class="tb-pack-list"></ul>
-                    <div id="tb-pack-confirm" class="tb-pack-confirm" hidden>
-                        <span data-i18n="pack-remove-ask">Rimuovo questo pacchetto? Potrai riscaricarlo.</span>
-                        <button type="button" id="tb-pack-yes" class="tb-btn" data-i18n="pack-remove">Rimuovi</button>
-                        <button type="button" id="tb-pack-no" class="tb-btn tb-btn--ghost" data-i18n="pack-remove-cancel">Annulla</button>
-                    </div>
-                </div>
                 <div class="tb-menu-foot-row">
                     <div class="tb-lang-switch" role="group" aria-label="Lingua / Language">
                         <button type="button" data-lang="it" aria-pressed="true">IT</button>
@@ -185,6 +177,16 @@
         <header class="tb-page-header">
             <h1 data-i18n="dna-title">DNA della traccia</h1>
         </header>
+
+        <!-- Aiuto in-app (spec 18 §6): shared/aiuto.js monta il foglio "Come
+             funziona" da questo bottone (contratto in shared/components.css)
+             e riempie .tb-hint sotto col suggerimento del primo avvio. -->
+        <button type="button" id="tb-help" class="tb-btn tb-btn--ghost tb-help tb-help--center"
+            aria-haspopup="dialog" aria-expanded="false">
+            <svg aria-hidden="true"><use href="#tb-icon-help"></use></svg>
+            <span data-i18n="help-open">Come funziona</span>
+        </button>
+        <div class="tb-hint" id="tb-hint" hidden></div>
 
         <!-- CONTRATTO dna.js (spec 13 §5, contratto scritto in testa a
              dna.js): data-dna-state su #dna rispecchia lo stato corrente

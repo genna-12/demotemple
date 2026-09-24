@@ -103,6 +103,13 @@
             <path d="M12 5v14"></path>
             <path d="M5 12h14"></path>
         </symbol>
+        <!-- Icona del bottone .tb-help (spec 18 §6, aiuto in-app): punto
+             interrogativo in cerchio, stesso stile a tratto delle altre. -->
+        <symbol id="tb-icon-help" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="9"></circle>
+            <path d="M9.2 9.5a3 3 0 0 1 5.6 1.3c0 1.8-2.4 2.3-2.7 3.7"></path>
+            <path d="M12 17.5v.01"></path>
+        </symbol>
         <!-- Icone nuove per Penna (spec 14): documenti, condividi, elimina;
              spec 16: ingranaggio delle impostazioni. -->
         <symbol id="tb-icon-docs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -168,21 +175,6 @@
                     <span id="tb-mic-state" data-i18n="mic-state-granted">Microfono: consentito</span>
                     <button type="button" id="tb-mic-revoke" class="tb-btn tb-btn--ghost" data-i18n="mic-revoke">Revoca</button>
                 </div>
-                <!-- CONTRATTO shared/nav.js (spec 14b, riga "PACCHETTI DEL
-                     RIMARIO" nel commento in testa a nav.js): riga dei
-                     pacchetti lingua scaricati, accanto a quella del
-                     microfono; [hidden] finche' non ce n'e' nessuno. nav.js
-                     riempie #tb-pack-list (nome, peso, "Rimuovi") e gestisce
-                     la conferma. -->
-                <div id="tb-packs-row" class="tb-packs-row" hidden>
-                    <span data-i18n="pack-installed">Pacchetti del rimario</span>
-                    <ul id="tb-pack-list" class="tb-pack-list"></ul>
-                    <div id="tb-pack-confirm" class="tb-pack-confirm" hidden>
-                        <span data-i18n="pack-remove-ask">Rimuovo questo pacchetto? Potrai riscaricarlo.</span>
-                        <button type="button" id="tb-pack-yes" class="tb-btn" data-i18n="pack-remove">Rimuovi</button>
-                        <button type="button" id="tb-pack-no" class="tb-btn tb-btn--ghost" data-i18n="pack-remove-cancel">Annulla</button>
-                    </div>
-                </div>
                 <!-- Lingua del documento ed "e muta" (spec 14b) sono uscite
                      da qui: vivono in #pen-settings (spec 16 §3/§4), stessi
                      id (#pen-doc-lang, #pen-emuet), il contratto di penna.js
@@ -203,6 +195,16 @@
         <header class="tb-page-header">
             <h1 data-i18n="penna-title">Penna</h1>
         </header>
+
+        <!-- Aiuto in-app (spec 18 §6): fuori da #penna apposta, cosi' resta
+             visibile sia in vista elenco sia in vista editor (data-pen-vista
+             pilota solo le sezioni sotto, non questo blocco). -->
+        <button type="button" id="tb-help" class="tb-btn tb-btn--ghost tb-help tb-help--center"
+            aria-haspopup="dialog" aria-expanded="false">
+            <svg aria-hidden="true"><use href="#tb-icon-help"></use></svg>
+            <span data-i18n="help-open">Come funziona</span>
+        </button>
+        <div class="tb-hint" id="tb-hint" hidden></div>
 
         <!-- CONTRATTO penna.js (spec 16 §4, contratto scritto in testa a
              penna.js): #penna porta data-pen-vista="elenco|editor" (pilota
@@ -266,7 +268,7 @@
                          un id non puo' ripetersi nella pagina). -->
                     <button type="button" id="pen-settings-open" class="tb-btn tb-btn--icon pen-settings-open"
                         aria-haspopup="dialog" aria-expanded="false" aria-controls="pen-settings"
-                        data-i18n-aria="penna-settings" aria-label="Impostazioni">
+                        data-i18n-aria="penna-settings" aria-label="Impostazioni" data-tip="penna-settings">
                         <svg aria-hidden="true"><use href="#tb-icon-settings"></use></svg>
                     </button>
                 </div>
@@ -307,7 +309,7 @@
                             </span>
                         </button>
                         <button type="button" class="pen-card-del tb-btn tb-btn--icon"
-                            data-i18n-aria="penna-delete" aria-label="Elimina">
+                            data-i18n-aria="penna-delete" aria-label="Elimina" data-tip="penna-delete">
                             <svg aria-hidden="true"><use href="#tb-icon-trash"></use></svg>
                         </button>
                         <div class="pen-card-confirm" hidden>
@@ -335,13 +337,13 @@
                             aria-label="Titolo del testo" data-i18n-placeholder="penna-untitled" placeholder="Senza titolo">
                         <button type="button" id="pen-settings-open-editor" class="tb-btn tb-btn--icon pen-settings-open"
                             aria-haspopup="dialog" aria-expanded="false" aria-controls="pen-settings"
-                            data-i18n-aria="penna-settings" aria-label="Impostazioni">
+                            data-i18n-aria="penna-settings" aria-label="Impostazioni" data-tip="penna-settings">
                             <svg aria-hidden="true"><use href="#tb-icon-settings"></use></svg>
                         </button>
-                        <button type="button" id="pen-share" class="tb-btn tb-btn--icon" data-i18n-aria="penna-share" aria-label="Condividi">
+                        <button type="button" id="pen-share" class="tb-btn tb-btn--icon" data-i18n-aria="penna-share" aria-label="Condividi" data-tip="penna-share">
                             <svg aria-hidden="true"><use href="#tb-icon-share"></use></svg>
                         </button>
-                        <button type="button" id="pen-delete" class="tb-btn tb-btn--icon" data-i18n-aria="penna-delete" aria-label="Elimina">
+                        <button type="button" id="pen-delete" class="tb-btn tb-btn--icon" data-i18n-aria="penna-delete" aria-label="Elimina" data-tip="penna-delete">
                             <svg aria-hidden="true"><use href="#tb-icon-trash"></use></svg>
                         </button>
                     </div>
@@ -656,89 +658,21 @@
 
             <hr class="pen-settings-sep">
 
-            <!-- Sincronizza fra dispositivi (spec 17 §3/§5): il builder si
-                 ferma al markup, penna/sync.js (implementer) toglie [hidden]
-                 al <div data-sync-view="off|create|have|on"> che serve e
-                 scrive gli stati in #pen-sync-state (aria-live). Le quattro
-                 viste sono TUTTE nel DOM da subito, "off" e' l'unica visibile
-                 di default: nessuna riga di questo markup avvia una
-                 richiesta di rete da sola, ci pensa sync.js sui click. -->
-            <section id="pen-sync" class="pen-sync">
-                <h3 class="pen-settings-heading" data-i18n="sync-title">Sincronizza fra dispositivi</h3>
+            <!-- Sincronizza fra dispositivi (spec 18 §4/§5): la sezione
+                 completa (crea/collega/attiva, elenco collezioni) e' passata
+                 a Impostazioni (#imp-sync, impostazioni/index.html), un solo
+                 codice per tutta la Toolbox invece che uno per Penna. Qui
+                 resta solo il rimando, stesso link/classe di sotto ma dentro
+                 al foglio invece che in fondo. -->
+            <a class="tb-settings-link" href="/impostazioni/#imp-sync" data-i18n="penna-sync-link">Sincronizza fra dispositivi → Impostazioni</a>
 
-                <p id="pen-sync-state" class="pen-sync-state" aria-live="polite"></p>
+            <hr class="pen-settings-sep">
 
-                <!-- off: scollegato -->
-                <div data-sync-view="off" class="pen-sync-view">
-                    <p class="pen-sync-intro" data-i18n="sync-intro">Stessi testi su telefono e computer, senza account.</p>
-                    <div class="pen-settings-actions">
-                        <button type="button" id="pen-sync-create" class="tb-btn" data-i18n="sync-create">Crea un codice</button>
-                        <button type="button" id="pen-sync-have" class="tb-btn" data-i18n="sync-have">Ho già un codice</button>
-                    </div>
-                </div>
-
-                <!-- create: codice appena generato, in attesa di conferma -->
-                <div data-sync-view="create" class="pen-sync-view" hidden>
-                    <p id="pen-sync-code" class="pen-sync-code"></p>
-                    <p class="pen-sync-warn" data-i18n="sync-code-warn">Scrivilo da qualche parte: senza il codice i testi non si ritrovano.</p>
-                    <div class="pen-settings-actions">
-                        <button type="button" id="pen-sync-copy" class="tb-btn" data-i18n="sync-copy">Copia</button>
-                        <button type="button" id="pen-sync-activate" class="tb-btn tb-btn--primary" data-i18n="sync-activate">Attiva</button>
-                        <button type="button" class="tb-btn tb-btn--ghost pen-sync-cancel" data-i18n="penna-cancel">Annulla</button>
-                    </div>
-                </div>
-
-                <!-- have: campo per un codice esistente. Chiave placeholder
-                     non elencata dalla spec 17 §3 (solo sync-input-label lo
-                     e'): aggiunta dal builder perche' il markup la richiede,
-                     stesso principio di penna-count-heading nella 16. -->
-                <div data-sync-view="have" class="pen-sync-view" hidden>
-                    <label class="pen-sync-input-row" for="pen-sync-input">
-                        <span class="pen-sync-input-label" data-i18n="sync-input-label">Il tuo codice (sei parole)</span>
-                        <input type="text" id="pen-sync-input" class="pen-sync-input" autocomplete="off"
-                            autocapitalize="none" spellcheck="false" data-i18n-placeholder="sync-input-placeholder"
-                            placeholder="parola parola parola parola parola parola">
-                    </label>
-                    <div class="pen-settings-actions pen-settings-actions--single">
-                        <button type="button" id="pen-sync-link" class="tb-btn tb-btn--primary" data-i18n="sync-link">Collega</button>
-                        <button type="button" class="tb-btn tb-btn--ghost pen-sync-cancel" data-i18n="penna-cancel">Annulla</button>
-                    </div>
-                </div>
-
-                <!-- on: collegato -->
-                <div data-sync-view="on" class="pen-sync-view" hidden>
-                    <p id="pen-sync-last" class="pen-sync-last" data-i18n="sync-last">Ultima sincronizzazione: {ora}</p>
-                    <!-- Sincronizza/Mostra codice in coppia, Scollega a tutta
-                         riga sotto (terzo item, stesso principio di
-                         #pen-print); l'azione distruttiva #pen-sync-wipe
-                         sta fuori da questa griglia, sempre a tutta riga e
-                         font piu' piccolo perche' l'etichetta lunga non
-                         vada a capo a 390px (validator). -->
-                    <div class="pen-settings-actions">
-                        <button type="button" id="pen-sync-now" class="tb-btn" data-i18n="sync-now">Sincronizza</button>
-                        <button type="button" id="pen-sync-show" class="tb-btn" data-i18n="sync-show"
-                            aria-expanded="false" aria-controls="pen-sync-code-on">Mostra codice</button>
-                        <button type="button" id="pen-sync-unlink" class="tb-btn" data-i18n="sync-unlink">Scollega</button>
-                    </div>
-                    <button type="button" id="pen-sync-wipe" class="tb-btn tb-btn--ghost pen-sync-wipe-btn" data-i18n="sync-wipe">Scollega ed elimina dal server</button>
-
-                    <!-- #pen-sync-show e' un interruttore (aria-expanded):
-                         rivela questo riquadro invece di cambiare vista, cosi'
-                         non si vedono mai due sotto-viste insieme. Stesso
-                         stile del riquadro in "create" (.pen-sync-code). -->
-                    <p id="pen-sync-code-on" class="pen-sync-code" hidden></p>
-                    <button type="button" id="pen-sync-copy-on" class="tb-btn" data-i18n="sync-copy" hidden>Copia</button>
-
-                    <!-- Distruttivo: conferma inline, stesso principio di
-                         #pen-delete-confirm/.pen-card-confirm (niente
-                         confirm() del browser). -->
-                    <div id="pen-sync-wipe-confirm" class="pen-delete-confirm" hidden>
-                        <span data-i18n="sync-wipe-ask">Elimino le copie dal server? I testi restano su questo dispositivo.</span>
-                        <button type="button" id="pen-sync-wipe-yes" class="tb-btn" data-i18n="sync-wipe">Scollega ed elimina dal server</button>
-                        <button type="button" id="pen-sync-wipe-no" class="tb-btn tb-btn--ghost" data-i18n="penna-cancel">Annulla</button>
-                    </div>
-                </div>
-            </section>
+            <!-- Riga verso la pagina comune (spec 18 §5/§9): lingua e muta
+                 del testo e i pacchetti restano qui (sono di Penna), solo
+                 il link e' nuovo. Nessuna riga da questo foglio si sposta
+                 in questo giro. -->
+            <a class="tb-settings-link" href="/impostazioni/" data-i18n="tb-settings-link">Impostazioni della Toolbox →</a>
         </div>
     </div>
 

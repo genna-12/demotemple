@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="it">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="format-detection" content="telephone=no, address=no, email=no">
+    <title>Impostazioni | Tiny Temple Toolbox</title>
+
+    <link rel="icon" href="/assets/icons/favicon-v2.ico">
+    <link rel="apple-touch-icon" href="/assets/icons/apple-touch-icon-v2.png">
+    <meta name="theme-color" content="#080808">
+    <meta name="apple-mobile-web-app-title" content="Toolbox">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <link rel="manifest" href="/manifest.webmanifest">
+
+    <meta name="description" content="Lingua, aspetto, microfono, pacchetti lingua e dati della Toolbox in un unico posto: esporta, importa o cancella tutto quello che hai salvato.">
+    <link rel="canonical" href="https://toolbox.tinytemplestudio.it/impostazioni/">
+
+    <script src="/shared/lang-boot.js"></script>
+    <link rel="stylesheet" href="/shared/tokens.css">
+    <link rel="stylesheet" href="/shared/base.css">
+    <link rel="stylesheet" href="/shared/components.css">
+    <link rel="stylesheet" href="/impostazioni/impostazioni.css">
+</head>
+
+<body>
+
+    <!-- tb-bar resta senza sfondo/posizione propri: e' solo il contenitore
+         atteso da shared/nav.js (mountBar). Niente titolo in barra (spec 03
+         §11.6): "Impostazioni" e' solo l'h1 sotto; mountBar va chiamata
+         senza titleKey. -->
+    <header class="tb-bar">
+        <a class="tb-logo in-nav" href="/" data-i18n-aria="bar-logo-aria" aria-label="Toolbox, vai alla dashboard">
+            <img src="/assets/brand/logo-arancione.png" width="100" height="100" alt="" loading="eager">
+            <span class="sr-only">Tiny Temple Toolbox</span>
+        </a>
+        <button type="button" class="tb-menu-toggle is-visible" aria-controls="tb-menu" aria-expanded="false"
+            data-i18n-aria="bar-menu-open" aria-label="Apri il menu">
+            <span class="tb-menu-toggle-line"></span>
+            <span class="tb-menu-toggle-line"></span>
+        </button>
+        <!-- CONTRATTO shared/nav.js: fratello di .tb-menu-toggle, [hidden]
+             di default, nav.js toglie [hidden] mentre uno stream del
+             microfono e' attivo in QUALSIASI strumento. Impostazioni non
+             usa il microfono da sola (solo #imp-mic-revoca lo tocca) ma il
+             markup resta identico alle altre pagine. -->
+        <span id="tb-mic-live" class="tb-mic-live" hidden role="status"
+            data-i18n-aria="mic-live-aria" aria-label="Microfono attivo">
+            <svg aria-hidden="true"><use href="#tb-icon-mic"></use></svg>
+        </span>
+    </header>
+
+    <!-- CONTRATTO shared/nav.js: vedi il commento in index.html vicino a #tb-menu. -->
+    <svg class="tb-sprite" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg">
+        <symbol id="tb-icon-mic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"></path>
+            <path d="M19 11a7 7 0 0 1-14 0"></path>
+            <path d="M12 18v4"></path>
+            <path d="M9 22h6"></path>
+        </symbol>
+        <symbol id="tb-icon-metronomo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M8 20h8"></path>
+            <path d="M9 20 11 5h2l2 15"></path>
+            <path d="M12 9v7"></path>
+        </symbol>
+        <symbol id="tb-icon-accordatore" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M5 16a7 7 0 0 1 14 0"></path>
+            <path d="M12 16 15 9"></path>
+            <circle cx="12" cy="16" r="1" fill="currentColor" stroke="none"></circle>
+        </symbol>
+        <symbol id="tb-icon-dna" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 12h3l2-7 4 14 4-14 2 7h3"></path>
+        </symbol>
+        <symbol id="tb-icon-penna" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 20l4-1 11-11-3-3L5 16z"></path>
+            <path d="M14 6l3 3"></path>
+        </symbol>
+        <symbol id="tb-icon-calcolatore-tempo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="13" r="8"></circle>
+            <path d="M12 9v4l3 2"></path>
+            <path d="M9 2h6"></path>
+        </symbol>
+        <symbol id="tb-icon-pianificatore-uscita" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="4" y="5" width="16" height="16" rx="2"></rect>
+            <path d="M4 10h16"></path>
+            <path d="M8 3v4"></path>
+            <path d="M16 3v4"></path>
+        </symbol>
+        <!-- Icone di UI (spec 03 §3/§5/§9: niente piu' frecce/simboli scritti a
+             mano nel testo). -->
+        <symbol id="tb-icon-arrow-left" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 12H5"></path>
+            <path d="M11 18l-6-6 6-6"></path>
+        </symbol>
+        <symbol id="tb-icon-chevron-down" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M6 9l6 6 6-6"></path>
+        </symbol>
+        <symbol id="tb-icon-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M5 13l4 4L19 7"></path>
+        </symbol>
+        <symbol id="tb-icon-minus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M5 12h14"></path>
+        </symbol>
+        <symbol id="tb-icon-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 5v14"></path>
+            <path d="M5 12h14"></path>
+        </symbol>
+        <!-- Icona del bottone .tb-help (spec 18 §6, aiuto in-app): punto
+             interrogativo in cerchio, stesso stile a tratto delle altre. -->
+        <symbol id="tb-icon-help" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="9"></circle>
+            <path d="M9.2 9.5a3 3 0 0 1 5.6 1.3c0 1.8-2.4 2.3-2.7 3.7"></path>
+            <path d="M12 17.5v.01"></path>
+        </symbol>
+        <symbol id="tb-icon-grip" viewBox="0 0 24 24">
+            <circle cx="9" cy="6" r="1.6" fill="currentColor"></circle>
+            <circle cx="15" cy="6" r="1.6" fill="currentColor"></circle>
+            <circle cx="9" cy="12" r="1.6" fill="currentColor"></circle>
+            <circle cx="15" cy="12" r="1.6" fill="currentColor"></circle>
+            <circle cx="9" cy="18" r="1.6" fill="currentColor"></circle>
+            <circle cx="15" cy="18" r="1.6" fill="currentColor"></circle>
+        </symbol>
+    </svg>
+
+    <div id="tb-menu" class="tb-menu" hidden>
+        <div class="tb-menu-scrim"></div>
+        <div class="tb-menu-panel" role="dialog" aria-modal="true" aria-label="Menu">
+            <a class="tb-menu-home tb-menu-item" href="/" data-i18n="menu-all">Dashboard</a>
+            <div class="tb-menu-title" data-i18n="menu-tools">Strumenti</div>
+            <div class="tb-menu-groups"></div>
+            <div class="tb-menu-foot tb-menu-item">
+                <div class="tb-menu-install-group">
+                    <button type="button" id="tb-menu-install" class="tb-menu-install" data-i18n="menu-install">Installa l’app</button>
+                    <details class="tb-menu-ios" id="tb-menu-ios" hidden>
+                        <summary data-i18n="idx-ios-title">Su iPhone</summary>
+                        <div data-pwa-when="safari">
+                            <ol>
+                                <li data-i18n="idx-ios-step1">Apri questa pagina in Safari.</li>
+                                <li data-i18n="idx-ios-step2">Tocca Condividi (il quadrato con la freccia in
+                                    alto).</li>
+                                <li data-i18n="idx-ios-step3">Scegli &ldquo;Aggiungi alla schermata
+                                    Home&rdquo;.</li>
+                            </ol>
+                        </div>
+                        <div data-pwa-when="inapp">
+                            <strong data-i18n="idx-ios-inapp-title">Apri in Safari</strong>
+                            <p data-i18n="idx-ios-inapp-text">Questo browser non permette di installare l’app.
+                                Tocca il menu e scegli &ldquo;Apri in Safari&rdquo;, poi segui i passaggi per
+                                aggiungerla alla schermata Home.</p>
+                        </div>
+                    </details>
+                    <p class="tb-menu-manual" data-pwa-when="manual" hidden data-i18n="pwa-manual">Usa il menu del
+                        browser: Installa app oppure Aggiungi alla schermata Home.</p>
+                </div>
+                <!-- CONTRATTO shared/nav.js: [hidden] finche' il consenso al
+                     microfono non c'e', in qualunque strumento sia stato
+                     dato. -->
+                <div id="tb-mic-row" class="tb-mic-row" hidden>
+                    <span id="tb-mic-state" data-i18n="mic-state-granted">Microfono: consentito</span>
+                    <button type="button" id="tb-mic-revoke" class="tb-btn tb-btn--ghost" data-i18n="mic-revoke">Revoca</button>
+                </div>
+                <div class="tb-menu-foot-row">
+                    <div class="tb-lang-switch" role="group" aria-label="Lingua / Language">
+                        <button type="button" data-lang="it" aria-pressed="true">IT</button>
+                        <button type="button" data-lang="en" aria-pressed="false">EN</button>
+                    </div>
+                    <a class="tb-menu-ext" href="https://tinytemplestudio.it/" data-i18n="menu-ext">Sito dello
+                        studio</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="tb-shell imp-shell">
+        <header class="tb-page-header">
+            <h1 data-i18n="imp-title">Impostazioni</h1>
+        </header>
+
+        <!-- Aiuto in-app (spec 18 §6): shared/aiuto.js monta il foglio "Come
+             funziona" da questo bottone (contratto in shared/components.css)
+             e riempie .tb-hint sotto col suggerimento del primo avvio. -->
+        <button type="button" id="tb-help" class="tb-btn tb-btn--ghost tb-help tb-help--center"
+            aria-haspopup="dialog" aria-expanded="false">
+            <svg aria-hidden="true"><use href="#tb-icon-help"></use></svg>
+            <span data-i18n="help-open">Come funziona</span>
+        </button>
+        <div class="tb-hint" id="tb-hint" hidden></div>
+
+        <!-- CONTRATTO impostazioni.js (implementer, spec 18 §5): ogni
+             <section id="imp-..."> qui sotto e' letta/scritta cosi' come
+             sta, id in MINUSCOLO fissati dal builder e mai rinominati.
+             #impostazioni non ha stati (a differenza di #pianificatore):
+             e' una pagina lunga a sezioni, sempre tutta visibile tranne
+             dove [hidden] e' gia' nel markup (solo #imp-cancella-box). -->
+        <main id="impostazioni" class="imp">
+            <div class="imp-list">
+
+                <!-- ---------- Lingua ---------- -->
+                <section id="imp-lingua" class="imp-sezione">
+                    <h2 id="imp-lingua-title" class="imp-sezione-title" data-i18n="imp-sec-lingua">Lingua</h2>
+                    <div id="imp-lingua-seg" class="tb-segment" role="radiogroup" aria-labelledby="imp-lingua-title">
+                        <button type="button" class="tb-segment-btn" data-imp-lang="it" role="radio" aria-checked="true">IT</button>
+                        <button type="button" class="tb-segment-btn" data-imp-lang="en" role="radio" aria-checked="false">EN</button>
+                    </div>
+                </section>
+
+                <!-- ---------- Aspetto ---------- -->
+                <section id="imp-aspetto" class="imp-sezione">
+                    <h2 class="imp-sezione-title" data-i18n="imp-sec-aspetto">Aspetto</h2>
+
+                    <div class="imp-toggle-row">
+                        <span id="imp-anim-ridotte-label" class="imp-toggle-label" data-i18n="imp-anim-ridotte">Animazioni ridotte</span>
+                        <button type="button" id="imp-anim-ridotte" class="tb-toggle" role="switch"
+                            aria-checked="false" aria-labelledby="imp-anim-ridotte-label">
+                            <span class="tb-toggle-thumb" aria-hidden="true"></span>
+                        </button>
+                    </div>
+
+                    <div class="imp-toggle-row">
+                        <span id="imp-salta-intro-label" class="imp-toggle-label" data-i18n="imp-salta-intro">Salta l’intro</span>
+                        <button type="button" id="imp-salta-intro" class="tb-toggle" role="switch"
+                            aria-checked="false" aria-labelledby="imp-salta-intro-label">
+                            <span class="tb-toggle-thumb" aria-hidden="true"></span>
+                        </button>
+                    </div>
+                </section>
+
+                <!-- ---------- Microfono ---------- -->
+                <section id="imp-mic" class="imp-sezione">
+                    <h2 class="imp-sezione-title" data-i18n="imp-sec-mic">Microfono</h2>
+                    <!-- Vuoto: nessun default statico (CONTRATTO, come
+                         #pia-plan-title). impostazioni.js scrive qui lo
+                         stesso testo di #tb-mic-state (mic-state-granted/
+                         mic-state-unasked, shared/i18n-common.js). -->
+                    <p id="imp-mic-stato" class="imp-mic-stato" aria-live="polite"></p>
+                    <!-- Solo col permesso gia' concesso (spec 03 §6, stesso
+                         principio di #acc-mic-off): impostazioni.js toglie
+                         [hidden] in renderMic(). -->
+                    <button type="button" id="imp-mic-revoca" class="tb-btn tb-btn--ghost" hidden data-i18n="imp-mic-revoca">Revoca il permesso</button>
+                </section>
+
+                <!-- ---------- Sincronizzazione ---------- -->
+                <!-- Sincronizzazione della Toolbox (spec 18 §4/§5): stesso
+                     flusso e stessi testi della sincronizzazione di Penna
+                     (spec 17 §3/§5, prima in #pen-sync), spostata qui perche'
+                     ora il codice e' UNO per tutta la Toolbox, non solo per
+                     Penna. Il builder si ferma al markup: shared/sync.js
+                     (implementer) toglie [hidden] al <div
+                     data-sync-view="off|create|have|on"> che serve e scrive
+                     gli stati in #imp-sync-state (aria-live). Le quattro
+                     viste sono TUTTE nel DOM da subito, "off" e' l'unica
+                     visibile di default: nessuna riga di questo markup avvia
+                     una richiesta di rete da sola. Il riquadro del codice e'
+                     la classe condivisa .tb-sync-code (shared/components.css,
+                     la stessa che usava Penna). -->
+                <section id="imp-sync" class="imp-sezione">
+                    <h2 class="imp-sezione-title" data-i18n="imp-sec-sync">Sincronizzazione</h2>
+
+                    <p id="imp-sync-state" class="imp-sync-state" aria-live="polite"></p>
+
+                    <!-- off: scollegato -->
+                    <div data-sync-view="off" class="imp-sync-view">
+                        <p class="imp-sync-intro" data-i18n="sync-intro-all">Stessi testi, piani e preferenze su telefono e computer, senza account.</p>
+                        <div class="imp-sync-actions">
+                            <button type="button" id="imp-sync-create" class="tb-btn" data-i18n="sync-create">Crea un codice</button>
+                            <button type="button" id="imp-sync-have" class="tb-btn" data-i18n="sync-have">Ho già un codice</button>
+                        </div>
+                    </div>
+
+                    <!-- create: codice appena generato, in attesa di conferma -->
+                    <div data-sync-view="create" class="imp-sync-view" hidden>
+                        <p id="imp-sync-code" class="tb-sync-code"></p>
+                        <p class="imp-sync-warn" data-i18n="sync-code-warn">Scrivilo da qualche parte: senza il codice i dati non si ritrovano.</p>
+                        <div class="imp-sync-actions">
+                            <button type="button" id="imp-sync-copy" class="tb-btn" data-i18n="sync-copy">Copia</button>
+                            <button type="button" id="imp-sync-activate" class="tb-btn tb-btn--primary" data-i18n="sync-activate">Attiva</button>
+                            <button type="button" class="tb-btn tb-btn--ghost imp-sync-cancel" data-i18n="imp-annulla">Annulla</button>
+                        </div>
+                    </div>
+
+                    <!-- have: campo per un codice esistente -->
+                    <div data-sync-view="have" class="imp-sync-view" hidden>
+                        <label class="imp-sync-input-row" for="imp-sync-input">
+                            <span class="imp-sync-input-label" data-i18n="sync-input-label">Il tuo codice (sei parole)</span>
+                            <input type="text" id="imp-sync-input" class="imp-sync-input" autocomplete="off"
+                                autocapitalize="none" spellcheck="false" data-i18n-placeholder="sync-input-placeholder"
+                                placeholder="parola parola parola parola parola parola">
+                        </label>
+                        <div class="imp-sync-actions imp-sync-actions--single">
+                            <button type="button" id="imp-sync-link" class="tb-btn tb-btn--primary" data-i18n="sync-link">Collega</button>
+                            <button type="button" class="tb-btn tb-btn--ghost imp-sync-cancel" data-i18n="imp-annulla">Annulla</button>
+                        </div>
+                    </div>
+
+                    <!-- on: collegato -->
+                    <div data-sync-view="on" class="imp-sync-view" hidden>
+                        <p id="imp-sync-last" class="imp-sync-last" data-i18n="sync-last">Ultima sincronizzazione: {ora}</p>
+                        <!-- Server trovato vuoto (spec 17 §6.7): i dati di qui
+                             non ripartono da soli; li rimanda solo questo
+                             bottone. Lo mostra il JS con lo stato vuoto-remoto. -->
+                        <button type="button" id="imp-sync-reupload" class="tb-btn tb-btn--primary" data-i18n="sync-reupload" hidden>Reinvia i dati</button>
+                        <!-- Sincronizza/Mostra codice in coppia, Scollega a
+                             tutta riga sotto (terzo item, stesso principio di
+                             #imp-print in Penna); l'azione distruttiva
+                             #imp-sync-wipe sta fuori da questa griglia,
+                             sempre a tutta riga e font piu' piccolo perche'
+                             l'etichetta lunga non vada a capo a 390px. -->
+                        <div class="imp-sync-actions">
+                            <button type="button" id="imp-sync-now" class="tb-btn" data-i18n="sync-now">Sincronizza</button>
+                            <button type="button" id="imp-sync-show" class="tb-btn" data-i18n="sync-show"
+                                aria-expanded="false" aria-controls="imp-sync-code-on">Mostra codice</button>
+                            <button type="button" id="imp-sync-unlink" class="tb-btn" data-i18n="sync-unlink">Scollega</button>
+                        </div>
+                        <button type="button" id="imp-sync-wipe" class="tb-btn tb-btn--ghost imp-sync-wipe-btn" data-i18n="sync-wipe">Scollega ed elimina dal server</button>
+
+                        <!-- #imp-sync-show e' un interruttore (aria-expanded):
+                             rivela questo riquadro invece di cambiare vista,
+                             cosi' non si vedono mai due sotto-viste insieme. -->
+                        <p id="imp-sync-code-on" class="tb-sync-code" hidden></p>
+                        <button type="button" id="imp-sync-copy-on" class="tb-btn" data-i18n="sync-copy" hidden>Copia</button>
+
+                        <!-- Distruttivo: conferma inline, niente confirm()
+                             del browser (stesso principio di
+                             #imp-cancella-box). -->
+                        <div id="imp-sync-wipe-confirm" class="imp-sync-wipe-confirm" hidden>
+                            <span data-i18n="sync-wipe-ask">Elimino le copie dal server? I dati restano su questo dispositivo.</span>
+                            <button type="button" id="imp-sync-wipe-yes" class="tb-btn" data-i18n="sync-wipe">Scollega ed elimina dal server</button>
+                            <button type="button" id="imp-sync-wipe-no" class="tb-btn tb-btn--ghost" data-i18n="imp-annulla">Annulla</button>
+                        </div>
+
+                        <hr class="imp-sep">
+
+                        <!-- Cosa sincronizzare (spec 18 §5): un interruttore
+                             per collezione, tutti accesi di default. -->
+                        <div class="imp-campo">
+                            <span id="imp-sync-coll-title" class="imp-campo-label" data-i18n="sync-what">Cosa sincronizzare</span>
+                            <div class="imp-sync-coll-list" role="group" aria-labelledby="imp-sync-coll-title">
+                                <div class="imp-toggle-row">
+                                    <span id="imp-sync-coll-penna-label" class="imp-toggle-label" data-i18n="sync-coll-penna">Testi</span>
+                                    <button type="button" id="imp-sync-coll-penna" class="tb-toggle" role="switch"
+                                        aria-checked="true" aria-labelledby="imp-sync-coll-penna-label">
+                                        <span class="tb-toggle-thumb" aria-hidden="true"></span>
+                                    </button>
+                                </div>
+                                <div class="imp-toggle-row">
+                                    <span id="imp-sync-coll-uscite-label" class="imp-toggle-label" data-i18n="sync-coll-uscite">Piani di uscita</span>
+                                    <button type="button" id="imp-sync-coll-uscite" class="tb-toggle" role="switch"
+                                        aria-checked="true" aria-labelledby="imp-sync-coll-uscite-label">
+                                        <span class="tb-toggle-thumb" aria-hidden="true"></span>
+                                    </button>
+                                </div>
+                                <div class="imp-toggle-row">
+                                    <span id="imp-sync-coll-accordature-label" class="imp-toggle-label" data-i18n="sync-coll-accordature">Accordature</span>
+                                    <button type="button" id="imp-sync-coll-accordature" class="tb-toggle" role="switch"
+                                        aria-checked="true" aria-labelledby="imp-sync-coll-accordature-label">
+                                        <span class="tb-toggle-thumb" aria-hidden="true"></span>
+                                    </button>
+                                </div>
+                                <div class="imp-toggle-row">
+                                    <span id="imp-sync-coll-metronomo-preset-label" class="imp-toggle-label" data-i18n="sync-coll-metronomo-preset">Preset del metronomo</span>
+                                    <button type="button" id="imp-sync-coll-metronomo-preset" class="tb-toggle" role="switch"
+                                        aria-checked="true" aria-labelledby="imp-sync-coll-metronomo-preset-label">
+                                        <span class="tb-toggle-thumb" aria-hidden="true"></span>
+                                    </button>
+                                </div>
+                                <div class="imp-toggle-row">
+                                    <span id="imp-sync-coll-dna-label" class="imp-toggle-label" data-i18n="sync-coll-dna">Storico DNA</span>
+                                    <button type="button" id="imp-sync-coll-dna" class="tb-toggle" role="switch"
+                                        aria-checked="true" aria-labelledby="imp-sync-coll-dna-label">
+                                        <span class="tb-toggle-thumb" aria-hidden="true"></span>
+                                    </button>
+                                </div>
+                                <div class="imp-toggle-row">
+                                    <span id="imp-sync-coll-impostazioni-label" class="imp-toggle-label" data-i18n="sync-coll-impostazioni">Preferenze</span>
+                                    <button type="button" id="imp-sync-coll-impostazioni" class="tb-toggle" role="switch"
+                                        aria-checked="true" aria-labelledby="imp-sync-coll-impostazioni-label">
+                                        <span class="tb-toggle-thumb" aria-hidden="true"></span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ---------- Pacchetti lingua ---------- -->
+                <section id="imp-pacchetti" class="imp-sezione">
+                    <h2 id="imp-pacchetti-title" class="imp-sezione-title" data-i18n="imp-sec-pacchetti">Pacchetti lingua</h2>
+
+                    <!-- impostazioni.js toglie [hidden] solo se la lista
+                         resta vuota dopo averla riempita. -->
+                    <p id="imp-pacchetti-vuoto" class="imp-pacchetti-vuoto" data-i18n="imp-pacchetti-vuoto">Nessun pacchetto scaricato.</p>
+
+                    <!-- Vuoto: impostazioni.js clona #imp-pack-tpl una volta
+                         per lingua disponibile del rimario (stessa fonte di
+                         #tb-pack-list in shared/nav.js). Nessun attributo di
+                         template serve per distinguere IT (base, "si prepara
+                         da solo"): il clone porta gia' data-imp-pack="it" e
+                         impostazioni.js ha "codice" in scope dove lo crea,
+                         stesso confronto codice!=='it' gia' usato in
+                         statoReale(). Chiave pronta: imp-pack-auto. -->
+                    <ul id="imp-pacchetti-lista" class="imp-pacchetti-lista" aria-labelledby="imp-pacchetti-title"></ul>
+
+                    <template id="imp-pack-tpl">
+                        <li class="imp-pack-row">
+                            <div class="imp-pack-info">
+                                <span class="imp-pack-nome"></span>
+                                <span class="imp-pack-meta">
+                                    <span class="imp-pack-peso"></span>
+                                    <span class="imp-pack-stato"></span>
+                                </span>
+                            </div>
+                            <div class="imp-pack-actions">
+                                <button type="button" class="tb-btn imp-pack-scarica" data-i18n="imp-pack-scarica">Scarica</button>
+                                <button type="button" class="tb-btn tb-btn--ghost imp-pack-rimuovi" data-i18n="imp-pack-rimuovi">Rimuovi</button>
+                            </div>
+                        </li>
+                    </template>
+                </section>
+
+                <!-- ---------- Dati ---------- -->
+                <section id="imp-dati" class="imp-sezione">
+                    <h2 id="imp-dati-title" class="imp-sezione-title" data-i18n="imp-sec-dati">Dati</h2>
+
+                    <div class="imp-dati-actions">
+                        <button type="button" id="imp-esporta" class="tb-btn" data-i18n="imp-esporta">Esporta tutto (.json)</button>
+                        <button type="button" id="imp-importa" class="tb-btn" data-i18n="imp-importa">Importa</button>
+                        <!-- sr-only, tabindex="-1": si apre solo cliccando
+                             #imp-importa (stesso principio di #pen-import-input). -->
+                        <input type="file" id="imp-importa-input" accept=".json,application/json" class="sr-only" tabindex="-1">
+                    </div>
+
+                    <div class="imp-campo">
+                        <span id="imp-importa-modo-label" class="imp-campo-label" data-i18n="imp-importa-modo-label">In caso di conflitto</span>
+                        <div id="imp-importa-modo" class="tb-segment" role="radiogroup" aria-labelledby="imp-importa-modo-label">
+                            <button type="button" class="tb-segment-btn" data-imp-modo="unisci" role="radio"
+                                aria-checked="true" data-i18n="imp-importa-unisci">Unisci</button>
+                            <button type="button" class="tb-segment-btn" data-imp-modo="sostituisci" role="radio"
+                                aria-checked="false" data-i18n="imp-importa-sostituisci">Sostituisci</button>
+                        </div>
+                    </div>
+
+                    <p id="imp-dati-status" class="tb-status" aria-live="polite"></p>
+
+                    <hr class="imp-sep">
+
+                    <!-- Distruttivo: conferma inline digitata, mai
+                         confirm() del browser (stesso principio di
+                         #pen-sync-wipe-confirm). #imp-cancella toglie
+                         [hidden] a #imp-cancella-box, non cancella subito. -->
+                    <button type="button" id="imp-cancella" class="tb-btn tb-btn--ghost imp-cancella-apri"
+                        aria-haspopup="true" aria-expanded="false" aria-controls="imp-cancella-box"
+                        data-i18n="imp-cancella">Cancella tutto</button>
+
+                    <div id="imp-cancella-box" class="imp-cancella-box" hidden>
+                        <p data-i18n="imp-cancella-avviso">Elimina tutti i dati della Toolbox da questo dispositivo: testi, analisi, piani, accordature e preferenze. Non si può annullare.</p>
+                        <p class="imp-cancella-etichetta">
+                            <span id="imp-cancella-etichetta-testo" data-i18n="imp-cancella-etichetta">Scrivi la parola per confermare</span>
+                            <!-- Vuoto: nessun default statico (CONTRATTO). La
+                                 parola stessa (spec 18 §5) e' tradotta:
+                                 impostazioni.js scrive qui t('imp-cancella-parola')
+                                 e confronta lo stesso valore col contenuto di
+                                 #imp-cancella-conferma. -->
+                            <strong id="imp-cancella-parola" class="imp-cancella-parola"></strong>
+                        </p>
+                        <!-- Label da due pezzi (testo + parola), stesso
+                             principio di #pia-view aria-labelledby su piu'
+                             id: uno screen reader legge entrambi in fila. -->
+                        <input type="text" id="imp-cancella-conferma" class="imp-input" autocomplete="off"
+                            autocapitalize="characters" spellcheck="false"
+                            aria-labelledby="imp-cancella-etichetta-testo imp-cancella-parola"
+                            data-i18n-placeholder="imp-cancella-parola" placeholder="CANCELLA">
+                        <div class="imp-cancella-actions">
+                            <button type="button" id="imp-cancella-si" class="tb-btn" disabled data-i18n="imp-cancella">Cancella tutto</button>
+                            <button type="button" id="imp-cancella-annulla" class="tb-btn tb-btn--ghost" data-i18n="imp-annulla">Annulla</button>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ---------- Informative ---------- -->
+                <section id="imp-informative" class="imp-sezione">
+                    <h2 class="imp-sezione-title" data-i18n="imp-sec-informative">Informative</h2>
+                    <div class="imp-informative-links">
+                        <a href="https://www.iubenda.com/privacy-policy/35861019" target="_blank" rel="noopener"
+                            data-i18n="tb-footer-privacy">Privacy</a>
+                        <a href="https://www.iubenda.com/privacy-policy/35861019/cookie-policy" target="_blank" rel="noopener"
+                            data-i18n="imp-cookie">Cookie</a>
+                    </div>
+                </section>
+
+                <!-- ---------- Versione dell'app ---------- -->
+                <section class="imp-sezione">
+                    <h2 class="imp-sezione-title" data-i18n="imp-sec-versione">Versione dell’app</h2>
+                    <!-- Vuoto: nessun default statico (CONTRATTO). impostazioni.js
+                         scrive qui la VERSION di sw.js e la data di build. -->
+                    <p id="imp-versione" class="imp-versione-testo" aria-live="polite"></p>
+                </section>
+
+            </div>
+        </main>
+
+        <!-- Riga sola su ogni pagina (spec 03 §4). -->
+        <footer class="tb-footer">
+            <p class="tb-footer-line">
+                <span>Tiny Temple Studio</span>
+                <span class="tb-footer-sep" aria-hidden="true">&middot;</span>
+                <a href="https://www.iubenda.com/privacy-policy/35861019" target="_blank" rel="noopener"
+                    data-i18n="tb-footer-privacy">Privacy</a>
+                <span class="tb-footer-sep" aria-hidden="true">&middot;</span>
+                <span data-i18n="footer-designed">Designed by Genna</span>
+            </p>
+        </footer>
+    </div>
+
+    <script type="module" src="/impostazioni/impostazioni.js"></script>
+</body>
+
+</html>

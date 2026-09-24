@@ -78,9 +78,11 @@ import { init, t, lang, onChange } from '/shared/i18n.js';
 import { pressFeedback, setStatus, toast } from '/shared/ui.js';
 import { mountBar } from '/shared/nav.js';
 import { initPwa } from '/shared/pwa.js';
+import { mountAiuto } from '/shared/aiuto.js';
 import { mountSelects } from '/shared/select.js';
 import { openSheet, closeSheet } from '/shared/sheet.js';
-import { prefs, leggi, scrivi, elenca, elimina } from '/shared/archivio.js';
+import { prefs, leggi, scrivi, elenca, elimina, onChange as onArchivio } from '/shared/archivio.js';
+import { avviaPagina as avviaSync } from '/shared/sync.js';
 import { TIPI, PROFILI } from '/pianificatore-uscita/tappe.js';
 import {
     generaTappe, nuovaPersonale, ricalcola, decora, conteggio, prossime,
@@ -999,6 +1001,29 @@ export function mountPianificatore() {
     /* cambiando lingua cambiano titoli delle tappe, date e parole di stato */
     onChange(() => { if (ui.stato === 'piano') render(); else renderPiani(); });
 
+    /* piani arrivati (o tolti) dalla sincronizzazione (spec 18 §4): l'elenco
+       si rilegge; il piano aperto si riapre se e' cambiato, si chiude se
+       non c'e' piu'. Il modulo di modifica aperto non si tocca. */
+    onArchivio(USCITE, async (m) => {
+        if (!m || m.origine !== 'sync') return;
+        const prima = ui.piano ? JSON.stringify(ui.piano) : null;
+        await caricaTutti();
+        if (ui.stato === 'piano' && ui.id) {
+            const rec = ui.tutti.find((r) => r.id === ui.id);
+            if (!rec) {
+                ui.id = null;
+                ui.piano = null;
+                setStato(ui.tutti.length ? 'piani' : 'vuoto');
+            } else if (JSON.stringify(rec.value) !== prima) {
+                apri(rec.id, rec.value);
+            }
+        } else if (ui.stato === 'vuoto' && ui.tutti.length) {
+            setStato('piani');
+        } else if (ui.stato === 'piani' && !ui.tutti.length) {
+            setStato('vuoto');
+        }
+    }, { locali: true });
+
     /* tornando dopo mezzanotte "in scadenza" deve riallinearsi */
     document.addEventListener('visibilitychange', () => {
         if (document.visibilityState !== 'visible') return;
@@ -1052,4 +1077,8 @@ if (typeof document !== 'undefined' && document.getElementById('pianificatore'))
         installSection: document.querySelector('.tb-menu-install-group')
     });
     mountPianificatore();
+    /* «Come funziona», riga del primo avvio, tip dei pulsanti icona (spec 18 §6) */
+    try { mountAiuto({ slug: SLUG }); } catch (e) { console.warn('[aiuto] non montato:', e && e.message); }
+    /* giro all'apertura e 3 s dopo i salvataggi; senza codice niente rete */
+    avviaSync().catch(() => { /* senza IndexedDB resta spenta */ });
 }

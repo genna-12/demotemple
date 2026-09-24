@@ -20,11 +20,13 @@ import { init, t } from '/shared/i18n.js';
 import { pressFeedback, setStatus, wakeLock } from '/shared/ui.js';
 import { mountBar } from '/shared/nav.js';
 import { initPwa } from '/shared/pwa.js';
+import { mountAiuto } from '/shared/aiuto.js';
 import { getContext, unlock, needsGesture, onStateChange } from '/shared/audio.js';
 import { createScheduler } from '/shared/scheduler.js';
 import { createBpmControl } from '/shared/bpm-control.js';
 import { mountRanges } from '/shared/range.js';
 import { prefs } from '/shared/archivio.js';
+import { avviaPagina as avviaSync } from '/shared/sync.js';
 
 const TOOL = 'metronomo';
 const BPM_MIN = 30;
@@ -758,4 +760,9 @@ if (typeof document !== 'undefined' && document.getElementById('met')) {
         installSection: document.querySelector('.tb-menu-install-group')
     });
     mountMetronome();
+    /* «Come funziona», riga del primo avvio, tip dei pulsanti icona (spec 18 §6) */
+    try { mountAiuto({ slug: TOOL }); } catch (e) { console.warn('[aiuto] non montato:', e && e.message); }
+    /* le preferenze viaggiano con la sincronizzazione (spec 18 §4): giro
+       all'apertura e 3 s dopo i salvataggi; senza codice niente rete */
+    avviaSync().catch(() => { /* senza IndexedDB resta spenta */ });
 }

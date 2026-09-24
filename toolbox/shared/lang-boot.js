@@ -9,10 +9,20 @@
     if (l !== 'it' && l !== 'en') l = 'it';
     var root = document.documentElement;
     root.lang = l;
-    /* intro gia' vista in questa sessione o movimento ridotto: il logo parte
-       agganciato in alto a sinistra, senza transizione (vedi shared/intro.js). */
-    var noIntro = false;
-    try { noIntro = window.sessionStorage.getItem('tbIntro') === '1'; } catch (e) { noIntro = false; }
+    /* Impostazioni > Aspetto (spec 18 §5): preferenze portabili nell'archivio,
+       qui lette dalla copia veloce in localStorage (JSON: 'true'). */
+    var pref = function (k) {
+        try { return window.localStorage.getItem(k) === 'true'; } catch (e) { return false; }
+    };
+    /* "Animazioni ridotte": come prefers-reduced-motion, dal primo frame
+       (base.css ha le stesse regole sotto html.tb-ridotte) */
+    var ridotte = pref('tt.shared.animazioni-ridotte');
+    if (ridotte) root.classList.add('tb-ridotte');
+    /* intro gia' vista in questa sessione, "Salta l'intro" o movimento
+       ridotto: il logo parte agganciato in alto a sinistra, senza
+       transizione (vedi shared/intro.js). */
+    var noIntro = ridotte || pref('tt.shared.salta-intro');
+    try { noIntro = noIntro || window.sessionStorage.getItem('tbIntro') === '1'; } catch (e) { /* storage bloccato */ }
     try {
         noIntro = noIntro || window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     } catch (e) { /* matchMedia assente */ }

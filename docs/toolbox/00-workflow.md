@@ -90,7 +90,11 @@ indipendenti possono avere spec in parallelo.
 - [x] T0 (22/09): imbracatura e2e (scripts/e2e, GitHub Actions) e i 13 bloccanti dell'audit; icone v2
 - [x] Penna: stress test con 12 testi (32 prove) e correzioni (23/09)
 - [x] T1 giro 1 (23/09): archivio unico `shared/archivio.js` con 6 migrazioni, tutti gli strumenti migrati, 184 e2e verdi
-- [ ] T1 giro 2: pagina `/impostazioni/`; giro 3: sync generalizzata (schema D1 già definitivo); giro 4: aiuto in-app
+- [x] T1 giro 2 (24/09): pagina `/impostazioni/` (lingua, aspetto, microfono, pacchetti, dati, informative, versione)
+- [x] T1 giro 3 (24/09): sincronizzazione generalizzata `shared/sync.js` (un codice per tutti i dati, lotti, potatura lapidi sul server, offline, `vuoto-remoto`), sezione in Impostazioni
+- [x] T1 giro 4 (24/09): aiuto in-app «Come funziona» + hint al primo avvio + popover sui pulsanti icona (`shared/aiuto.js`, `<slug>/aiuto.js`)
+- [ ] **Genna:** database D1 + binding (guida §3c) e testo Iubenda (guida §3c punto 6) → poi la sincronizzazione è attiva per tutti
+- [ ] T2: Penna, DNA, Accordatore, Metronomo a «completo» (roadmap)
 - [ ] Da provare su iPhone: Penna v2 (download in standalone, condividi `.txt`, tastiera aperta, stampa) e PBKDF2 200k iterazioni (spec 17 §6.9)
 - [ ] Trasposizione (T3, solo se la qualità regge). Checklist consegna e Split sheet: **scartati** il 22/09 (utili solo al flusso dello studio)
 - [ ] Prima del merge su `main`: informative Iubenda, prova completa su iPhone (vedi `guida-genna.md` §2)

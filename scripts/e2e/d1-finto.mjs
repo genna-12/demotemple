@@ -8,6 +8,9 @@
  *
  * Espone la fetta di API D1 che la Function usa davvero:
  *   db.prepare(sql).bind(...valori).first() / .all() / .run()
+ *   db.batch([istruzioni])   tutte in UNA transazione, tutto o niente, come D1
+ *                            (-> un risultato per istruzione); conta come UNA
+ *                            chiamata in `chiamate()` e una query per istruzione
  * I parametri sono `?1 ?2 ...`: sqlite li lega per posizione, quindi
  * `bind()` passa i valori nell'ordine in cui arrivano.
  *
@@ -31,11 +34,13 @@ export function creaD1() {
     const db = new DatabaseSync(':memory:');
     db.exec(SCHEMA);
     let query = 0;
+    let batch = 0;
 
-    return {
+    const d1 = {
         /* utili ai test, non alla Function */
         query: () => query,
-        azzeraConto() { query = 0; },
+        lotti: () => batch,
+        azzeraConto() { query = 0; batch = 0; },
         svuota() { db.exec('DELETE FROM voci; DELETE FROM limiti;'); },
 
         prepare(sql) {
@@ -56,9 +61,30 @@ export function creaD1() {
                     query++;
                     const i = st.run(...args);
                     return { success: true, meta: { changes: i.changes } };
+                },
+                /* per batch(): esegue senza contare la chiamata due volte */
+                esegui() {
+                    query++;
+                    if (st.columns().length) return { results: st.all(...args), success: true, meta: {} };
+                    const i = st.run(...args);
+                    return { results: [], success: true, meta: { changes: i.changes } };
                 }
             };
             return eseguibile;
         }
     };
+    d1.batch = async (istruzioni) => {
+        if (!Array.isArray(istruzioni) || !istruzioni.length) throw new Error('batch vuoto');
+        batch++;
+        db.exec('BEGIN');
+        try {
+            const out = istruzioni.map((x) => x.esegui());
+            db.exec('COMMIT');
+            return out;
+        } catch (e) {
+            db.exec('ROLLBACK');
+            throw e;
+        }
+    };
+    return d1;
 }

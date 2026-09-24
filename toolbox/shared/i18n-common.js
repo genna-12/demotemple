@@ -12,6 +12,21 @@
 // spec 01). "audio-resume-msg": testo "Tocca per riprendere" della spec
 // (00-architettura §3), pronto per lo strumento che lo mostra dopo
 // needsGesture() al ritorno in primo piano.
+// Chiavi "sync-*" (spec 18 §4/§5): la sincronizzazione era di Penna sola
+// (spec 17 §3, #pen-sync), ora e' della Toolbox intera, un codice per
+// tutto, in Impostazioni (#imp-sync). Spostate qui da penna/i18n.js perche'
+// valgono ovunque; "sync-what"/"sync-coll-*"/"sync-intro-all" sono nuove
+// del giro 18 (elenco delle collezioni sincronizzabili).
+// Chiavi "help-*"/"hint-*" (spec 18 §6, aiuto in-app uniforme): usate da
+// shared/aiuto.js, comune a tutti gli strumenti + /impostazioni/.
+// "help-open" e' il testo visibile del bottone .tb-help in barra
+// (data-i18n) e "help-close" l'aria-label del bottone × del foglio "Come
+// funziona" che aiuto.js costruisce al volo (riusa .tb-sheet/.tb-sheet-close
+// di shared/sheet.js: chiave separata da "sheet-close" perche' qui la X
+// chiude nello specifico l'aiuto, non un foglio qualsiasi).
+// "hint-close-aria" e' l'aria-label del × sulla riga .tb-hint del primo
+// avvio (testo della riga: aiuto.js legge hint.it/hint.en da <slug>/aiuto.js,
+// non da qui).
 export default {
     it: {
         'tb-back': 'Toolbox',
@@ -22,6 +37,7 @@ export default {
         'bar-logo-aria': 'Toolbox, vai alla dashboard',
         'menu-all': 'Dashboard',
         'menu-tools': 'Strumenti',
+        'menu-impostazioni': 'Impostazioni',
         'menu-install': 'Installa l’app',
         'menu-ext': 'Sito dello studio',
         'pill-soon': 'In arrivo',
@@ -100,6 +116,44 @@ export default {
         'sheet-close': 'Chiudi',
         'info-aria': 'Che cos\'è',
 
+        'help-open': 'Come funziona',
+        'help-close': 'Chiudi l’aiuto',
+        'hint-close-aria': 'Chiudi il suggerimento',
+
+        'tb-settings-link': 'Impostazioni della Toolbox →',
+
+        'sync-title': 'Sincronizza fra dispositivi',
+        'sync-intro-all': 'Stessi testi, piani e preferenze su telefono e computer, senza account.',
+        'sync-create': 'Crea un codice',
+        'sync-have': 'Ho già un codice',
+        'sync-code-warn': 'Scrivilo da qualche parte: senza il codice i dati non si ritrovano.',
+        'sync-last': 'Ultima sincronizzazione: {ora}',
+        'sync-wipe': 'Scollega ed elimina dal server',
+        'sync-off': 'Nessuna rete: riprovo dopo',
+        'sync-bad-code': 'Codice non valido',
+        'sync-full': 'Collezione piena',
+        'sync-activate': 'Attiva',
+        'sync-link': 'Collega',
+        'sync-now': 'Sincronizza',
+        'sync-show': 'Mostra codice',
+        'sync-unlink': 'Scollega',
+        'sync-doing': 'Sincronizzazione in corso…',
+        'sync-done': 'Sincronizzato',
+        'sync-fail': 'Errore del server: riprovo dopo',
+        'sync-too-big': 'Elemento troppo grande per la sincronizzazione',
+        'sync-copy': 'Copia',
+        'sync-copied': 'Codice copiato',
+        'sync-input-label': 'Il tuo codice (sei parole)',
+        'sync-input-placeholder': 'parola parola parola parola parola parola',
+        'sync-wipe-ask': 'Elimino le copie dal server? I dati restano su questo dispositivo.',
+        'sync-what': 'Cosa sincronizzare',
+        'sync-coll-penna': 'Testi',
+        'sync-coll-uscite': 'Piani di uscita',
+        'sync-coll-accordature': 'Accordature',
+        'sync-coll-metronomo-preset': 'Preset del metronomo',
+        'sync-coll-dna': 'Storico DNA',
+        'sync-coll-impostazioni': 'Preferenze',
+
         'e404-eyebrow': 'Errore 404',
         'e404-title': 'Pagina non trovata',
         'e404-intro': 'Il link che hai seguito non porta da nessuna parte: la pagina è stata spostata oppure non è mai esistita.',
@@ -119,6 +173,7 @@ export default {
         'bar-logo-aria': 'Toolbox, go to the dashboard',
         'menu-all': 'Dashboard',
         'menu-tools': 'Tools',
+        'menu-impostazioni': 'Settings',
         'menu-install': 'Install the app',
         'menu-ext': 'Studio website',
         'pill-soon': 'Coming soon',
@@ -196,6 +251,44 @@ export default {
         'footer-designed': 'Designed by Genna',
         'sheet-close': 'Close',
         'info-aria': 'What is this',
+
+        'help-open': 'How it works',
+        'help-close': 'Close help',
+        'hint-close-aria': 'Dismiss this tip',
+
+        'tb-settings-link': 'Toolbox settings →',
+
+        'sync-title': 'Sync across devices',
+        'sync-intro-all': 'The same lyrics, plans and preferences on your phone and computer, no account.',
+        'sync-create': 'Create a code',
+        'sync-have': 'I already have a code',
+        'sync-code-warn': 'Write it down: without the code the data cannot be recovered.',
+        'sync-last': 'Last sync: {ora}',
+        'sync-wipe': 'Unlink and delete from the server',
+        'sync-off': 'No network: will retry later',
+        'sync-bad-code': 'Invalid code',
+        'sync-full': 'Collection full',
+        'sync-activate': 'Turn on',
+        'sync-link': 'Link',
+        'sync-now': 'Sync now',
+        'sync-show': 'Show code',
+        'sync-unlink': 'Unlink',
+        'sync-doing': 'Syncing…',
+        'sync-done': 'Synced',
+        'sync-fail': 'Server error: will retry later',
+        'sync-too-big': 'Item too large to sync',
+        'sync-copy': 'Copy',
+        'sync-copied': 'Code copied',
+        'sync-input-label': 'Your code (six words)',
+        'sync-input-placeholder': 'word word word word word word',
+        'sync-wipe-ask': 'Delete the server copies? The data stays on this device.',
+        'sync-what': 'What to sync',
+        'sync-coll-penna': 'Lyrics',
+        'sync-coll-uscite': 'Release plans',
+        'sync-coll-accordature': 'Tunings',
+        'sync-coll-metronomo-preset': 'Metronome presets',
+        'sync-coll-dna': 'DNA history',
+        'sync-coll-impostazioni': 'Preferences',
 
         'e404-eyebrow': 'Error 404',
         'e404-title': 'Page not found',

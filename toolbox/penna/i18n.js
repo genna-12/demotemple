@@ -89,35 +89,12 @@ export default {
         'penna-limit': 'Il quaderno è pieno (1000 testi): eliminane qualcuno per scriverne altri',
         'penna-print': 'Stampa',
         'penna-gone': 'Testo non trovato',
-        /* Sincronizza fra dispositivi (spec 17 §3), foglio impostazioni.
-           sync-input-placeholder non è nella lista chiavi della spec
-           (solo sync-input-label lo è): aggiunta dal builder perché il
-           markup la richiede, stesso principio di penna-count-heading
-           nella 16. */
-        'sync-title': 'Sincronizza fra dispositivi',
-        'sync-intro': 'Stessi testi su telefono e computer, senza account.',
-        'sync-create': 'Crea un codice',
-        'sync-have': 'Ho già un codice',
-        'sync-code-warn': 'Scrivilo da qualche parte: senza il codice i testi non si ritrovano.',
-        'sync-last': 'Ultima sincronizzazione: {ora}',
-        'sync-wipe': 'Scollega ed elimina dal server',
-        'sync-off': 'Nessuna rete: riprovo dopo',
-        'sync-bad-code': 'Codice non valido',
-        'sync-full': 'Quaderno pieno (1000 testi)',
-        'sync-activate': 'Attiva',
-        'sync-link': 'Collega',
-        'sync-now': 'Sincronizza',
-        'sync-show': 'Mostra codice',
-        'sync-unlink': 'Scollega',
-        'sync-doing': 'Sincronizzazione in corso…',
-        'sync-done': 'Sincronizzato',
-        'sync-fail': 'Errore del server: riprovo dopo',
-        'sync-too-big': 'Testo troppo grande per la sincronizzazione',
-        'sync-copy': 'Copia',
-        'sync-copied': 'Codice copiato',
-        'sync-input-label': 'Il tuo codice (sei parole)',
-        'sync-input-placeholder': 'parola parola parola parola parola parola',
-        'sync-wipe-ask': 'Elimino le copie dal server? I testi restano su questo dispositivo.'
+        /* Le chiavi sync-* (spec 17 §3) sono passate a shared/i18n-common.js
+           (spec 18 §4/§5): la sincronizzazione è ora di tutta la Toolbox,
+           non solo di Penna, #pen-sync e' sparita da questa pagina, resta
+           solo il rimando (chiave non elencata dalla spec: aggiunta dal
+           builder perche' il markup la richiede). */
+        'penna-sync-link': 'Sincronizza fra dispositivi → Impostazioni'
     },
     en: {
         'penna-title': 'Lyric Pad',
@@ -194,29 +171,6 @@ export default {
         'penna-limit': 'The notebook is full (1000 lyrics): delete some to write more',
         'penna-print': 'Print',
         'penna-gone': 'Lyric not found',
-        'sync-title': 'Sync across devices',
-        'sync-intro': 'The same lyrics on your phone and computer, no account.',
-        'sync-create': 'Create a code',
-        'sync-have': 'I already have a code',
-        'sync-code-warn': 'Write it down: without the code the lyrics cannot be recovered.',
-        'sync-last': 'Last sync: {ora}',
-        'sync-wipe': 'Unlink and delete from the server',
-        'sync-off': 'No network: will retry later',
-        'sync-bad-code': 'Invalid code',
-        'sync-full': 'Notebook full (1000 lyrics)',
-        'sync-activate': 'Turn on',
-        'sync-link': 'Link',
-        'sync-now': 'Sync now',
-        'sync-show': 'Show code',
-        'sync-unlink': 'Unlink',
-        'sync-doing': 'Syncing…',
-        'sync-done': 'Synced',
-        'sync-fail': 'Server error: will retry later',
-        'sync-too-big': 'Lyric too large to sync',
-        'sync-copy': 'Copy',
-        'sync-copied': 'Code copied',
-        'sync-input-label': 'Your code (six words)',
-        'sync-input-placeholder': 'word word word word word word',
-        'sync-wipe-ask': 'Delete the server copies? The lyrics stay on this device.'
+        'penna-sync-link': 'Sync across devices → Settings'
     }
 };

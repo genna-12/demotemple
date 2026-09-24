@@ -47,11 +47,12 @@ transazione per passo, da `pronto()` prima di ogni lettura:
 3. `dna`: stesso involucro, id = timestamp. 4. `pianificatore-uscita` → `uscite`.
 5. `tt.accordatore.custom` (già con `name` e `strings`) → un record per accordatura in
    `accordature`; la preferenza resta scritta una versione ancora.
-6. Preferenze **portabili** (`tinyTempleLang`, `tt.shared.a4`, `tt.dna.target`, `tt.dash.*`,
+6. Preferenze **portabili** (`tinyTempleLang`, `tt.shared.a4`, `tt.dna.target`,
    `tt.penna.*`, `tt.metronomo.*`, `tt.calcolatore-tempo.*`) → un record per chiave in
    `impostazioni`; localStorage resta la copia veloce per il boot sincrono (`lang-boot.js`),
    l'archivio è la verità. **Locali e mai sincronizzati**: consenso al microfono, chiave e
-   codice, pacchetti lingua installati.
+   codice, pacchetti lingua installati, e dal giro 3 di T1 la dashboard (`tt.dash.*`) e il
+   volume del metronomo (`tt.metronomo.volume`), che dipendono dal dispositivo.
 
 Si scrive sempre prima di cancellare, ed `esportaTutto()` funziona anche prima di migrare.
 

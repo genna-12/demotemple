@@ -174,7 +174,7 @@ test('un profilo vecchio migra tutto, una volta sola, e i sid restano (spec 18 �
     const imp = new Map(di('impostazioni').map((r) => [r.id, r.value.dati]));
     expect(imp.get('tt.penna.ordine')).toBe('titolo');
     expect(imp.get('tt.metronomo.bpm')).toBe(97);
-    expect(imp.get('tt.dash.hidden')).toEqual(['dna']);
+    expect(imp.has('tt.dash.hidden'), 'la dashboard e\u2019 locale (giro 3)').toBe(false);
     expect(imp.get('tt.shared.a4')).toBe(442);
     expect(imp.get('tt.dna.target')).toBe('apple');
     expect(imp.get('tinyTempleLang')).toBe('it');
@@ -350,7 +350,7 @@ for (const attiva of [false, true]) {
             lap('4444444444444444', adesso - 1000)                  // recente mai sincronizzata: resta
         ];
         /* un codice salvato (non valido per il server: qui non parte nessun giro) */
-        if (attiva) records.push({ tool: 'penna-sync', id: 'quaderno', updated: adesso, value: { codice: 'finto', id: 'nessuno' } });
+        if (attiva) records.push({ tool: 'sync', id: 'quaderno', updated: adesso, value: { codice: 'finto', id: 'nessuno' } });
         await semina(page, { records });
         await page.goto('/penna/', { waitUntil: 'load' });
         const attese = ['2222222222222222', '3333333333333333', '4444444444444444'];
@@ -372,9 +372,9 @@ test('cancellazione dura (lapide:false) per le potature automatiche, lapide per 
     expect(esito).toEqual({ dura: true, morbida: true, tutti: ['b:1'] });
 });
 
-test('la sincronizzazione di Penna porta testi e lapidi dal record (niente penna-tomb)', async ({ page, browser }) => {
+test('la sincronizzazione porta i testi di Penna e le lapidi dal record (niente penna-tomb)', async ({ page, browser }) => {
     const giro = (p, corpo, arg = null) => p.evaluate('(async (arg) => { '
-        + 'const m = await import(\'/shared/archivio.js\'); const s = await import(\'/penna/sync.js\'); '
+        + 'const m = await import(\'/shared/archivio.js\'); const s = await import(\'/shared/sync.js\'); '
         + corpo + '\n})(' + JSON.stringify(arg) + ')');
 
     await page.goto('/penna/', { waitUntil: 'load' });
@@ -383,7 +383,7 @@ test('la sincronizzazione di Penna porta testi e lapidi dal record (niente penna
         await s.collega(codice);
         await m.scrivi('penna', 't-sync', { titolo: 'Viaggia', testo: 'a\\nb', modificato: new Date().toISOString() });
         const e = await s.sincronizza();
-        if (e.esito !== 'ok' || e.inviati !== 1) throw new Error('primo giro: ' + JSON.stringify(e));
+        if (e.esito !== 'ok' || e.perCollezione.penna.inviati !== 1) throw new Error('primo giro: ' + JSON.stringify(e));
         return codice;
     `);
 
@@ -397,7 +397,7 @@ test('la sincronizzazione di Penna porta testi e lapidi dal record (niente penna
             const vivi = await m.elenca('penna');
             return { e, vivi: vivi.map((r) => ({ titolo: r.dati.titolo, sid: r.sid, sinc: r.sincronizzato === r.modificato })) };
         `, codice);
-        expect(arrivato.e.ricevuti).toBe(1);
+        expect(arrivato.e.perCollezione.penna.ricevuti).toBe(1);
         expect(arrivato.vivi).toHaveLength(1);
         expect(arrivato.vivi[0].titolo).toBe('Viaggia');
         expect(arrivato.vivi[0].sinc, 'un testo ricevuto e’ gia’ sincronizzato').toBe(true);
@@ -409,7 +409,7 @@ test('la sincronizzazione di Penna porta testi e lapidi dal record (niente penna
             const r = await m.leggiRecord('penna', 't-sync');
             return { e, r };
         `);
-        expect(primo.e.eliminati).toBe(1);
+        expect(primo.e.perCollezione.penna.eliminati).toBe(1);
         expect(primo.r.cancellato).toBe(1);
         expect(primo.r.sincronizzato, 'la lapide inviata va segnata sincronizzata').toBe(primo.r.modificato);
 
@@ -417,7 +417,7 @@ test('la sincronizzazione di Penna porta testi e lapidi dal record (niente penna
             const e = await s.sincronizza();
             return { e, vivi: (await m.elenca('penna')).length, tutti: await m.elenca('penna', { conCancellati: true }) };
         `);
-        expect(secondo.e.eliminati).toBe(1);
+        expect(secondo.e.perCollezione.penna.eliminati).toBe(1);
         expect(secondo.vivi).toBe(0);
         expect(secondo.tutti).toHaveLength(1);
         expect(secondo.tutti[0].sid).toBe(arrivato.vivi[0].sid);

@@ -26,7 +26,7 @@ export { expect };
 
 export const BASE = 'http://127.0.0.1:4321';
 
-/** Le sette pagine della Toolbox, piu' la 404. */
+/** Le pagine della Toolbox (sei strumenti, dashboard, Impostazioni), piu' la 404. */
 export const PAGINE = [
     { percorso: '/', nome: 'dashboard' },
     { percorso: '/metronomo/', nome: 'metronomo' },
@@ -35,6 +35,7 @@ export const PAGINE = [
     { percorso: '/dna/', nome: 'dna' },
     { percorso: '/penna/', nome: 'penna' },
     { percorso: '/pianificatore-uscita/', nome: 'pianificatore-uscita' },
+    { percorso: '/impostazioni/', nome: 'impostazioni' },
     { percorso: '/404', nome: '404', stato404: true }
 ];
 

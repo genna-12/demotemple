@@ -1181,8 +1181,8 @@ a.tb-tile:active {
 
 .tb-sheet-close {
     flex-shrink: 0;
-    width: 32px;
-    height: 32px;
+    width: var(--tap);
+    height: var(--tap);
     min-height: 0;
     display: flex;
     align-items: center;
@@ -1544,4 +1544,204 @@ a.tb-tile:active {
     padding: 60px 20px;
     color: var(--text-muted);
     font-size: 0.9rem;
+}
+
+/* --- SINCRONIZZAZIONE: riquadro del codice (spec 17 §5, spec 18 §4/§5) ---
+   Nata in Penna (#pen-sync) come .pen-sync-code, ora condivisa perche' la
+   sincronizzazione e' di tutta la Toolbox (Impostazioni, #imp-sync-code e
+   #imp-sync-code-on). Font-family del testo (non mono, e' un codice da
+   leggere ad alta voce, non da allineare), dimensione generosa e interlinea
+   ampia per le sei parole su piu' righe a 390px, user-select:all per
+   prenderlo con un tocco, overflow-wrap:anywhere perche' una parola lunga
+   non sbordi. Vetro coerente con --glass-* (stessa ricetta di
+   .tb-menu-toggle/.tb-tile), raggio --r-md. */
+.tb-sync-code {
+    margin: 0;
+    padding: var(--sp-4);
+    border-radius: var(--r-md);
+    background: var(--glass-bg);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    border: 1px solid var(--glass-border);
+    border-top: 1px solid var(--glass-border-top);
+    font-family: var(--font-text);
+    font-size: 1.15rem;
+    line-height: 1.8;
+    letter-spacing: 0.02em;
+    text-align: center;
+    color: var(--text-primary);
+    user-select: all;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+}
+
+.tb-sync-code[hidden] {
+    display: none;
+}
+
+/* --- AIUTO IN-APP UNIFORME (spec 18 §6) ---
+   shared/aiuto.js (implementer) monta i tre pezzi qui sotto da
+   <slug>/aiuto.js (default export { it:[{t,d}...], en:[...], hint:{it,en} },
+   builder); qui solo il markup/CSS, il mount e' di mountAiuto({slug}).
+   Contratto atteso (letto nel sorgente di shared/aiuto.js):
+
+   1. button.tb-help.tb-btn.tb-btn--ghost (etichetta visibile,
+      svg><use href="#tb-icon-help"> + span[data-i18n=help-open]).
+      mountAiuto() gli imposta da solo aria-haspopup/aria-controls/
+      aria-expanded e al tocco costruisce un .tb-sheet unico per pagina
+      (#tb-help-sheet, riusato ad ogni apertura) con dentro ul.tb-help-list
+      > li.tb-help-item > h3.tb-help-item-title + p.tb-help-item-text, una
+      voce per elemento di aiuto.js, e lo apre con openSheet() di sheet.js.
+      Due posizioni secondo le pagine: subito dopo .tb-page-header (nessuna
+      barra propria) con anche la classe .tb-help--center, che lo centra da
+      solo senza dipendere dal text-align del genitore; oppure dentro la
+      barra dello strumento quando c'e' (es. .pen-editor-bar), bottone come
+      gli altri della riga, senza il modificatore.
+
+   2. div.tb-hint#tb-hint[hidden] subito sotto la barra/il titolo: riga non
+      bloccante, mountAiuto() ci scrive dentro p.tb-hint-text (il testo di
+      hint.it/hint.en) + button.tb-hint-close (×, aria-label). Mostrata al
+      primo avvio di ogni strumento (ricordato per slug in tt.<slug>.hint),
+      si chiude anche da sola dopo la prima interazione con lo strumento,
+      non solo dal ×. Non e' un overlay: scorre col contenuto, non copre
+      nulla, non e' fissa.
+
+   3. .tb-tip: popover ancorato a un bottone icona con [data-tip="<chiave
+      i18n>"] (regola spec 18 §6: ogni pulsante icona ha etichetta visibile
+      o tb-tip). mountAiuto() crea un solo div#tb-tip.tb-tip per pagina, ci
+      mette t(chiave) dentro, lo posiziona con left/top inline (stessa
+      logica di place() in sheet.js) e alterna [hidden]/.is-open; .is-above
+      segna solo che e' stato ancorato sopra il bottone invece che sotto
+      (spazio insufficiente in basso), nessuna geometria diversa richiesta
+      qui. Mostrato al tocco lungo, al fuoco da tastiera o al mouse fermo
+      sopra; chiuso da un tocco fuori, da Esc, scorrendo, uscendo col
+      fuoco/mouse. */
+.tb-help {
+    flex-shrink: 0;
+}
+
+/* Standalone dopo .tb-page-header: si centra da solo (display:flex +
+   width:fit-content, non inline-flex, cosi' margin:auto funziona) senza
+   contare sul text-align:center del genitore, che qui non c'e' piu'. */
+.tb-help--center {
+    display: flex;
+    width: fit-content;
+    margin: var(--sp-3) auto 0;
+}
+
+.tb-hint {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--sp-3);
+    max-width: 640px;
+    margin: 0 auto var(--sp-4);
+    padding: var(--sp-2) var(--sp-3) var(--sp-2) var(--sp-4);
+    border-radius: var(--r-pill);
+    border: 1px solid var(--glass-border);
+    background: rgba(255, 255, 255, 0.04);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    text-align: left;
+}
+
+.tb-hint[hidden] {
+    display: none;
+}
+
+.tb-hint-text {
+    flex: 1 1 auto;
+    font-size: 0.82rem;
+    line-height: 1.5;
+    color: var(--text-muted);
+}
+
+.tb-hint-close {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--tap);
+    height: var(--tap);
+    min-height: 0;
+    font-size: 1.2rem;
+    color: var(--text-muted);
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .tb-hint-close:hover {
+        color: var(--accent-orange);
+    }
+}
+
+/* Foglio "Come funziona" (mountAiuto/buildSheet): riusa .tb-sheet/
+   .tb-sheet-scrim/.tb-sheet-head/.tb-sheet-body cosi' come sono (stessa X,
+   stesso scrim, stessa trappola del fuoco), solo il corpo cambia forma
+   (lista invece di un paragrafo). */
+.tb-help-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-4);
+}
+
+.tb-help-item + .tb-help-item {
+    padding-top: var(--sp-4);
+    border-top: 1px solid var(--glass-border);
+}
+
+.tb-help-item-title {
+    margin-bottom: var(--sp-1);
+    font-family: var(--font-title);
+    font-size: 0.85rem;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    color: var(--text-primary);
+}
+
+.tb-help-item-text {
+    font-size: 0.85rem;
+    line-height: 1.6;
+    color: var(--text-muted);
+}
+
+/* Popover ancorato dal JS (mountAiuto/placeTip: position:fixed + left/top
+   inline, stessa idea di place() in sheet.js); qui solo l'aspetto e lo
+   stato mostrato/nascosto. .is-above: ancorato sopra il bottone invece che
+   sotto, stessa classe con lo stesso significato di .tb-select-panel. */
+.tb-tip {
+    z-index: 500;
+    padding: var(--sp-2) var(--sp-3);
+    border-radius: var(--r-pop);
+    border: 1px solid var(--glass-border);
+    border-top: 1px solid var(--glass-border-top);
+    background: var(--glass-bg);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    box-shadow: var(--shadow-pop);
+    font-size: 0.78rem;
+    line-height: 1.5;
+    color: var(--text-primary);
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity var(--dur-fast) ease;
+}
+
+.tb-tip[hidden] {
+    display: none;
+}
+
+.tb-tip.is-open {
+    opacity: 1;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    .tb-hint {
+        animation: tb-hint-in var(--dur-fast) var(--ease-cinematic);
+    }
+}
+
+@keyframes tb-hint-in {
+    from { opacity: 0; transform: translateY(-4px); }
+    to { opacity: 1; transform: translateY(0); }
 }

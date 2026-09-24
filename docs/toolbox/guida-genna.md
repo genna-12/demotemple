@@ -83,10 +83,15 @@ cartella del sito per toglierlo: Cloudflare lo userebbe per avviare una build.
   Wikizionario per contare le sillabe (e muta compresa), che oggi è stimato
   dalle regole. Scrive `toolbox/penna/data/fr/*-v2.*`: cancella i `-v1`.
 
-## 3c. Attivare la sincronizzazione di Penna (una volta, spec 17)
+## 3c. Attivare la sincronizzazione della Toolbox (una volta, spec 17 e 18)
 
-Penna v2 sincronizza i testi fra PC e telefono con un "codice del quaderno" di
-sei parole (lo stesso codice servirà poi per tutti i dati della Toolbox: spec 18): i testi partono cifrati dal dispositivo e il server (una Pages
+La Toolbox sincronizza i dati fra PC e telefono con un **codice di sei parole
+che vale per tutta la Toolbox**: testi di Penna, piani di uscita, accordature,
+storico del DNA e preferenze (spec 18 §4). Il codice si crea e si collega da
+**Impostazioni → Sincronizzazione** (`/impostazioni/#imp-sync`); lì c'è anche
+un interruttore per ogni tipo di dato. In Penna il foglio ha solo un link a
+quella sezione. Chi aveva già attivato il codice in Penna lo ritrova acceso:
+si sposta da solo. I dati partono cifrati dal dispositivo e il server (una Pages
 Function + un database D1 dello stesso progetto Cloudflare, costo zero) vede
 solo un identificatore e blocchi illeggibili. Il codice è già nel repo
 (`toolbox/functions/api/quaderno/[[route]].js`) e parte col push; manca solo
@@ -124,9 +129,9 @@ il database, che si crea dalla dashboard:
    > identificatore casuale, la data dell'ultima modifica e il contenuto
    > cifrato: senza il tuo codice nessuno, noi compresi, può leggerlo. Non
    > usiamo cookie e non registriamo il contenuto. Per cancellare tutto:
-   > Impostazioni → Sincronizza fra dispositivi → Scollega ed elimina dal
-   > server; le copie cifrate spariscono subito e i dati restano solo sul
-   > tuo dispositivo.
+   > Impostazioni → Sincronizzazione → Scollega ed elimina dal server; le
+   > copie cifrate spariscono subito e i dati restano solo sul tuo
+   > dispositivo.
 
    > **Toolbox data sync (optional).** When you turn it on, your data (lyrics,
    > release plans, analyses, tunings, preferences) is encrypted on your
@@ -135,14 +140,15 @@ il database, che si crea dalla dashboard:
    > EU/USA). Of those copies we keep only a random identifier, the
    > last-modified date and the encrypted content: without your code nobody,
    > including us, can read it. We use no cookies and never record the
-   > content. To erase everything: Settings → Sync across devices → Unlink
-   > and delete from the server; the encrypted copies are removed
+   > content. To erase everything: Settings → Sync → Unlink and delete from
+   > the server; the encrypted copies are removed
    > immediately and the data stays only on your device.
 
    Finché gli artisti non la attivano, la Toolbox non fa nessuna richiesta di rete.
 
-Se il database non c'è ancora, Penna funziona lo stesso: chi prova ad attivare
-la sincronizzazione vede "Errore del server: riprovo dopo" e nient'altro.
+Se il database non c'è ancora, la Toolbox funziona lo stesso: chi prova ad
+attivare la sincronizzazione vede "Errore del server: riprovo dopo" e
+nient'altro.
 
 ## 4. Dove stanno le cose
 

@@ -1174,6 +1174,23 @@ body:has(#pen-pack-sheet:not([hidden])) .pen-pack-scrim {
     color: var(--text-muted);
 }
 
+/* Riga verso /impostazioni/ (spec 18 §5/§9), in fondo al foglio: testo,
+   niente sfondo, bersaglio 44px come ogni link della Toolbox. */
+.tb-settings-link {
+    display: flex;
+    align-items: center;
+    min-height: var(--tap);
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    text-decoration: none;
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .tb-settings-link:hover {
+        color: var(--accent-orange);
+    }
+}
+
 /* Revisione: flex 1 1 120px stringeva "Esporta tutto" su due righe mentre
    "Stampa" restava sola sulla sua. Griglia a due colonne: ogni bottone ha
    la stessa larghezza garantita, "Stampa" occupa la prima cella della
@@ -1194,131 +1211,10 @@ body:has(#pen-pack-sheet:not([hidden])) .pen-pack-scrim {
     grid-column: 1 / -1;
 }
 
-/* --- Sincronizza fra dispositivi (spec 17 §3/§5) --- */
-.pen-sync {
-    display: flex;
-    flex-direction: column;
-    gap: var(--sp-3);
-}
-
-.pen-sync-state {
-    min-height: 20px;
-    margin: 0;
-    font-size: 0.75rem;
-    color: var(--text-muted);
-}
-
-.pen-sync-view {
-    display: flex;
-    flex-direction: column;
-    gap: var(--sp-3);
-}
-
-.pen-sync-view[hidden] {
-    display: none;
-}
-
-.pen-sync-intro {
-    margin: 0;
-    font-size: 0.85rem;
-    color: var(--text-muted);
-}
-
-/* Riquadro del codice (spec 17 §5): font-family del testo (non mono, e'
-   un codice da leggere ad alta voce, non da allineare), dimensione
-   generosa e interlinea ampia per le sei parole su piu' righe a 390px,
-   user-select:all per prenderlo con un tocco, overflow-wrap:anywhere
-   perche' una parola lunga non sbordi. Vetro coerente con --glass-*
-   (stessa ricetta di .tb-menu-toggle/.tb-tile), raggio --r-md. */
-.pen-sync-code {
-    margin: 0;
-    padding: var(--sp-4);
-    border-radius: var(--r-md);
-    background: var(--glass-bg);
-    backdrop-filter: var(--glass-blur);
-    -webkit-backdrop-filter: var(--glass-blur);
-    border: 1px solid var(--glass-border);
-    border-top: 1px solid var(--glass-border-top);
-    font-family: var(--font-text);
-    font-size: 1.15rem;
-    line-height: 1.8;
-    letter-spacing: 0.02em;
-    text-align: center;
-    color: var(--text-primary);
-    user-select: all;
-    overflow-wrap: anywhere;
-    word-break: break-word;
-}
-
-.pen-sync-warn {
-    margin: 0;
-    font-size: 0.78rem;
-    color: var(--text-muted);
-}
-
-.pen-sync-input-row {
-    display: flex;
-    flex-direction: column;
-    gap: var(--sp-1);
-}
-
-.pen-sync-input-label {
-    font-size: 0.8rem;
-    color: var(--text-muted);
-}
-
-.pen-sync-input {
-    width: 100%;
-    min-height: var(--tap);
-    padding: 0 var(--sp-3);
-    border: 1px solid var(--glass-border);
-    border-radius: var(--r-pill);
-    background: var(--surface-1);
-    color: var(--text-primary);
-    font-size: 1rem;
-}
-
-.pen-sync-input:focus-visible {
-    border-color: var(--accent-orange);
-}
-
-.pen-sync-last {
-    margin: 0;
-    font-size: 0.8rem;
-    color: var(--text-muted);
-}
-
-/* Bottone unico di una vista (es. "Collega" nella vista have): stessa
-   griglia a due colonne di .pen-settings-actions, ma a tutta riga invece
-   di meta'. */
-.pen-settings-actions--single .tb-btn {
-    grid-column: 1 / -1;
-}
-
-/* Annulla (vista create/have): sempre a tutta riga, sotto la coppia di
-   azioni primarie quando ce n'e' una (create) o sotto Collega (have,
-   dove .pen-settings-actions--single lo fa gia', qui e' ridondante ma
-   innocuo). */
-.pen-settings-actions .pen-sync-cancel {
-    grid-column: 1 / -1;
-}
-
-/* Vista "on": Sincronizza/Mostra codice in coppia, Scollega (terzo item)
-   a tutta riga, stesso principio di #pen-print. */
-.pen-settings-actions > #pen-sync-unlink {
-    grid-column: 1 / -1;
-}
-
-/* #pen-sync-wipe sta fuori dalla griglia (azione distruttiva, mai in
-   coppia con le altre): a tutta riga, font e spaziatura ridotti perche'
-   "Scollega ed elimina dal server" non vada a capo a 390px. */
-.pen-sync-wipe-btn {
-    width: 100%;
-    font-size: 0.72rem;
-    letter-spacing: 1px;
-    padding-left: var(--sp-3);
-    padding-right: var(--sp-3);
-}
+/* Sincronizza fra dispositivi (spec 17 §3/§5): la sezione e i suoi stili
+   .pen-sync-* sono passati a Impostazioni (spec 18 §4/§5, #imp-sync,
+   impostazioni/impostazioni.css + shared/components.css .tb-sync-code).
+   Qui resta solo il rimando .tb-settings-link, gia' definito sotto. */
 
 /* ============================================================
    Stampa (spec 16 §4 punto 11, stesso principio di pianificatore.css):

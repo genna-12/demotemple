@@ -100,9 +100,11 @@ import { init, t } from '/shared/i18n.js';
 import { pressFeedback, setStatus } from '/shared/ui.js';
 import { mountBar } from '/shared/nav.js';
 import { initPwa } from '/shared/pwa.js';
+import { mountAiuto } from '/shared/aiuto.js';
 import { getContext, unlock, needsGesture, onStateChange } from '/shared/audio.js';
 import * as mic from '/shared/mic.js';
 import { prefs, elenca, scrivi, elimina, onChange as onArchivio, inSolaLettura, LIMITI } from '/shared/archivio.js';
+import { avviaPagina as avviaSync } from '/shared/sync.js';
 import { createPitchTracker, noteInfo, noteToHz, nearestIndex } from '/shared/pitch.js';
 import { createStringVoices, voiceFor } from '/shared/strings.js';
 import { mountSelects, mountSelect } from '/shared/select.js';
@@ -1094,7 +1096,11 @@ export function mountTuner() {
         }).catch(() => { /* senza IndexedDB resta la prefs */ });
     }
     const customReady = refreshCustom();
-    onArchivio(ACCORDATURE, () => { refreshCustom(); });
+    /* le altre schede, e questa quando scrive la sincronizzazione (spec 18 §4) */
+    onArchivio(ACCORDATURE, (m) => {
+        if (m && m.locale && m.origine !== 'sync') return;
+        refreshCustom();
+    }, { locali: true });
 
     return {
         ui,
@@ -1132,4 +1138,8 @@ if (typeof document !== 'undefined' && document.getElementById('acc')) {
         installSection: document.querySelector('.tb-menu-install-group')
     });
     mountTuner();
+    /* «Come funziona», riga del primo avvio, tip dei pulsanti icona (spec 18 §6) */
+    try { mountAiuto({ slug: TOOL }); } catch (e) { console.warn('[aiuto] non montato:', e && e.message); }
+    /* giro all'apertura e 3 s dopo i salvataggi; senza codice niente rete */
+    avviaSync().catch(() => { /* senza IndexedDB resta spenta */ });
 }

@@ -420,6 +420,14 @@ html.tb-no-intro .tb-intro {
     }
 }
 
+/* "Animazioni ridotte" delle Impostazioni (spec 18 §5): stessa regola,
+   classe messa da /shared/lang-boot.js prima del primo paint */
+html.tb-ridotte .tb-intro,
+html.tb-ridotte .tb-logo {
+    transition: none !important;
+    animation: none !important;
+}
+
 /* --- MENU COMPATTO `tb-menu` (spec 02 §3), riempito da shared/nav.js --- */
 /* CONTRATTO shared/nav.js (markup gia' pronto in index.html/404.html):
      #tb-menu[hidden] > .tb-menu-scrim + .tb-menu-panel[role=dialog]
@@ -967,6 +975,22 @@ a.tb-menu-link[aria-current="page"] {
         transition-duration: 0.01ms !important;
         transition-delay: 0ms !important;
     }
+}
+
+/* Lo stesso, forzato da "Animazioni ridotte" (Impostazioni, spec 18 §5):
+   html.tb-ridotte la mette /shared/lang-boot.js leggendo localStorage. */
+html.tb-ridotte {
+    scroll-behavior: auto !important;
+}
+
+html.tb-ridotte *,
+html.tb-ridotte *::before,
+html.tb-ridotte *::after {
+    animation-duration: 0.01ms !important;
+    animation-delay: 0ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    transition-delay: 0ms !important;
 }
 
 /* Lingua non italiana salvata: testi nascosti fino alla prima traduzione

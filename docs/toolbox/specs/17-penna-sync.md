@@ -105,8 +105,7 @@ quello della 18 §4**, non quello di questa tabella.
 | DELETE | `/api/quaderno/<id>/<coll>/<doc>` | `{aggiornato}` | lapide: `cancellato=1`, `blob=''` |
 | DELETE | `/api/quaderno/<id>` | — | cancella davvero tutto (anche la riga in `limiti`) |
 
-`PUT /api/quaderno/<id>/<coll>` (il **lotto** della 18 §4, un solo `env.QUADERNO.batch()`) non è
-ancora implementato: arriva in T1 e fino ad allora risponde `404 {errore:"rotta"}`. `collezione`
+`PUT /api/quaderno/<id>/<coll>` (il **lotto** della 18 §4, ≤ 20 voci, anche lapidi, un solo `env.QUADERNO.batch()`) esiste dal giro 3 di T1 ed è la via normale di `shared/sync.js`. `collezione`
 va in `^[a-z][a-z0-9-]{1,31}$`; il tetto di 1000 documenti è **per collezione**.
 
 PUT/DELETE sono **last-write-wins per documento**: `ON CONFLICT(quaderno,doc) DO UPDATE SET …
@@ -189,15 +188,22 @@ testo, `user-select: all`, `overflow-wrap: anywhere`, nessun bordo che sbordi a 
    successivo con titolo, lingua e dialefe; modificato su entrambi vince l'ultimo salvataggio,
    senza fusioni né duplicati; eliminato su uno sparisce sull'altro (lapide). Un codice diverso
    apre un quaderno vuoto.
-4. Il server rifiuta: id o doc fuori formato (400), blob oltre 262 144 caratteri (413), il
-   1001-esimo documento (413), 61 scritture in un minuto (429 con `Retry-After`). Ogni risposta
+4. Il server rifiuta: id o doc fuori formato (400), blob oltre `MAX_BLOB` di `shared/limiti.js`
+   (384 KB di base64 dal giro 3 di T1, così ci sta un testo da 256 KB) (413), il documento vivo
+   oltre il tetto della collezione (le lapidi non contano e si potano dopo 90 giorni) (413), 61 scritture in un minuto (429 con `Retry-After`). Ogni risposta
    ha `Cache-Control: no-store` e nessun `Set-Cookie`.
 5. Il manifest di 200 documenti è **una sola query** e risponde in < 200 ms; un giro di 20
    documenti resta sotto i 10 ms di CPU per richiesta.
 6. In aereo: `sync-off`, editor ed elenco funzionano, niente errori in console; tornata la rete
    il giro successivo recupera tutto.
 7. Scollega cancella chiave e codice locali e **lascia i testi**; Scollega ed elimina dal server
-   svuota anche le righe (il manifest torna `voci: []`).
+   svuota anche le righe (il manifest torna `voci: []`). Prima del DELETE il giro in corso si
+   ferma: nessuna richiesta nuova, letture e attese annullate, le scritture già partite si
+   aspettano (così arrivano prima del DELETE, non dopo). **Server vuoto sugli altri
+   dispositivi** (giro 3 di T1): chi ritrova vuoto un quaderno che aveva già delle voci
+   (`sync`/`remoto` = `{id, visto:true}`) **non reinvia da solo** — i suoi dati restano, lo stato
+   è `vuoto-remoto`, Impostazioni dice «Il server è vuoto… Reinvio i dati di questo?» e solo
+   il bottone `#imp-sync-reupload` (`sincronizza({forza:true})`) li rimanda.
 8. `?lang=en` traduce tutta la sezione; il riquadro del codice è selezionabile e copiabile con un
    tocco; bersagli ≥ 44 px; `sync-doing`/`sync-done` in `aria-live`; `node scripts/check.mjs`
    passa (fine riga LF anche in `functions/`).

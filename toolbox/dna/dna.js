@@ -180,12 +180,14 @@ import { init, t, lang } from '/shared/i18n.js';
 import { pressFeedback, setStatus, toast } from '/shared/ui.js';
 import { mountBar } from '/shared/nav.js';
 import { initPwa } from '/shared/pwa.js';
+import { mountAiuto } from '/shared/aiuto.js';
 import { mountSelects } from '/shared/select.js';
 import { mountInfos } from '/shared/sheet.js';
 import { mountRanges } from '/shared/range.js';
 import { getContext, unlock, decode, needsGesture, addWorklet } from '/shared/audio.js';
 import * as mic from '/shared/mic.js';
-import { prefs, leggi, scrivi, elenca, elimina } from '/shared/archivio.js';
+import { prefs, leggi, scrivi, elenca, elimina, onChange as onArchivio } from '/shared/archivio.js';
+import { avviaPagina as avviaSync } from '/shared/sync.js';
 import { fold } from '/shared/analysis/bpm.js';
 import { compatibleWith } from '/shared/analysis/key.js';
 import { gainToTarget, TARGETS } from '/shared/analysis/loudness.js';
@@ -610,9 +612,10 @@ export function mountDna() {
             await put(TOOL, result.at, historyRecord(result));
             const all = await list(TOOL);
             const extra = all.slice(0, Math.max(0, all.length - HISTORY));
-            /* taglio automatico oltre HISTORY: cancellazione dura, niente
-               lapidi (non e' un'eliminazione dell'utente, spec 18 §3) */
-            await Promise.all(extra.map((rec) => elimina(TOOL, rec.id, { lapide: false })));
+            /* taglio automatico oltre HISTORY: una lapide normale, cosi'
+               la voce sparisce anche sugli altri dispositivi invece di
+               tornare dal server al giro dopo (spec 18 §3-4) */
+            await Promise.all(extra.map((rec) => elimina(TOOL, rec.id)));
             renderHistory();
         } catch (e) {
             /* archivio pieno o record troppo grande: lo si dice (spec 18 §3);
@@ -1316,6 +1319,9 @@ export function mountDna() {
     if (targetSelect) targetSelect.value = ui.target;
     setState('empty');
     renderHistory();
+    /* analisi arrivate (o tolte) dalla sincronizzazione, di qui o di
+       un'altra scheda: «Recenti» si ridisegna (spec 18 §4) */
+    onArchivio(TOOL, (m) => { if (m && m.origine === 'sync') renderHistory(); }, { locali: true });
     if (needsGesture()) { /* nessun suono da sbloccare finche' non si registra */ }
 
     return {
@@ -1356,4 +1362,8 @@ if (typeof document !== 'undefined' && document.getElementById('dna')) {
         installSection: document.querySelector('.tb-menu-install-group')
     });
     mountDna();
+    /* «Come funziona», riga del primo avvio, tip dei pulsanti icona (spec 18 §6) */
+    try { mountAiuto({ slug: TOOL }); } catch (e) { console.warn('[aiuto] non montato:', e && e.message); }
+    /* giro all'apertura e 3 s dopo i salvataggi; senza codice niente rete */
+    avviaSync().catch(() => { /* senza IndexedDB resta spenta */ });
 }

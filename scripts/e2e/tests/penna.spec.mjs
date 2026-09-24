@@ -4,7 +4,9 @@
  *   elenco vuoto -> nuovo -> si incolla un testo vero (55 versi) -> il
  *   contatore dei versi li conta tutti -> si ricarica e il testo e' ancora
  *   li' -> si sincronizza con un secondo dispositivo attraverso lo stub del
- *   quaderno -> si esporta, si cancella tutto, si reimporta.
+ *   quaderno (il codice si attiva da Impostazioni: Penna ha solo il link)
+ *   -> si esporta, si cancella tutto, si reimporta. Il resto della
+ *   sincronizzazione (tutte le collezioni, lotti, lapidi) sta in sync.spec.mjs.
  *
  * Il testo e' quello di prova del progetto
  * (`docs/toolbox/contenuti/testo-prova-canto.txt`, 55 righe): un testo vero,
@@ -147,60 +149,44 @@ test('esporta, cancella, importa: il quaderno torna com’era', async ({ page })
     await expect(page.locator('#pen-text')).toHaveValue(TESTO);
 });
 
-test('due dispositivi con lo stesso codice vedono lo stesso testo', async ({ page, browser }) => {
+test('due dispositivi con lo stesso codice vedono lo stesso testo (codice da Impostazioni)', async ({ page, browser }) => {
     /* PBKDF2 a 200 000 giri, due volte, piu' due giri di sincronizzazione */
     test.setTimeout(180000);
 
-    /* --- dispositivo 1: scrive, crea il codice, attiva, sincronizza --- */
+    /* --- dispositivo 1: scrive, e da Penna il foglio porta a Impostazioni --- */
     await scriviTesto(page);
     await page.goto('/penna/', { waitUntil: 'load' });
     await page.waitForTimeout(800);
-
     await page.locator('#pen-settings-open').click();
-    await expect(page.locator('#pen-sync-create')).toBeVisible();
-    await page.locator('#pen-sync-create').click();
+    const link = page.locator('#pen-settings a[href="/impostazioni/#imp-sync"]');
+    await expect(link, 'il foglio di Penna non porta piu’ alla sincronizzazione').toBeVisible();
+    await link.click();
+    await page.waitForURL('**/impostazioni/**');
 
+    await page.locator('#imp-sync-create').click();
     /* creaCodice() e' asincrona (importa il dizionario delle parole):
        il riquadro resta vuoto per un istante */
-    await expect(page.locator('#pen-sync-code')).not.toBeEmpty({ timeout: 30000 });
-    const codice = (await page.locator('#pen-sync-code').textContent()).trim();
+    await expect(page.locator('#imp-sync-code')).not.toBeEmpty({ timeout: 30000 });
+    const codice = (await page.locator('#imp-sync-code').textContent()).trim();
     expect(codice.split(/\s+/).length, 'il codice non e’ di sei parole: "' + codice + '"').toBe(6);
 
-    await page.locator('#pen-sync-activate').click();
-    await expect(page.locator('#pen-sync-now')).toBeVisible({ timeout: 60000 });
-    await page.locator('#pen-sync-now').click();
-    await expect(page.locator('#pen-sync-state')).not.toBeEmpty({ timeout: 60000 });
-    await page.waitForTimeout(3000);
+    await page.locator('#imp-sync-activate').click();
+    await expect(page.locator('#imp-sync-now')).toBeVisible({ timeout: 60000 });
+    await expect(page.locator('#imp-sync-state')).toHaveAttribute('data-i18n', 'sync-done', { timeout: 60000 });
 
     /* il quaderno cifrato e' davvero finito sullo stub: l'id del quaderno sta
-       in IndexedDB (tool `penna-sync`, documento `quaderno`), e il manifest
-       del §4 risponde con almeno una voce */
-    const voci = await page.evaluate(() => new Promise((ok) => {
-        const req = indexedDB.open('tiny-temple-toolbox');
-        req.onsuccess = () => {
-            const db = req.result;
-            const q = db.transaction('records', 'readonly').objectStore('records').getAll();
-            q.onsuccess = async () => {
-                const riga = (q.result || []).find((r) => r && r.tool === 'penna-sync' && r.id === 'quaderno');
-                db.close();
-                const id = riga && riga.value ? riga.value.id : '';
-                if (!/^[0-9a-f]{32}$/.test(id || '')) return ok(-1);
-                try {
-                    const r = await fetch('/api/quaderno/' + id);
-                    const j = await r.json();
-                    ok((j.voci || []).length);
-                } catch (e) { ok(-2); }
-            };
-            q.onerror = () => { db.close(); ok(-3); };
-        };
-        req.onerror = () => ok(-4);
-    }));
-    expect(
-        voci,
-        'il manifest dello stub non ha nessuna voce: la sincronizzazione non ha scritto niente'
-    ).toBeGreaterThan(0);
+       in IndexedDB (tool `sync`, documento `quaderno`), e il manifest del §4
+       ha la voce del testo nella collezione `penna` */
+    const voci = await page.evaluate(async () => {
+        const st = await import('/shared/storage.js');
+        const q = await st.get('sync', 'quaderno');
+        if (!q || !/^[0-9a-f]{32}$/.test(q.id || '')) return -1;
+        const j = await (await fetch('/api/quaderno/' + q.id)).json();
+        return (j.voci || []).filter((v) => v.collezione === 'penna').length;
+    });
+    expect(voci, 'il manifest dello stub non ha il testo: la sincronizzazione non ha scritto niente').toBe(1);
 
-    /* --- dispositivo 2: collega lo stesso codice e sincronizza --- */
+    /* --- dispositivo 2: collega lo stesso codice da Impostazioni --- */
     const contesto = await browser.newContext();
     const due = await contesto.newPage();
     const fuori = [];
@@ -218,15 +204,14 @@ test('due dispositivi con lo stesso codice vedono lo stesso testo', async ({ pag
         await due.waitForTimeout(800);
         await expect(due.locator('#pen-list-empty'), 'il secondo dispositivo non parte vuoto').toBeVisible();
 
-        await due.locator('#pen-settings-open').click();
-        await due.locator('#pen-sync-have').click();
-        await due.locator('#pen-sync-input').fill(codice);
-        await due.locator('#pen-sync-link').click();
-        await expect(due.locator('#pen-sync-now')).toBeVisible({ timeout: 60000 });
-        await due.locator('#pen-sync-now').click();
-        await due.waitForTimeout(6000);
-        await due.keyboard.press('Escape');
+        await due.goto(BASE + '/impostazioni/#imp-sync', { waitUntil: 'load' });
+        await due.locator('#imp-sync-have').click();
+        await due.locator('#imp-sync-input').fill(codice);
+        await due.locator('#imp-sync-link').click();
+        await expect(due.locator('#imp-sync-now')).toBeVisible({ timeout: 60000 });
+        await expect(due.locator('#imp-sync-state')).toHaveAttribute('data-i18n', 'sync-done', { timeout: 60000 });
 
+        await due.goto(BASE + '/penna/', { waitUntil: 'load' });
         await expect(
             due.locator('#pen-list-grid .pen-card'),
             'il testo non e’ arrivato sul secondo dispositivo'

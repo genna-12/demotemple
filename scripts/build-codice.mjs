@@ -39,7 +39,7 @@
  * tocca un filtro, non si aggiorna `parole-v3.txt` "per migliorarla": una
  * parola che entra o esce sposta tutte le altre e i quaderni gia' creati
  * diventano illeggibili, senza recupero possibile (non c'e' account).
- * Per una lista nuova servono un SALE e una VERSIONE nuovi in `penna/sync.js`
+ * Per una lista nuova servono un SALE e una VERSIONE nuovi in `shared/sync.js`
  * (`tt-quaderno-v1` -> `-v2`), e i vecchi codici vanno continuati a
  * supportare. Questo script resta qui per documentare come e' nata la lista
  * e per poterla riprodurre uguale, non per rifarla.
@@ -149,7 +149,7 @@ const testa = `/**
  * LISTA CONGELATA (v1, 21/09/2026). NON si rigenera: una parola che entra o
  * esce sposta tutte le altre e i quaderni gia' creati diventano illeggibili,
  * senza recupero (non c'e' account). Per una lista nuova servono un sale e
- * una versione nuovi in penna/sync.js.
+ * una versione nuovi in shared/sync.js.
  */
 
 export const PAROLE = [

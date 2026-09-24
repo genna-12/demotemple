@@ -30,8 +30,9 @@
  *                   dai due .pen-settings-open (#pen-settings-open in elenco,
  *                   #pen-settings-open-editor in barra); dentro, oltre ai
  *                   comandi della 14/14b: #pen-export #pen-import
- *                   #pen-import-input #pen-print, e la sezione #pen-sync
- *                   (spec 17, qui sotto)
+ *                   #pen-import-input #pen-print, e #pen-sync, che dal
+ *                   giro 3 della spec 18 e' solo un link a
+ *                   /impostazioni/#imp-sync (qui sotto)
  *   #pen-title      <input type="text"> titolo del documento
  *   #pen-text       <textarea> il testo (etichettata, spec §6.11)
  *   #pen-gutter     colonna dei conteggi, aria-hidden="true": il JS ci
@@ -89,25 +90,15 @@
  *                   nav.js/penna.js con nome, peso e "Rimuovi".
  *
  * =====================================================================
- * SINCRONIZZA FRA DISPOSITIVI (spec 17 §3) — markup che scrive il builder
+ * SINCRONIZZA FRA DISPOSITIVI (spec 18 §4)
  * =====================================================================
- *   #pen-sync       la sezione dentro #pen-settings; dentro:
- *                   #pen-sync-state  .tb-status con aria-live (in corso,
- *                                    fatto, offline, codice non valido...)
- *                   quattro sotto-viste [data-sync-view="off|create|have|on"]:
- *                   penna.js mostra quella giusta e mette [hidden] alle altre.
- *      off:   #pen-sync-create "Crea un codice", #pen-sync-have "Ho gia' un codice"
- *      create: #pen-sync-code il riquadro grande e selezionabile con le sei
- *              parole (lo riempie il JS), #pen-sync-copy, #pen-sync-activate
- *      have:  #pen-sync-input <input> del codice, #pen-sync-link "Collega"
- *      on:    #pen-sync-last "Ultima sincronizzazione: {ora}" (testo dal JS),
- *             #pen-sync-now, #pen-sync-show, #pen-sync-unlink, #pen-sync-wipe
- *             e la conferma #pen-sync-wipe-confirm con -yes / -no.
- *   Ogni .pen-sync-cancel (in create e have) riporta a "off" e butta via il
- *   codice generato ma mai attivato. #pen-sync-show e' un INTERRUTTORE: porta
- *   aria-expanded e rivela #pen-sync-code-on + #pen-sync-copy-on dentro "on",
- *   cosi' non si vedono mai due sotto-viste insieme.
- *   La rete sta tutta in penna/sync.js e non parte mai da sola (spec 17 §2).
+ *   Il codice e' della Toolbox intera e si attiva da Impostazioni
+ *   (/impostazioni/#imp-sync): #pen-sync e' solo un link la', senza JS.
+ *   Qui restano due cose: `avviaPagina()` di shared/sync.js (il giro
+ *   all'apertura e 3 s dopo ogni salvataggio, via onChange dell'archivio;
+ *   senza codice non parte niente) e l'ascolto dei testi che la
+ *   sincronizzazione scrive o toglie (`origine: 'sync'`), per ridisegnare
+ *   l'elenco e, se non si sta scrivendo, l'editor.
  *
  * Il catalogo dei pacchetti e' `penna/pacchetti.js` (lo scrive il builder):
  * un modulo PRECACHEATO, cosi' aprendo Penna non parte nessuna richiesta
@@ -138,18 +129,19 @@ import { init, t, lang, onChange } from '/shared/i18n.js';
 import { pressFeedback, setStatus, toast } from '/shared/ui.js';
 import { mountBar } from '/shared/nav.js';
 import { initPwa } from '/shared/pwa.js';
+import { mountAiuto } from '/shared/aiuto.js';
 import { mountSelects } from '/shared/select.js';
 import { mountInfos, openSheet, closeSheet } from '/shared/sheet.js';
-import { prefs, leggi, scrivi, elenca, elimina as eliminaDallArchivio } from '/shared/archivio.js';
+import { prefs, leggi, scrivi, elenca, elimina as eliminaDallArchivio, onChange as onArchivio } from '/shared/archivio.js';
 import { filtra, fondi, riassunto, idDaHash, hashDiId } from '/penna/elenco.js';
 import { condividi as condividiFileTesto, esporta, leggiFileScelto, leggiQuaderno, stampa } from '/penna/file.js';
-import {
-    avvia as avviaSync, stato as statoSync, onStato as onStatoSync, creaCodice, collega,
-    scollega, sincronizza
-} from '/penna/sync.js';
+import { avviaPagina as avviaSync } from '/shared/sync.js';
 import { versoMetrico, contaVerso, ultimaParola, parole as paroleDelVerso } from '/shared/testo/metrica.js';
 import { chiaveRima } from '/shared/testo/fonetica.js';
-import { LINGUE, CODICI, normalizzaCodice, cartella, moduli } from '/shared/testo/lingue.js';
+import { LINGUE, CODICI, normalizzaCodice, moduli } from '/shared/testo/lingue.js';
+import {
+    DATA_BASE, CATALOGO_BASE, caricaCatalogo, scaricaFile, togliDallaCache, pesoLeggibile
+} from '/shared/pacchetti-lingua.js';
 
 const TOOL = 'penna';
 
@@ -161,18 +153,9 @@ const get = (coll, id) => leggi(coll, id);
 const put = (coll, id, doc) => scrivi(coll, id, doc);
 const list = (coll) => elenca(coll).then((rs) => rs.map((r) => ({ id: r.id, value: r.dati })));
 const WORKER_URL = '/penna/rimario-worker.js';
-const DATA_BASE = '/penna/data/';
-const CACHE_PACCHETTI = 'toolbox-rimario';
-const PACCHETTI_URL = '/penna/pacchetti.js';
-/* catalogo minimo: vale finche' il builder non consegna pacchetti.js */
-const CATALOGO_BASE = Object.fromEntries(CODICI.map((c) => {
-    const v = LINGUE[c].versione;
-    const gzip = { it: 1257000, en: 1612000, fr: 1047000, es: 452000 }[c];
-    const file = LINGUE[c].derivate ? ['parole-' + v + '.txt'] : ['parole-' + v + '.txt', 'chiavi-' + v + '.json', 'tratti-' + v + '.bin'];
-    return [c, { codice: c, nome: LINGUE[c].nome, versione: v, gzip, file }];
-}));
+/* DATA_BASE, il catalogo minimo e scarica/rimuovi dei pacchetti stanno in
+   shared/pacchetti-lingua.js, condivisi con la pagina Impostazioni */
 const SALVA_DOPO = 600;      // ms di quiete prima di salvare
-const SYNC_DOPO = 3000;      // ms di quiete dopo l'ultimo salvataggio (spec 17 §3)
 const MISURA_DOPO = 100;     // ms di quiete del ResizeObserver (spec 16 §4)
 const COLORI = 6;            // classi di rima colorate (spec §3)
 const LETTERE = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
@@ -274,29 +257,6 @@ export function mountPenna() {
     const packFonti = el('pen-pack-fonti');
     const docLang = el('pen-doc-lang');
     const emuetTgl = el('pen-emuet');
-    /* --- sincronizza fra dispositivi (spec 17 §3): il markup lo scrive il
-           builder, qui si aggancia quel che c'e' e non si fallisce mai per
-           un id che manca --- */
-    const syncBox = el('pen-sync');
-    const syncState = el('pen-sync-state');
-    const syncCreateBtn = el('pen-sync-create');
-    const syncHaveBtn = el('pen-sync-have');
-    const syncCodeBox = el('pen-sync-code');
-    const syncCodeOn = el('pen-sync-code-on');
-    const syncCopyBtn = el('pen-sync-copy');
-    const syncCopyOn = el('pen-sync-copy-on');
-    const syncActivateBtn = el('pen-sync-activate');
-    const syncCancelBtns = [...document.querySelectorAll('.pen-sync-cancel')];
-    const syncInput = el('pen-sync-input');
-    const syncLinkBtn = el('pen-sync-link');
-    const syncNowBtn = el('pen-sync-now');
-    const syncShowBtn = el('pen-sync-show');
-    const syncUnlinkBtn = el('pen-sync-unlink');
-    const syncWipeBtn = el('pen-sync-wipe');
-    const syncWipeBox = el('pen-sync-wipe-confirm');
-    const syncWipeYes = el('pen-sync-wipe-yes');
-    const syncWipeNo = el('pen-sync-wipe-no');
-    const syncLastOut = el('pen-sync-last');
 
     const ui = {
         vista: 'elenco',
@@ -700,9 +660,8 @@ export function mountPenna() {
             prefs.set(TOOL, 'ultimo', ui.id);
             segnaSalvato();
             aggiornaRecord(ui.id, ui.doc);
-            /* 3 s di quiete dopo l'ultimo salvataggio, mai mentre si scrive
-               (spec 17 §3); senza sincronizzazione attiva non fa niente */
-            pianificaGiro();
+            /* il giro 3 s dopo lo fa partire shared/sync.js da solo
+               (onChange dell'archivio): qui non serve chiamarlo */
         } catch (e) {
             setStatus(statusOut, { kind: 'error', key: e && e.codice === 'grande' ? 'penna-too-big' : 'penna-save-fail' });
         }
@@ -872,8 +831,6 @@ export function mountPenna() {
     function mostraElenco() {
         setVista('elenco');
         caricaElenco();
-        /* l'elenco e' l'ingresso: e' il momento buono per un giro (spec 17 §3) */
-        giroSync();
     }
 
     /* ---------------- elimina ---------------- */
@@ -905,113 +862,18 @@ export function mountPenna() {
         }
     }
 
-    /* ---------------- sincronizza fra dispositivi (spec 17) ---------------- */
+    /* ---------------- sincronizza fra dispositivi (spec 18 §4) ---------------- */
 
     /*
-     * Tutta la rete sta in penna/sync.js: qui ci sono solo i bottoni, gli
-     * stati in aria-live e i tre momenti in cui parte un giro — all'apertura
-     * dell'elenco, 3 s dopo l'ultimo salvataggio, a mano. Finche' l'utente
-     * non tocca Attiva o Collega non parte NESSUNA richiesta (spec 17 §2):
-     * `statoSync().attivo` e' falso e ogni funzione qui sotto esce subito.
-     *
-     * La vista giusta fra `[data-sync-view="off|create|have|on"]` la sceglie
-     * renderSync(); l'unica eccezione e' "Mostra il codice" da collegato, che
-     * lascia visibile anche la sotto-vista dove vive #pen-sync-code.
+     * La rete sta tutta in shared/sync.js e il codice si attiva da
+     * Impostazioni. Qui si ascoltano solo i testi che la sincronizzazione
+     * (di questa scheda o di un'altra) scrive o toglie nell'archivio.
      */
-    let syncVista = 'off';        // off | create | have (da scollegato)
-    let codiceNuovo = '';         // le sei parole appena sorteggiate
-    let codiceVisibile = false;   // l'interruttore "Mostra il codice"
-    let giroTimer = null;
-
-    function oraBreve(ms) {
-        if (!ms) return '';
-        try { return new Intl.DateTimeFormat(lang(), { hour: '2-digit', minute: '2-digit' }).format(new Date(ms)); } catch (e) { return ''; }
-    }
-
-    function statoSyncUI(kind, key) {
-        if (syncState) setStatus(syncState, { kind, key });
-    }
-
-    /* #pen-sync-state e' una regione aria-live: quando non c'e' niente da
-       annunciare deve restare VUOTA, non ospitare l'introduzione (che sta
-       nella .pen-sync-intro della vista "off"). */
-    function pulisciStatoSync() {
-        if (!syncState) return;
-        setStatus(syncState, { kind: 'idle' });
-        syncState.removeAttribute('data-i18n');
-        syncState.textContent = '';
-    }
-
-    function renderSync() {
-        if (!syncBox) return;
-        const s = statoSync();
-        const vista = s.attivo ? 'on' : syncVista;
-        /* una sola sotto-vista per volta, sempre */
-        syncBox.querySelectorAll('[data-sync-view]').forEach((v) => {
-            v.hidden = v.getAttribute('data-sync-view') !== vista;
-        });
-        if (syncCodeBox) syncCodeBox.textContent = codiceNuovo;
-        /* da collegato il codice sta nel suo riquadro dentro "on", rivelato
-           dall'interruttore #pen-sync-show: niente due viste insieme */
-        const mostra = s.attivo && codiceVisibile;
-        if (syncCodeOn) {
-            syncCodeOn.textContent = mostra ? s.codice : '';
-            syncCodeOn.hidden = !mostra;
-        }
-        if (syncCopyOn) syncCopyOn.hidden = !mostra;
-        if (syncShowBtn) syncShowBtn.setAttribute('aria-expanded', mostra ? 'true' : 'false');
-        if (syncLastOut) syncLastOut.textContent = s.ultima ? t('sync-last', { ora: oraBreve(s.ultima) }) : '';
-        if (syncWipeBox && !s.attivo) syncWipeBox.hidden = true;
-        if (syncNowBtn) syncNowBtn.disabled = !!s.inCorso;
-    }
-
-    function vistaSync(quale) {
-        syncVista = quale;
-        codiceVisibile = false;
-        renderSync();
-    }
-
-    /** Un giro solo per volta; senza rete si dice e basta, non si insiste. */
-    async function giroSync({ manuale = false } = {}) {
-        const s = statoSync();
-        if (!s.attivo || s.inCorso) return null;
-        if (navigator.onLine === false) {
-            if (manuale) statoSyncUI('denied', 'sync-off');
-            return null;
-        }
-        statoSyncUI('busy', 'sync-doing');
-        let esito;
-        try {
-            esito = await sincronizza();
-        } catch (e) {
-            esito = { esito: 'server' };
-        }
-        const chiavi = {
-            ok: ['ok', 'sync-done'],
-            offline: ['denied', 'sync-off'],
-            server: ['error', 'sync-fail'],
-            pieno: ['error', 'sync-full'],
-            grande: ['error', 'sync-too-big']
-        };
-        const [kind, chiave] = chiavi[esito.esito] || chiavi.server;
-        statoSyncUI(kind, chiave);
-        renderSync();
-        /* oltre i 20 documenti per giro il resto va al giro dopo */
-        if (esito.esito === 'ok' && esito.restano > 0) pianificaGiro();
-        return esito;
-    }
-
-    function pianificaGiro() {
-        if (!statoSync().attivo) return;
-        if (giroTimer) clearTimeout(giroTimer);
-        giroTimer = setTimeout(() => { giroTimer = null; giroSync(); }, SYNC_DOPO);
-    }
 
     /** Un testo arrivato (o cambiato) dal server: e' gia' in IndexedDB. */
     function suDocumento(id, doc) {
         aggiornaRecord(id, doc);
         if (ui.id !== id || !ui.doc) return;
-        if (doc.sid && ui.doc.sid !== doc.sid) ui.doc.sid = doc.sid;
         const piuNuovo = Date.parse(doc.modificato || '') > Date.parse(ui.doc.modificato || '');
         /* mai mentre si scrive: se c'e' un salvataggio in coda si lascia stare */
         if (!piuNuovo || salvaTimer) return;
@@ -1031,104 +893,14 @@ export function mountPenna() {
         vai(null, { sostituisci: true });
     }
 
-    async function attivaCodice(codice) {
-        try {
-            await collega(codice);
-        } catch (e) {
-            statoSyncUI('error', 'sync-bad-code');
-            return false;
-        }
-        codiceNuovo = '';
-        codiceVisibile = false;
-        syncVista = 'off';
-        renderSync();
-        giroSync({ manuale: true });
-        return true;
-    }
-
-    if (syncCreateBtn) {
-        syncCreateBtn.addEventListener('click', async () => {
-            try {
-                codiceNuovo = await creaCodice();
-            } catch (e) {
-                statoSyncUI('error', 'sync-fail');
-                return;
-            }
-            vistaSync('create');
-        });
-    }
-    if (syncHaveBtn) {
-        syncHaveBtn.addEventListener('click', () => {
-            vistaSync('have');
-            if (syncInput) { try { syncInput.focus({ preventScroll: true }); } catch (e) { /* niente fuoco */ } }
-        });
-    }
-    async function copiaCodice(testo) {
-        if (!testo) return;
-        try {
-            await navigator.clipboard.writeText(testo);
-            statoSyncUI('ok', 'sync-copied');
-        } catch (e) {
-            /* senza permesso resta il riquadro, che e' selezionabile a mano */
-            statoSyncUI('idle', 'sync-copy');
-        }
-    }
-    if (syncCopyBtn) syncCopyBtn.addEventListener('click', () => copiaCodice(codiceNuovo));
-    if (syncCopyOn) syncCopyOn.addEventListener('click', () => copiaCodice(statoSync().codice));
-    /* "Annulla" da create/have: si torna alla scelta e il codice generato ma
-       mai attivato si butta via (spec 17 §3, nessuno stato a meta') */
-    syncCancelBtns.forEach((b) => b.addEventListener('click', () => {
-        codiceNuovo = '';
-        if (syncInput) syncInput.value = '';
-        pulisciStatoSync();
-        vistaSync('off');
-    }));
-    if (syncActivateBtn) syncActivateBtn.addEventListener('click', () => { if (codiceNuovo) attivaCodice(codiceNuovo); });
-    if (syncLinkBtn) syncLinkBtn.addEventListener('click', () => attivaCodice(syncInput ? syncInput.value : ''));
-    if (syncInput) {
-        syncInput.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') { e.preventDefault(); attivaCodice(syncInput.value); }
-        });
-    }
-    if (syncNowBtn) syncNowBtn.addEventListener('click', () => giroSync({ manuale: true }));
-    if (syncShowBtn) {
-        syncShowBtn.addEventListener('click', () => {
-            codiceVisibile = !codiceVisibile;
-            renderSync();
-        });
-    }
-    if (syncUnlinkBtn) {
-        syncUnlinkBtn.addEventListener('click', async () => {
-            try { await scollega({ elimina: false }); } catch (e) { statoSyncUI('error', 'sync-fail'); return; }
-            codiceNuovo = '';
-            syncVista = 'off';
-            pulisciStatoSync();
-            renderSync();
-        });
-    }
-    if (syncWipeBtn && syncWipeBox) {
-        syncWipeBtn.addEventListener('click', () => {
-            syncWipeBox.hidden = false;
-            if (syncWipeYes) { try { syncWipeYes.focus({ preventScroll: true }); } catch (e) { /* niente fuoco */ } }
-        });
-    }
-    if (syncWipeNo && syncWipeBox) syncWipeNo.addEventListener('click', () => { syncWipeBox.hidden = true; });
-    if (syncWipeYes) {
-        syncWipeYes.addEventListener('click', async () => {
-            statoSyncUI('busy', 'sync-doing');
-            try {
-                await scollega({ elimina: true });
-            } catch (e) {
-                statoSyncUI(navigator.onLine === false ? 'denied' : 'error', navigator.onLine === false ? 'sync-off' : 'sync-fail');
-                return;
-            }
-            if (syncWipeBox) syncWipeBox.hidden = true;
-            codiceNuovo = '';
-            syncVista = 'off';
-            statoSyncUI('ok', 'sync-done');
-            renderSync();
-        });
-    }
+    onArchivio(TOOL, async (m) => {
+        if (!m || m.origine !== 'sync') return;
+        if (m.id === null || m.id === undefined) { caricaElenco(); return; }
+        let doc;
+        try { doc = await get(TOOL, m.id); } catch (e) { return; }
+        if (doc) suDocumento(m.id, doc);
+        else suRimosso(m.id);
+    }, { locali: true });
 
     /* ---------------- lingue e pacchetti ---------------- */
 
@@ -1273,11 +1045,6 @@ export function mountPenna() {
         apriFoglioPacchetto(lang);
     }
 
-    function pesoLeggibile(byte) {
-        const mb = byte / 1048576;
-        return (mb >= 1 ? mb.toFixed(1) : (byte / 1024).toFixed(0)) + (mb >= 1 ? ' MB' : ' KB');
-    }
-
     function apriFoglioPacchetto(codice) {
         const pack = catalogo[codice] || CATALOGO_BASE[codice];
         if (!packSheet || !pack) return;
@@ -1312,11 +1079,11 @@ export function mountPenna() {
         const lang = normalizzaCodice(codice);
         const pack = catalogo[lang] || CATALOGO_BASE[lang];
         if (!pack || scaricamento) return false;
-        const file = ['manifest-' + pack.versione + '.json', ...(pack.file || [])];
-        const dir = cartella(lang, DATA_BASE);
         let fermato = false;
         const controller = typeof AbortController === 'function' ? new AbortController() : null;
-        scaricamento = { annulla() { fermato = true; if (controller) controller.abort(); } };
+        /* senza AbortController basta un { aborted }: scaricaFile lo guarda fra un file e l'altro */
+        const segnale = controller ? controller.signal : { aborted: false };
+        scaricamento = { annulla() { fermato = true; if (controller) controller.abort(); else segnale.aborted = true; } };
         if (packBar) {
             packBar.hidden = false;
             packBar.setAttribute('role', 'progressbar');
@@ -1325,25 +1092,16 @@ export function mountPenna() {
             packBar.setAttribute('aria-valuemax', '100');
         }
         if (packGo) packGo.hidden = true;
-        const avanti = (fatti) => {
-            const pct = Math.round(100 * fatti / file.length);
+        const avanti = (fatti, totale) => {
+            const pct = Math.round(100 * fatti / totale);
             if (packBar) {
                 packBar.style.setProperty('--pen-pct', pct + '%');
                 packBar.setAttribute('aria-valuenow', String(pct));
                 packBar.textContent = pct + '%';
             }
         };
-        avanti(0);
         try {
-            const cache = typeof caches !== 'undefined' ? await caches.open(CACHE_PACCHETTI) : null;
-            for (let i = 0; i < file.length; i++) {
-                if (fermato) throw new Error('annullato');
-                const url = dir + file[i];
-                const risposta = await fetch(url, controller ? { signal: controller.signal } : undefined);
-                if (!risposta.ok) throw new Error(file[i] + ': HTTP ' + risposta.status);
-                if (cache) await cache.put(url, risposta.clone());
-                avanti(i + 1);
-            }
+            await scaricaFile(lang, { catalogo, signal: segnale, onAvanti: avanti });
             if (!ui.pacchetti.includes(lang)) ui.pacchetti = [...ui.pacchetti, lang];
             prefs.set(TOOL, 'pacchetti', ui.pacchetti);
             scaricamento = null;
@@ -1367,14 +1125,7 @@ export function mountPenna() {
     /** "Rimuovi": via dalla cache e dalle preferenze. */
     async function rimuoviPacchetto(codice) {
         const lang = normalizzaCodice(codice);
-        const pack = catalogo[lang] || CATALOGO_BASE[lang];
-        const dir = cartella(lang, DATA_BASE);
-        try {
-            if (typeof caches !== 'undefined') {
-                const cache = await caches.open(CACHE_PACCHETTI);
-                await Promise.all(['manifest-' + pack.versione + '.json', ...(pack.file || [])].map((f) => cache.delete(dir + f)));
-            }
-        } catch (e) { /* cache non disponibile: restano solo le prefs */ }
+        await togliDallaCache(lang, catalogo);   // senza Cache Storage restano solo le prefs
         ui.pacchetti = ui.pacchetti.filter((c) => c !== lang);
         prefs.set(TOOL, 'pacchetti', ui.pacchetti);
         if (ui.lingua === lang) {
@@ -1794,13 +1545,6 @@ export function mountPenna() {
     settingsBtns.forEach((b) => {
         b.addEventListener('click', () => {
             if (settingsSheet && !settingsSheet.hidden) { closeSheet(); return; }
-            /* la sezione sync riparte sempre dalla scelta (spec 17 §3): "Crea
-               un codice" e "Ho gia' un codice" vivono solo li' dentro, e da
-               "create" non ci sarebbe altro modo di tornare indietro */
-            syncVista = 'off';
-            codiceNuovo = '';
-            codiceVisibile = false;
-            renderSync();
             if (settingsSheet) openSheet(settingsSheet, { anchor: b });
         });
     });
@@ -1847,7 +1591,7 @@ export function mountPenna() {
 
     /* le card le scrive il JS (t('penna-verses'), data breve, "Senza
        titolo"): apply() del cambio lingua non le vede, si rifanno qui */
-    onChange(() => { renderElenco(); applicaSegnaposto(); renderSync(); });
+    onChange(() => { renderElenco(); applicaSegnaposto(); });
     if (downloadBtn) downloadBtn.addEventListener('click', () => scarica());
     /* Il rimario della lingua gia' installata (l'italiano lo e' sempre) si
        prepara da solo quando si apre il foglio: e' un file nostro, resta
@@ -1936,9 +1680,9 @@ export function mountPenna() {
     mountInfos(document);
     applicaSegnaposto();
     /* il catalogo e' un modulo precacheato: nessuna richiesta di rete */
-    import(PACCHETTI_URL).then((m) => {
-        if (m && m.PACCHETTI) { catalogo = m.PACCHETTI; renderLingue(); }
-    }, () => { /* non consegnato: resta il catalogo minimo */ });
+    caricaCatalogo().then((c) => {
+        if (c !== CATALOGO_BASE) { catalogo = c; renderLingue(); }
+    });   // non consegnato: resta il catalogo minimo
     if (!ui.pacchetti.includes('it')) ui.pacchetti = ['it', ...ui.pacchetti];
     /* il rimario parte su una lingua che c'e' davvero: il documento puo'
        restare in un'altra, il gutter gira anche senza pacchetto */
@@ -1956,14 +1700,10 @@ export function mountPenna() {
         sortSel.value = ui.ordine;
         sortSel.dispatchEvent(new Event('change', { bubbles: true }));
     }
-    /* Sincronizzazione: si legge solo che cosa c'e' salvato. Nessuna rete
-       finche' l'utente non tocca Attiva o Collega (spec 17 §2); il giro
-       dell'apertura parte da mostraElenco(), quando c'e' un codice. */
-    onStatoSync(renderSync);
-    renderSync();
-    avviaSync({ applicaDoc: suDocumento, rimuoviDoc: suRimosso, apertoId: () => ui.id })
-        .then(() => { renderSync(); if (ui.vista === 'elenco') giroSync(); })
-        .catch(() => { /* senza IndexedDB la sincronizzazione resta spenta */ });
+    /* Sincronizzazione (spec 18 §4): il giro dell'apertura e quelli 3 s
+       dopo i salvataggi. Senza un codice attivato in Impostazioni non parte
+       nessuna richiesta (spec 18 §10.4). */
+    avviaSync().catch(() => { /* senza IndexedDB la sincronizzazione resta spenta */ });
     /* La vista la decide l'hash, sempre: /penna/ e' l'elenco, anche se
        l'ultima volta si stava scrivendo (spec 16 §6.2). */
     applicaHash();
@@ -2004,11 +1744,7 @@ export function mountPenna() {
         opzioniLingua,
         catalogo: () => catalogo,
         documento: () => ui.doc,
-        pronto: () => pronto,
-        /* sincronizzazione (spec 17): per i collaudi in browser headless */
-        giroSync,
-        renderSync,
-        statoSync
+        pronto: () => pronto
     };
 }
 
@@ -2023,4 +1759,6 @@ if (typeof document !== 'undefined' && document.getElementById('penna')) {
         installSection: document.querySelector('.tb-menu-install-group')
     });
     mountPenna();
+    /* «Come funziona», riga del primo avvio, tip dei pulsanti icona (spec 18 §6) */
+    try { mountAiuto({ slug: TOOL }); } catch (e) { console.warn('[aiuto] non montato:', e && e.message); }
 }
