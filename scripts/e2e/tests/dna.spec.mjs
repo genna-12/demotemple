@@ -70,9 +70,12 @@ test('l’analisi finisce nello storico e lo storico sopravvive', async ({ page 
     await expect(page.locator('#dna-result')).toBeVisible({ timeout: 90000 });
     await page.waitForTimeout(600);
 
+    /* dopo il ricaricamento si riapre il risultato (spec 20 §3, `#r=<id>`),
+       con «Recenti» sotto */
     await page.reload({ waitUntil: 'load' });
     await page.waitForTimeout(900);
-    await expect(page.locator('#dna-drop')).toBeVisible();
+    await expect(page.locator('#dna-result')).toBeVisible();
+    await expect(page).toHaveURL(/#r=/);
     await expect(
         page.locator('#dna-history li'),
         'l’analisi non e’ finita in «Recenti»'

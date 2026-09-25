@@ -136,6 +136,13 @@
             <circle cx="12" cy="12" r="3"></circle>
             <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
         </symbol>
+        <!-- Icona di #pen-prova-open (spec 19 §3/§4): un riflettore da palco,
+             stesso stile a tratto delle altre. -->
+        <symbol id="tb-icon-prova" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M8 3h8l3 9H5z"></path>
+            <path d="M5 12l-1 9h16l-1-9"></path>
+            <path d="M12 3v9"></path>
+        </symbol>
     </svg>
 
     <div id="tb-menu" class="tb-menu" hidden>
@@ -335,6 +342,14 @@
                         </button>
                         <input type="text" id="pen-title" class="pen-title" data-i18n-aria="penna-title-aria"
                             aria-label="Titolo del testo" data-i18n-placeholder="penna-untitled" placeholder="Senza titolo">
+                        <!-- Modalita' Prova (spec 19 §3): apre #pen-prova a tutto
+                             schermo, stesso pulsante icona degli altri qui accanto
+                             (aria-label = etichetta "Prova"/"Stage", il tip piu'
+                             lungo sta in data-tip, popover di shared/aiuto.js). -->
+                        <button type="button" id="pen-prova-open" class="tb-btn tb-btn--icon"
+                            data-i18n-aria="penna-prova" aria-label="Prova" data-tip="penna-prova-tip">
+                            <svg aria-hidden="true"><use href="#tb-icon-prova"></use></svg>
+                        </button>
                         <button type="button" id="pen-settings-open-editor" class="tb-btn tb-btn--icon pen-settings-open"
                             aria-haspopup="dialog" aria-expanded="false" aria-controls="pen-settings"
                             data-i18n-aria="penna-settings" aria-label="Impostazioni" data-tip="penna-settings">
@@ -538,6 +553,30 @@
                     </div>
                 </section>
             </div>
+
+            <!-- ========== Vista prova (spec 19 §3): testo grande, sola
+                 lettura, per il palco/la sala. Terzo fratello sotto #penna
+                 insieme a #pen-list/#pen-editor (data-pen-vista="prova");
+                 [hidden] di partenza, penna.js lo toglie insieme a
+                 body.pen-prova-attiva (nasconde barra/aiuto/piede globali,
+                 vedi penna.css) e al wake lock (shared/ui.js). ========== -->
+            <section id="pen-prova" class="pen-prova" data-i18n-aria="penna-prova" aria-label="Prova" hidden>
+                <div class="pen-prova-bar">
+                    <button type="button" id="pen-prova-smaller" class="tb-btn tb-btn--icon pen-prova-size"
+                        data-i18n="penna-prova-smaller" data-i18n-aria="penna-prova-smaller" aria-label="A−">A−</button>
+                    <button type="button" id="pen-prova-bigger" class="tb-btn tb-btn--icon pen-prova-size"
+                        data-i18n="penna-prova-bigger" data-i18n-aria="penna-prova-bigger" aria-label="A+">A+</button>
+                    <button type="button" id="pen-prova-exit" class="tb-btn tb-btn--primary pen-prova-exit"
+                        data-i18n="penna-prova-exit">Fine</button>
+                </div>
+                <div class="pen-prova-scroll">
+                    <h2 id="pen-prova-title" class="pen-prova-title"></h2>
+                    <!-- Vuoto: penna.js lo riempie con <p class="pen-prova-verso">
+                         per verso e <h3> per ogni marcatore di sezione (spec 19
+                         §3/§4), sola lettura, senza numeri/lettere/colori/barre. -->
+                    <div id="pen-prova-body" class="pen-prova-body"></div>
+                </div>
+            </section>
         </main>
 
         <!-- Riga sola su ogni pagina (spec 03 §4). -->
@@ -650,7 +689,14 @@
 
             <h3 class="pen-settings-heading" data-i18n="penna-notebook">Quaderno</h3>
             <div class="pen-settings-actions">
-                <button type="button" id="pen-export" class="tb-btn" data-i18n="penna-export">Esporta</button>
+                <!-- Duplica (spec 19 §3): solo mentre si scrive un testo, non
+                     in vista elenco; penna.js gli mette/toglie [hidden] a
+                     seconda dell'hash, nessuna regola CSS dedicata (lo stato
+                     non dipende dal solo markup). -->
+                <button type="button" id="pen-duplicate" class="tb-btn" data-i18n="penna-duplicate"
+                    data-i18n-aria="penna-duplicate-aria" aria-label="Duplica questo testo">Duplica</button>
+                <button type="button" id="pen-export" class="tb-btn" data-i18n="penna-export">Esporta (.json)</button>
+                <button type="button" id="pen-export-txt" class="tb-btn" data-i18n="penna-export-txt">Tutti i testi (.txt)</button>
                 <button type="button" id="pen-import" class="tb-btn" data-i18n="penna-import">Importa</button>
                 <input type="file" id="pen-import-input" accept=".json,application/json" class="sr-only" tabindex="-1">
                 <button type="button" id="pen-print" class="tb-btn" data-i18n="penna-print">Stampa</button>

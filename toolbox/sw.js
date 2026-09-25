@@ -33,7 +33,7 @@
  * quindi cache-first e' sicuro senza bisogno di `cache:'reload'`.
  */
 
-const VERSION = 'tb-v39';
+const VERSION = 'tb-v50';
 const CACHE = 'toolbox-' + VERSION;
 const VENDOR_CACHE = 'toolbox-vendor';
 const RIMARIO_CACHE = 'toolbox-rimario';
@@ -88,6 +88,7 @@ const SHELL = [
     '/shared/testo/fonetica.js',
     '/shared/testo/metrica.js',
     '/shared/testo/lingue.js',
+    '/shared/testo/schema.js',
     '/shared/testo/en/sillabe.js',
     '/shared/testo/en/fonetica.js',
     '/shared/testo/fr/sillabe.js',
@@ -126,6 +127,7 @@ const TOOLS = [
     '/metronomo/metronomo.css',
     '/metronomo/i18n.js',
     '/metronomo/aiuto.js',
+    '/metronomo/preset.js',
 
     '/accordatore/',
     '/accordatore/accordatore.js',
@@ -141,6 +143,7 @@ const TOOLS = [
 
     '/dna/',
     '/dna/dna.js',
+    '/dna/storico.js',
     '/dna/dna.css',
     '/dna/i18n.js',
     '/dna/aiuto.js',

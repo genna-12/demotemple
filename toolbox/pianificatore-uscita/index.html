@@ -270,6 +270,10 @@
                         <button type="button" class="tb-segment-btn" data-pia-profile="completa" role="radio"
                             aria-checked="true" data-i18n="pia-profile-full">Completa</button>
                     </div>
+                    <!-- CONTRATTO pianificatore.js (spec 22 §3): il testo con
+                         {n} (chiave pia-profile-hint-fast/-full) lo scrive
+                         solo il JS, niente data-i18n qui (come #pia-count). -->
+                    <p id="pia-profile-hint" class="pia-field-hint"></p>
                 </div>
 
                 <!-- .tb-select (spec 03 §2/§6, contratto in shared/components.css):

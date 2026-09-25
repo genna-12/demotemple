@@ -172,17 +172,43 @@
  *   dna-silent                                      "Nessun suono rilevato"
  *   dna-mic-name                                    nome del record registrato
  * Piu' quelle gia' condivise: mic-denied, audio-resume-msg.
+ *
+ * =====================================================================
+ * SPEC 20 (DNA «completo») - quel che questo file si aspetta in piu'
+ * =====================================================================
+ *   Router: `#r=<id>` = risultato di una voce, senza hash = vuoto; la pref
+ *   locale `tt.dna.ultimo` e' l'id dell'hash (riapre dopo la chiusura).
+ *   #dna-history-wrap   fuori da #dna-drop, dopo #dna-result: dna.js lo
+ *                       mostra in "empty" e "result", lo nasconde negli altri
+ *   #dna-search         campo di ricerca (con >= 6 voci; se sta in un
+ *                       contenitore .dna-search-wrap si nasconde quello)
+ *   #dna-filter         barra del filtro; il testo va in #dna-filter-label
+ *                       (o nel primo .dna-filter-label/<span> dentro)
+ *   #dna-filter-clear   «×» che toglie il filtro
+ *   #dna-export         «Esporta .csv» nella testa dello storico
+ *   #dna-share          «Condividi», visibile solo con navigator.share
+ *   #dna-fold-hint      riga sotto il segment ÷2/×2, nascosta con lui
+ *   #dna-lufs-hint      .tb-hint del glossario, «×» #dna-lufs-hint-close
+ *   #dna-compare        .tb-sheet del confronto, con <table id="dna-compare-table">
+ *                       (la riempie dna.js: thead + tbody)
+ *   #dna-key-compat     contenitore dei chip button.dna-compat-chip
+ *                       [data-dna-camelot][aria-pressed] (li crea dna.js)
+ *   Righe dello storico: la voce aperta ha .is-open e aria-current; le
+ *   icone hanno data-tip; .dna-history-compare (⇄) solo nel risultato e
+ *   mai sulla voce aperta. Stato vuoto del filtro/ricerca:
+ *   li.dna-history-none come lo storico vuoto.
+ *   Confronto, testata: th > span.dna-compare-role + span.dna-compare-name.
  */
 
 import commonDict from '/shared/i18n-common.js';
 import toolDict from '/dna/i18n.js';
-import { init, t, lang } from '/shared/i18n.js';
+import { init, t, lang, onChange as onLingua } from '/shared/i18n.js';
 import { pressFeedback, setStatus, toast } from '/shared/ui.js';
 import { mountBar } from '/shared/nav.js';
 import { initPwa } from '/shared/pwa.js';
 import { mountAiuto } from '/shared/aiuto.js';
 import { mountSelects } from '/shared/select.js';
-import { mountInfos } from '/shared/sheet.js';
+import { mountInfos, openSheet, closeSheet } from '/shared/sheet.js';
 import { mountRanges } from '/shared/range.js';
 import { getContext, unlock, decode, needsGesture, addWorklet } from '/shared/audio.js';
 import * as mic from '/shared/mic.js';
@@ -192,6 +218,7 @@ import { fold } from '/shared/analysis/bpm.js';
 import { compatibleWith } from '/shared/analysis/key.js';
 import { gainToTarget, TARGETS } from '/shared/analysis/loudness.js';
 import { readTags, coverBlob } from '/shared/tags.js';
+import { idDaHash, hashDiId, filtra, confronto, csv, nomeCsv, testoVoce, nomeMostrato, durata } from '/dna/storico.js';
 
 const TOOL = 'dna';
 
@@ -229,6 +256,8 @@ const RING_MS = 900;          // quanto vive un anello
 const PULSE_EASE = 0.25;      // quanto insegue il livello (0-1)
 const ONSET_GAP = 180;        // ms minimi fra due anelli
 const HISTORY = 200;   // solo metadati: 200 voci pesano pochi KB
+const SEARCH_MIN = 6;  // la ricerca compare da 6 voci in su (spec 20 §3)
+const RESULT_MAX = 5;  // sotto un risultato lo storico si accorcia (revisione ui-ux)
 
 const fmt = (v, digits) => {
     try {
@@ -302,6 +331,24 @@ export function mountDna() {
     const retryBtn = document.getElementById('dna-retry');
     const targetLabel = document.getElementById('dna-target-label');
     const coverImg = document.getElementById('dna-cover');
+    /* spec 20: storico anche nel risultato, filtro, ricerca, confronto, esporta */
+    const historyWrap = document.getElementById('dna-history-wrap')
+        || (historyBox && historyBox.closest('.dna-history-wrap'));
+    const searchIn = document.getElementById('dna-search');
+    const searchBox = searchIn ? (searchIn.closest('.dna-search-wrap') || searchIn) : null;
+    const filterBar = document.getElementById('dna-filter');
+    const filterLabel = document.getElementById('dna-filter-label')
+        || (filterBar && filterBar.querySelector('.dna-filter-label, span'));
+    const filterClear = document.getElementById('dna-filter-clear');
+    const exportBtn = document.getElementById('dna-export');
+    const shareBtn = document.getElementById('dna-share');
+    const foldHint = document.getElementById('dna-fold-hint');
+    const lufsHint = document.getElementById('dna-lufs-hint');
+    const lufsHintClose = document.getElementById('dna-lufs-hint-close');
+    const lufsInfoBtn = document.querySelector('.tb-info[aria-controls="dna-lufs-info"]');
+    const compareSheet = document.getElementById('dna-compare');
+    const compareTable = document.getElementById('dna-compare-table');
+    const compatBox = document.getElementById('dna-key-compat');
 
     const out = (id) => document.getElementById(id);
 
@@ -310,8 +357,15 @@ export function mountDna() {
         target: TARGETS[prefs.get(TOOL, 'target', 'spotify')] ? prefs.get(TOOL, 'target', 'spotify') : 'spotify',
         source: 'file',
         result: null,
-        name: ''
+        name: '',
+        openId: null,      // id della voce mostrata (null: vuoto o risultato non salvato)
+        voci: [],          // lo storico normalizzato, dalla voce piu' recente
+        filtro: null,      // Camelot del chip acceso (in memoria, non persiste)
+        q: '',             // ricerca per nome
+        confronto: null,   // voce scelta nel foglio del confronto
+        tutte: false       // «Mostra tutte» toccato: vale per la sessione
     };
+    let hashApplicato = null;   // l'hash gia' servito: popstate+hashchange arrivano in coppia
 
     let worker = null;
     let cancelled = false;
@@ -329,6 +383,10 @@ export function mountDna() {
             const el = document.getElementById('dna-' + (name === 'empty' ? 'drop' : name === 'working' ? 'progress' : name));
             if (el && el.id !== 'dna-status') el.hidden = name !== state;
         });
+        /* «Recenti» si vede nel vuoto e sotto il risultato (spec 20 §3) */
+        if (historyWrap && historyWrap !== document.getElementById('dna-drop')) {
+            historyWrap.hidden = !(state === 'empty' || state === 'result');
+        }
         if (state !== 'error' && statusOut) statusOut.textContent = '';
     }
 
@@ -354,8 +412,24 @@ export function mountDna() {
      * che al primo errore si sposta in cima a #dna. Cosi' chi ha sbagliato
      * file legge cos'e' successo e riprova senza ricaricare.
      */
+    /**
+     * Uscita da un'analisi o da un ascolto senza risultato (errore, annulla,
+     * nessun risultato): l'hash cambiato nel frattempo (ignorato, vedi
+     * applicaHash) non deve restare `#r=...` sopra una vista che non e'
+     * quella voce. Si toglie con un replace, come `ultimo`.
+     */
+    function pulisciHash() {
+        ui.openId = null;
+        if (idDaHash(location.hash)) {
+            try { history.replaceState(null, '', location.pathname + location.search); } catch (e) { /* resta */ }
+        }
+        hashApplicato = location.hash || '';
+        prefs.set(TOOL, 'ultimo', undefined);
+    }
+
     function fail(key) {
         setState('empty');
+        pulisciHash();
         if (statusOut) statusOut.textContent = ''; // il messaggio sta sopra, non due volte
         if (!errorBox) { setStatus(statusOut, { kind: 'error', key }); return; }
         if (errorBox.parentElement === root && errorBox !== root.firstElementChild) {
@@ -472,8 +546,7 @@ export function mountDna() {
             at: new Date().toISOString()
         };
         stopWorker();
-        showResult(result, { cover: tags && tags.cover });
-        saveHistory(result);   // salva i metadati, non la copertina
+        mostraNuovo(result, { cover: tags && tags.cover });   // salva i metadati, non la copertina
         return result;
     }
 
@@ -499,6 +572,7 @@ export function mountDna() {
 
     function showResult(result, { cover = null } = {}) {
         ui.result = result;
+        ui.filtro = null;   // il filtro e' della voce di prima: si riparte da tutto
         setState('result');
         showTags(result, cover);
         const set = (id, text) => { const el = out(id); if (el) el.textContent = text; };
@@ -509,10 +583,13 @@ export function mountDna() {
             conf.setAttribute('data-i18n', confidenceKey(result.bpmConfidence, unsure));
             conf.textContent = t(confidenceKey(result.bpmConfidence, unsure));
         }
-        if (foldBox) foldBox.hidden = !(result.bpmAlternatives && result.bpmAlternatives.length);
+        const piega = !(result.bpmAlternatives && result.bpmAlternatives.length);
+        if (foldBox) foldBox.hidden = piega;
+        aggiornaFoldHint();   // la spiegazione va e viene col segment
         set('dna-key', result.tonic ? result.tonic + ' ' + t(result.mode === 'minor' ? 'dna-minor' : 'dna-major') : '—');
         set('dna-camelot', result.camelot || '');
-        set('dna-key-compat', compatibleWith(result.camelot).join(' · '));
+        renderChips(result.camelot);
+        mostraGlossario();
         const keyConf = out('dna-key-conf');
         if (keyConf) {
             keyConf.setAttribute('data-i18n', confidenceKey(result.keyConfidence * 3, unsure));
@@ -521,7 +598,7 @@ export function mountDna() {
         set('dna-lufs', isFinite(result.lufs) ? fmt(result.lufs, 1) + ' LUFS' : '—');
         set('dna-tp', isFinite(result.truePeak) ? fmt(result.truePeak, 1) + ' dBTP' : '—');
         set('dna-lra', result.lra === null || result.lra === undefined ? '' : fmt(result.lra, 1) + ' LU');
-        set('dna-duration', fmt(Math.floor(result.seconds / 60), 0) + ':' + String(Math.round(result.seconds % 60)).padStart(2, '0'));
+        set('dna-duration', durata(result.seconds));   // 59,6 s = 1:00, non 0:60
         set('dna-rate', fmt(result.sampleRate / 1000, 1) + ' kHz');
         set('dna-channels', String(result.channels));
         const fromMic = result.source === 'mic';
@@ -564,19 +641,171 @@ export function mountDna() {
         if (bar) bar.style.setProperty('--dna-lufs', barPos(ui.result.lufs).toFixed(1) + '%');
     }
 
-    /** Riepilogo testuale da incollare dove serve. */
+    /**
+     * Il testo di Copia e Condividi (spec 20 §3): nome, BPM e tonalita',
+     * loudness, durata e fonte. Sostituisce il riepilogo su una riga, che
+     * non diceva ne' la durata ne' la fonte.
+     */
     function summary() {
-        const r = ui.result;
-        if (!r) return '';
-        const rows = [
-            r.name,
-            'BPM ' + fmt(r.bpm, 0),
-            t('dna-key') + ' ' + r.tonic + ' ' + t(r.mode === 'minor' ? 'dna-minor' : 'dna-major') + ' (' + r.camelot + ')',
-            fmt(r.lufs, 1) + ' LUFS',
-            fmt(r.truePeak, 1) + ' dBTP'
-        ];
-        if (r.lra !== null && r.lra !== undefined) rows.push(fmt(r.lra, 1) + ' LU');
-        return rows.filter(Boolean).join(' · ');
+        return ui.result ? testoVoce(ui.result, { lingua: lang(), t }) : '';
+    }
+
+    /**
+     * «Il BPM sembra sbagliato?» si vede col segment ÷2/×2, ma non insieme
+     * alla riga del primo avvio (#tb-hint, shared/aiuto.js): due righe di
+     * aiuto una sopra l'altra sono troppe (revisione ui-ux). Chiusa quella,
+     * compare questa (MutationObserver sotto).
+     */
+    function aggiornaFoldHint() {
+        if (!foldHint) return;
+        const primoAvvio = document.getElementById('tb-hint');
+        const occupato = !!(primoAvvio && !primoAvvio.hidden);
+        foldHint.hidden = !foldBox || foldBox.hidden || occupato;
+    }
+
+    /** Glossario LUFS (spec 20 §3): una riga, finche' non e' stata vista. */
+    function mostraGlossario() {
+        if (lufsHint) lufsHint.hidden = !!prefs.get(TOOL, 'glossario-visto', false);
+    }
+
+    function glossarioVisto() {
+        prefs.set(TOOL, 'glossario-visto', true);   // locale: portabile() non la porta
+        if (lufsHint) lufsHint.hidden = true;
+    }
+
+    /* ---------------- compatibili: chip e filtro ---------------- */
+
+    /** Il Camelot della voce, poi i compatibili: ogni codice e' un chip. */
+    function renderChips(camelot) {
+        if (!compatBox) return;
+        compatBox.textContent = '';
+        if (!camelot) return;
+        [camelot, ...compatibleWith(camelot)].forEach((k, i) => {
+            const b = document.createElement('button');
+            b.type = 'button';
+            /* il primo e' la tonalita' della voce stessa: stile a parte */
+            b.className = 'dna-compat-chip' + (i === 0 ? ' is-self' : '');
+            b.setAttribute('data-dna-camelot', k);
+            b.setAttribute('aria-pressed', 'false');
+            b.setAttribute('aria-label', t('dna-filter-label', { camelot: k }));
+            b.textContent = k;
+            compatBox.appendChild(b);
+        });
+        aggiornaFiltro();
+    }
+
+    /** Chip acceso, barra «Brani in 9A» e la sua «×». */
+    function aggiornaFiltro() {
+        if (filterBar) filterBar.hidden = !ui.filtro;
+        if (filterLabel && ui.filtro) filterLabel.textContent = t('dna-filter-label', { camelot: ui.filtro });
+        if (!compatBox) return;
+        compatBox.querySelectorAll('.dna-compat-chip').forEach((c) => {
+            const on = !!ui.filtro && c.getAttribute('data-dna-camelot') === ui.filtro;
+            c.classList.toggle('is-active', on);
+            c.setAttribute('aria-pressed', on ? 'true' : 'false');
+            c.setAttribute('aria-label', t('dna-filter-label', { camelot: c.getAttribute('data-dna-camelot') }));
+        });
+    }
+
+    /** Stesso chip = togli; un altro = filtra per quello. Lo storico viene in vista. */
+    function scegliFiltro(camelot) {
+        ui.filtro = camelot && camelot !== ui.filtro ? camelot : null;
+        disegnaStorico();
+        if (ui.filtro && historyWrap && typeof historyWrap.scrollIntoView === 'function') {
+            let calmo = false;
+            try { calmo = window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) { calmo = false; }
+            try { historyWrap.scrollIntoView({ block: 'start', behavior: calmo ? 'auto' : 'smooth' }); } catch (e) { /* vecchio Safari */ }
+        }
+    }
+
+    /* ---------------- confronto ---------------- */
+
+    /* zero alla precisione mostrata: niente segno (ne' "+0,0" ne' "-0,0") */
+    const nullo = (v, cifre) => Math.abs(v) < 0.5 * Math.pow(10, -cifre);
+    const segnato = (v, cifre) => (nullo(v, cifre) ? fmt(0, cifre) : (v > 0 ? '+' : '') + fmt(v, cifre));
+    const DASH = '\u2014';
+
+    /** La tabella aperta · scelta · Δ (spec 20 §3). */
+    function disegnaConfronto(a, b) {
+        if (!compareTable) return;
+        compareTable.textContent = '';
+        const cell = (tag, text, cls) => {
+            const c = document.createElement(tag);
+            if (cls) c.className = cls;
+            c.textContent = text;
+            return c;
+        };
+        const thead = document.createElement('thead');
+        const head = document.createElement('tr');
+        const corner = document.createElement('td');
+        head.appendChild(corner);
+        [['dna-compare-current', a], ['dna-compare-other', b]].forEach(([key, r]) => {
+            const th = document.createElement('th');
+            th.scope = 'col';
+            th.append(cell('span', t(key), 'dna-compare-role'), cell('span', nomeMostrato(r), 'dna-compare-name'));
+            head.appendChild(th);
+        });
+        const delta = cell('th', '\u0394');
+        delta.scope = 'col';
+        head.appendChild(delta);
+        thead.appendChild(head);
+
+        const n1 = (v) => fmt(v, 1);
+        const intero = (v) => Math.abs(v - Math.round(v)) < 0.05;
+        const valori = {
+            bpm: { label: 'BPM', unita: true, cifre: 1, v: (v) => fmt(v, 0), d: (d) => segnato(d, intero(d) ? 0 : 1) },
+            camelot: { label: 'Camelot', cifre: 0, v: (v) => v, d: null },
+            lufs: { label: 'LUFS', unita: true, cifre: 1, v: n1, d: (d) => segnato(d, 1) + ' LU' },
+            tp: { label: 'dBTP', unita: true, cifre: 1, v: n1, d: (d) => segnato(d, 1) + ' dB' },
+            lra: { label: 'LRA', unita: true, cifre: 1, v: (v) => n1(v) + ' LU', d: (d) => segnato(d, 1) + ' LU' },
+            durata: { label: t('dna-duration-label'), cifre: 0, v: (v) => durata(v),
+                d: (d) => (Math.round(d) > 0 ? '+' : '') + durata(d) }
+        };
+        const tbody = document.createElement('tbody');
+        confronto(a, b).forEach((riga) => {
+            const f = valori[riga.chiave];
+            if (!f) return;
+            const tr = document.createElement('tr');
+            tr.setAttribute('data-dna-row', riga.chiave);
+            /* le unita' (dBTP, LUFS...) si scrivono come sono: niente maiuscolo del CSS */
+            const th = cell('th', f.label, f.unita ? 'dna-compare-unit' : '');
+            th.scope = 'row';
+            tr.appendChild(th);
+            tr.appendChild(cell('td', riga.a === null ? DASH : f.v(riga.a)));
+            tr.appendChild(cell('td', riga.b === null ? DASH : f.v(riga.b)));
+            let d = DASH;
+            if (riga.chiave === 'camelot') {
+                const parti = [];
+                if (riga.delta !== null) {
+                    const uno = Math.abs(riga.delta) === 1;
+                    parti.push(uno ? t('dna-compare-semitone', { n: segnato(riga.delta, 0) })
+                        : t('dna-compare-semitones', { n: segnato(riga.delta, 0) }));
+                }
+                if (riga.a && riga.b) parti.push(t(riga.compatibile ? 'dna-compare-compatible' : 'dna-compare-incompatible'));
+                /* a capo, non « · »: la cella e' white-space: pre-line (dna.css) */
+                if (parti.length) d = parti.join('\n');
+            } else if (riga.delta !== null) {
+                d = f.d(riga.delta);
+            }
+            /* Δ nullo: non si evidenzia (niente accento su "0") */
+            const zero = riga.delta !== null && nullo(riga.delta, f.cifre);
+            tr.appendChild(cell('td', d, 'dna-compare-delta' + (zero ? ' is-zero' : '')));
+            tbody.appendChild(tr);
+        });
+        compareTable.append(thead, tbody);
+    }
+
+    function apriConfronto(r, anchor) {
+        if (!compareSheet || !ui.result) return;
+        ui.confronto = r;
+        disegnaConfronto(ui.result, r);
+        openSheet(compareSheet, { anchor });
+    }
+
+    /** Il foglio si chiude a ogni cambio di hash (spec 20 §3). */
+    function chiudiConfronto() {
+        ui.confronto = null;
+        if (compareSheet && !compareSheet.hidden) closeSheet({ restoreFocus: false });
     }
 
     /* ---------------- storico ---------------- */
@@ -597,16 +826,21 @@ export function mountDna() {
             channels: result.channels,
             bpm: result.bpm,
             bpmConfidence: result.bpmConfidence,
+            /* senza le alternative il ÷2/×2 spariva riaprendo la voce (spec 20 §3) */
+            bpmAlternatives: (Array.isArray(result.bpmAlternatives) ? result.bpmAlternatives : [])
+                .filter((v) => typeof v === 'number' && isFinite(v)).slice(0, 4),
             tonic: result.tonic,
             mode: result.mode,
             camelot: result.camelot,
             keyConfidence: result.keyConfidence,
             lufs: result.lufs,
             truePeak: result.truePeak,
-            lra: result.lra
+            lra: result.lra,
+            uncertain: !!result.uncertain
         };
     }
 
+    /** -> true se la voce e' nell'archivio. */
     async function saveHistory(result) {
         try {
             await put(TOOL, result.at, historyRecord(result));
@@ -616,19 +850,54 @@ export function mountDna() {
                la voce sparisce anche sugli altri dispositivi invece di
                tornare dal server al giro dopo (spec 18 §3-4) */
             await Promise.all(extra.map((rec) => elimina(TOOL, rec.id)));
-            renderHistory();
+            await renderHistory();
+            return true;
         } catch (e) {
             /* archivio pieno o record troppo grande: lo si dice (spec 18 §3);
                IndexedDB non disponibile: si vive senza storico */
             if (e && (e.codice === 'limite' || e.codice === 'grande')) toast('store-limit');
+            return false;
         }
+    }
+
+    /**
+     * Un risultato appena analizzato (file o microfono): si mostra, si salva
+     * e, se il salvataggio riesce, prende il suo `#r=<id>` con un push e lo
+     * si dice (spec 20 §3). Salvataggio fallito: risultato senza hash.
+     */
+    async function mostraNuovo(result, { cover = null } = {}) {
+        ui.openId = null;
+        showResult(result, { cover });
+        const bpmSalvato = result.bpm;   // historyRecord() lo legge adesso, prima del put
+        const ok = await saveHistory(result);
+        const id = String(result.at);
+        /* un ÷2/×2 toccato mentre il primo salvataggio era in corso: il
+           record ha ancora il BPM di prima, si riscrive (validator, spec 20) */
+        if (ok && result.bpm !== bpmSalvato) salvaPiega(result, id);
+        /* nel frattempo si e' andati altrove: niente hash, niente toast */
+        if (!ok || ui.result !== result || ui.state !== 'result') return;
+        ui.openId = id;
+        const hash = hashDiId(id);
+        try {
+            history.pushState(null, '', location.pathname + location.search + hash);
+            hashApplicato = location.hash || hash;
+        } catch (e) { /* senza history si resta senza hash */ }
+        prefs.set(TOOL, 'ultimo', id);
+        toast('dna-saved');
+        disegnaStorico();
     }
 
     async function removeHistory(id) {
         try {
             await del(TOOL, id);
-            renderHistory();
-        } catch (e) { /* niente da fare */ }
+        } catch (e) { return; }
+        /* la voce aperta eliminata da qui: si torna al vuoto, senza toast
+           (chi elimina sa gia' che non c'e' piu') */
+        if (ui.openId !== null && String(id) === ui.openId) {
+            prefs.set(TOOL, 'ultimo', undefined);
+            vai(null, { sostituisci: true });
+        }
+        renderHistory();
     }
 
     async function clearHistory() {
@@ -637,6 +906,10 @@ export function mountDna() {
             await Promise.all(all.map((rec) => del(TOOL, rec.id)));
         } catch (e) { /* niente da fare */ }
         if (clearConfirm) clearConfirm.hidden = true;
+        if (ui.openId !== null) {
+            prefs.set(TOOL, 'ultimo', undefined);
+            vai(null, { sostituisci: true });
+        }
         renderHistory();
     }
 
@@ -671,19 +944,14 @@ export function mountDna() {
 
     /** Il nome scelto a mano vince sui tag del file. */
     function historyName(r) {
-        if (r.renamed && r.name) return r.name;
-        return [r.artist, r.title].filter(Boolean).join(' - ') || r.name;
+        return nomeMostrato(r);   // la stessa regola della ricerca e del CSV (storico.js)
     }
 
     /** Numeri della riga, senza il nome (che sta nel suo <span>). */
     function historyMeta(r) {
         const parts = [r.bpm ? fmt(r.bpm, 0) + ' BPM' : '', r.camelot,
             isFinite(r.lufs) ? fmt(r.lufs, 1) + ' LUFS' : ''].filter(Boolean);
-        return parts.length ? ' · ' + parts.join(' · ') : '';
-    }
-
-    function historyLabel(r) {
-        return historyName(r) + historyMeta(r);
+        return parts.join(' · ');
     }
 
     /** Rinomina in linea: Invio o uscita dal campo salvano, Esc annulla. */
@@ -725,68 +993,336 @@ export function mountDna() {
         input.select();
     }
 
+    /** Tutte le voci vive, normalizzate e con il loro `id`, dalla piu' recente. */
+    async function tutteLeVoci() {
+        const all = await list(TOOL);
+        return all.slice().reverse().map((rec) => {
+            const id = rec.id || (rec.value && rec.value.at) || '';
+            return { ...migrate(rec, id), id: String(id) };
+        });
+    }
+
     async function renderHistory() {
         if (!historyBox) return;
-        let all = [];
-        try { all = await list(TOOL); } catch (e) { return; }
+        try { ui.voci = (await tutteLeVoci()).slice(0, HISTORY); } catch (e) { return; }
+        disegnaStorico();
+    }
+
+    /** Una riga senza voci: storico vuoto, filtro o ricerca senza risultati. */
+    function rigaVuota(key, vars) {
+        const vuoto = document.createElement('li');
+        vuoto.className = 'dna-history-none';
+        /* con le variabili il testo lo riscrive disegnaStorico() al cambio lingua */
+        if (!vars) vuoto.setAttribute('data-i18n', key);
+        vuoto.textContent = t(key, vars);
+        historyBox.appendChild(vuoto);
+    }
+
+    /** Ridisegna l'elenco dalla copia in memoria (`ui.voci`): filtro, ricerca, voce aperta. */
+    function disegnaStorico() {
+        if (!historyBox) return;
+        const voci = ui.voci;
         historyBox.textContent = '';
-        const recent = all.slice(-HISTORY).reverse();
-        if (clearBtn) clearBtn.hidden = recent.length === 0;
-        if (clearConfirm && !recent.length) clearConfirm.hidden = true;
-        if (!recent.length) {
+        mostraAltre(0);   // lo rimette solo l'elenco accorciato qui sotto
+        if (clearBtn) clearBtn.hidden = voci.length === 0;
+        if (exportBtn) exportBtn.hidden = voci.length === 0;
+        if (clearConfirm && !voci.length) clearConfirm.hidden = true;
+        /* la ricerca serve da SEARCH_MIN voci in su; sotto sparisce e si azzera */
+        const conRicerca = voci.length >= SEARCH_MIN;
+        if (searchBox) searchBox.hidden = !conRicerca;
+        if (!conRicerca && ui.q) {
+            ui.q = '';
+            if (searchIn) searchIn.value = '';
+        }
+        aggiornaFiltro();
+        if (!voci.length) {
             /* la riga che il markup si aspetta da sempre (CONTRATTO in
                index.html): senza, «Recenti» e' un elenco alto zero e chi
                apre lo strumento non capisce se manca qualcosa */
-            const vuoto = document.createElement('li');
-            vuoto.className = 'dna-history-none';
-            vuoto.setAttribute('data-i18n', 'dna-history-empty');
-            vuoto.textContent = t('dna-history-empty');
-            historyBox.appendChild(vuoto);
+            rigaVuota('dna-history-empty');
             return;
         }
-        recent.forEach((rec) => {
-            const id = rec.id || (rec.value && rec.value.at) || '';
-            const r = migrate(rec, id);
-            const li = document.createElement('li');
-            li.className = 'dna-history-row';
-            const btn = document.createElement('button');
-            btn.type = 'button';
-            btn.className = 'dna-history-item';
-            btn.setAttribute('data-dna-id', id);
-            const nameEl = document.createElement('span');
-            nameEl.className = 'dna-history-name';
-            nameEl.textContent = historyName(r);
-            const metaEl = document.createElement('span');
-            metaEl.className = 'dna-history-meta';
-            metaEl.textContent = historyMeta(r);
-            btn.append(nameEl, metaEl);
-            /* riapre il risultato salvato: nessuna nuova analisi */
-            btn.addEventListener('click', () => showResult(r));
-            /* il tocco sul nome rinomina, non riapre (feedback Genna) */
-            nameEl.addEventListener('click', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                startRename(li, btn, id, historyName(r));
+        const aperta = ui.state === 'result' ? ui.openId : null;
+        /* filtrando per tonalita' la voce aperta resta fuori: si cercano le ALTRE */
+        let mostrate = filtra(voci, { camelot: ui.filtro, q: ui.q, esclusa: ui.filtro ? aperta : null });
+        if (!mostrate.length) {
+            if (ui.filtro) rigaVuota('dna-filter-empty', { camelot: ui.filtro });
+            else rigaVuota('dna-search-empty');
+            return;
+        }
+        /* sotto un risultato bastano le ultime RESULT_MAX (la voce aperta
+           sempre dentro) e «Mostra tutte»; nel vuoto, filtrando o cercando
+           si vede tutto */
+        if (ui.state === 'result' && !ui.filtro && !ui.q && !ui.tutte && mostrate.length > RESULT_MAX) {
+            const prime = mostrate.slice(0, RESULT_MAX);
+            const lei = aperta === null ? null : mostrate.find((r) => r.id === aperta);
+            if (lei && !prime.includes(lei)) prime[RESULT_MAX - 1] = lei;
+            mostraAltre(voci.length);
+            mostrate = prime;
+        }
+        mostrate.forEach((r) => historyBox.appendChild(rigaStorico(r, aperta)));
+    }
+
+    /** «Mostra tutte» (n = voci totali) sotto l'elenco accorciato; 0 = via. */
+    let altreBtn = null;
+    function mostraAltre(n) {
+        if (!n) { if (altreBtn) altreBtn.hidden = true; return; }
+        if (!altreBtn) {
+            altreBtn = document.createElement('button');
+            altreBtn.type = 'button';
+            altreBtn.id = 'dna-history-more';
+            altreBtn.className = 'tb-btn tb-btn--ghost dna-history-more';
+            altreBtn.addEventListener('click', () => {
+                ui.tutte = true;
+                disegnaStorico();
             });
-            const pen = document.createElement('button');
-            pen.type = 'button';
-            pen.className = 'dna-history-rename tb-btn--icon';
-            pen.setAttribute('data-dna-rename', String(id));
-            pen.setAttribute('data-i18n-aria', 'dna-rename');
-            pen.setAttribute('aria-label', t('dna-rename'));
-            pen.textContent = '✎';
-            pen.addEventListener('click', (e) => { e.stopPropagation(); startRename(li, btn, id, historyName(r)); });
-            const rm = document.createElement('button');
-            rm.type = 'button';
-            rm.className = 'dna-history-del tb-btn--icon';
-            rm.setAttribute('data-dna-del', String(id));
-            rm.setAttribute('data-i18n-aria', 'dna-del-one');
-            rm.setAttribute('aria-label', t('dna-del-one'));
-            rm.textContent = '\u00d7';
-            rm.addEventListener('click', (e) => { e.stopPropagation(); removeHistory(id); });
-            li.append(btn, pen, rm);
-            historyBox.appendChild(li);
+        }
+        if (!altreBtn.isConnected) historyBox.after(altreBtn);
+        altreBtn.textContent = t('dna-history-more', { n });
+        altreBtn.hidden = false;
+    }
+
+    /** Pulsante icona della riga, con il suo tip (tocco lungo, hover, fuoco). */
+    function icona(cls, key, glyph, onClick) {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = cls + ' tb-btn--icon';
+        b.setAttribute('data-i18n-aria', key);
+        b.setAttribute('aria-label', t(key));
+        b.setAttribute('data-tip', key);
+        b.textContent = glyph;
+        b.addEventListener('click', (e) => { e.stopPropagation(); onClick(b); });
+        return b;
+    }
+
+    function rigaStorico(r, aperta) {
+        const id = r.id;
+        const li = document.createElement('li');
+        li.className = 'dna-history-row';
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'dna-history-item';
+        btn.setAttribute('data-dna-id', id);
+        const nameEl = document.createElement('span');
+        nameEl.className = 'dna-history-name';
+        nameEl.textContent = historyName(r);
+        const metaEl = document.createElement('span');
+        metaEl.className = 'dna-history-meta';
+        metaEl.textContent = historyMeta(r);
+        btn.append(nameEl, metaEl);
+        const suAperta = aperta !== null && id === aperta;
+        if (suAperta) {
+            li.classList.add('is-open');
+            btn.setAttribute('aria-current', 'true');
+        }
+        /* riapre il risultato salvato (push di #r=<id>): nessuna nuova analisi */
+        btn.addEventListener('click', () => { if (!suAperta) vai(id); });
+        /* il tocco sul nome rinomina, non riapre (feedback Genna) */
+        nameEl.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            startRename(li, btn, id, historyName(r));
         });
+        const pen = icona('dna-history-rename', 'dna-rename', '✎', () => startRename(li, btn, id, historyName(r)));
+        pen.setAttribute('data-dna-rename', id);
+        const rm = icona('dna-history-del', 'dna-del-one', '×', () => removeHistory(id));
+        rm.setAttribute('data-dna-del', id);
+        li.append(btn, pen);
+        /* «Confronta» solo sotto un risultato salvato, e mai con se stessa */
+        if (ui.state === 'result' && ui.openId !== null && !suAperta) {
+            const cmp = icona('dna-history-compare', 'dna-compare-tip', '⇄', (b) => apriConfronto(r, b));
+            cmp.setAttribute('data-dna-compare', id);
+            li.appendChild(cmp);
+        } else if (ui.state === 'result' && ui.openId !== null) {
+            /* la voce aperta non ha «Confronta»: lo spazio resta, le righe
+               restano allineate (stessa larghezza del nome in tutte) */
+            const posto = document.createElement('span');
+            posto.className = 'dna-history-spacer';
+            posto.setAttribute('aria-hidden', 'true');
+            li.appendChild(posto);
+        }
+        li.appendChild(rm);
+        return li;
+    }
+
+    /* ---------------- router: #r=<id> (spec 20 §3, come penna.js) ---------------- */
+
+    /** Porta a una voce (id) o al vuoto (null), scrivendo l'hash. */
+    function vai(id, { sostituisci = false } = {}) {
+        const hash = id ? hashDiId(id) : '';
+        /* stesso hash (es. «Analizza un altro» da un risultato non salvato):
+           nessuna voce nuova nella cronologia, ma la vista si riapplica */
+        if ((location.hash || '') === hash) {
+            hashApplicato = null;
+            return applicaHash();
+        }
+        const url = location.pathname + location.search + hash;
+        try {
+            if (sostituisci) history.replaceState(null, '', url);
+            else history.pushState(null, '', url);
+        } catch (e) {
+            location.hash = hash;
+            return Promise.resolve();   // l'hashchange fara' il resto
+        }
+        return applicaHash();
+    }
+
+    /** Stato vuoto: niente voce aperta, niente filtro, `ultimo` tolto. */
+    function mostraVuoto() {
+        ui.openId = null;
+        ui.result = null;
+        ui.filtro = null;
+        prefs.set(TOOL, 'ultimo', undefined);
+        setState('empty');
+        disegnaStorico();
+    }
+
+    function apriVoce(id, r) {
+        ui.openId = String(id);
+        ui.source = r.source;
+        ui.name = r.name;
+        showResult(r);
+        prefs.set(TOOL, 'ultimo', ui.openId);
+        disegnaStorico();
+    }
+
+    /**
+     * L'hash e' la vista: qui si esegue. Durante un'analisi o un ascolto si
+     * ignora (non si butta via il lavoro in corso). Un id sconosciuto torna
+     * al vuoto con un toast.
+     */
+    async function applicaHash() {
+        if (ui.state === 'working' || ui.state === 'recording') return;
+        const hash = location.hash || '';
+        if (hash === hashApplicato) return;
+        hashApplicato = hash;
+        chiudiConfronto();
+        const id = idDaHash(hash);
+        if (!id) { mostraVuoto(); return; }
+        if (ui.openId === id && ui.state === 'result') return;
+        let rec = null;
+        try { rec = await get(TOOL, id); } catch (e) { rec = null; }
+        if ((location.hash || '') !== hash) return;   // nel frattempo si e' andati altrove
+        if (ui.state === 'working' || ui.state === 'recording') return;
+        if (!rec) {
+            toast('dna-gone');
+            prefs.set(TOOL, 'ultimo', undefined);
+            vai(null, { sostituisci: true });
+            return;
+        }
+        apriVoce(id, migrate(rec, id));
+    }
+
+    /** La voce aperta c'e' ancora? (eliminata da un'altra scheda o dalla sync) */
+    async function controllaAperta() {
+        const id = ui.openId;
+        if (id === null || ui.state !== 'result') return;
+        let rec;
+        try { rec = await get(TOOL, id); } catch (e) { return; }
+        if (ui.openId !== id || rec) return;
+        toast('dna-gone');
+        prefs.set(TOOL, 'ultimo', undefined);
+        vai(null, { sostituisci: true });
+    }
+
+    /**
+     * All'avvio: con l'hash vale l'hash; senza, si riapre l'ultima voce
+     * (iPhone in standalone riparte sempre da start_url) con un replace,
+     * cosi' "indietro" non torna a una pagina vuota. `ultimo` orfano: via.
+     */
+    async function avvia() {
+        if (!idDaHash(location.hash)) {
+            const u = prefs.get(TOOL, 'ultimo', null);
+            if (u) {
+                let rec = null;
+                try { rec = await get(TOOL, String(u)); } catch (e) { rec = null; }
+                if (rec && !idDaHash(location.hash) && ui.state === 'empty') {
+                    vai(String(u), { sostituisci: true });
+                    return;
+                }
+                if (!rec) prefs.set(TOOL, 'ultimo', undefined);
+            }
+        }
+        applicaHash();
+    }
+
+    /* ---------------- esporta .csv, condividi, copia ---------------- */
+
+    function scaricaBlob(blob, nome) {
+        try {
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = nome;
+            a.rel = 'noopener';
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            setTimeout(() => URL.revokeObjectURL(url), 10000);
+            return true;
+        } catch (e) {
+            return false;
+        }
+    }
+
+    /** iPhone/iPad aggiunti alla schermata Home: li' `<a download>` non apre nulla. */
+    function inStandaloneIos() {
+        try {
+            const ua = navigator.userAgent || '';
+            const piatt = navigator.platform || '';
+            const iOS = /iPhone|iPad|iPod/.test(ua) || /iP(hone|ad|od)/.test(piatt)
+                || (/Mac/.test(piatt) && navigator.maxTouchPoints > 1);
+            const solo = navigator.standalone === true
+                || (typeof matchMedia === 'function' && matchMedia('(display-mode: standalone)').matches);
+            return !!(iOS && solo);
+        } catch (e) {
+            return false;
+        }
+    }
+
+    /** Web Share con il file allegato. -> true solo se e' andata davvero. */
+    async function condividiFile(blob, nome) {
+        if (typeof File !== 'function' || !navigator.canShare || !navigator.share) return false;
+        try {
+            const file = new File([blob], nome, { type: 'text/csv' });
+            if (!navigator.canShare({ files: [file] })) return false;
+            await navigator.share({ files: [file], title: nome });
+            return true;
+        } catch (e) {
+            return false;
+        }
+    }
+
+    /**
+     * Tutto lo storico in .csv (spec 20 §3). Stessi ripieghi di Penna: in
+     * standalone su iOS prima la condivisione del file, poi il download,
+     * infine il testo negli appunti.
+     */
+    async function esportaCsv() {
+        let voci = ui.voci;
+        try { voci = await tutteLeVoci(); } catch (e) { /* si usa la copia in memoria */ }
+        if (!voci.length) return;
+        const testo = csv(voci, { lingua: lang(), t });
+        const nome = nomeCsv();
+        const blob = new Blob([testo], { type: 'text/csv;charset=utf-8' });
+        if (inStandaloneIos() && await condividiFile(blob, nome)) return;
+        if (scaricaBlob(blob, nome)) return;
+        try {
+            await navigator.clipboard.writeText(testo);
+            toast('dna-csv-copied');
+        } catch (e) {
+            toast('dna-csv-fail');
+        }
+    }
+
+    async function copia(text) {
+        if (!text) return;
+        try {
+            await navigator.clipboard.writeText(text);
+            toast('dna-copied');
+        } catch (e) {
+            toast('dna-copy-manual');
+        }
     }
 
     /* ---------------- ingresso: file ---------------- */
@@ -1141,6 +1677,7 @@ export function mountDna() {
         starting = false;
         if (statusOut) statusOut.textContent = '';
         setState(back === 'recording' ? 'recording' : 'empty');
+        if (back !== 'recording') pulisciHash();
     }
 
     /**
@@ -1156,6 +1693,7 @@ export function mountDna() {
             noneText.textContent = t(key);
         }
         setState('none');
+        pulisciHash();
         /* senza il markup del nuovo stato almeno il messaggio si vede */
         if (!document.getElementById('dna-none')) setStatus(statusOut, { kind: 'error', key });
     }
@@ -1209,8 +1747,7 @@ export function mountDna() {
             at: new Date().toISOString()
         };
         stopWorker();
-        showResult(result);
-        saveHistory(result);
+        mostraNuovo(result);
     }
 
     /** Schermata del logo fermo: nessun microfono, nessun permesso. */
@@ -1265,9 +1802,11 @@ export function mountDna() {
             cancelled = true;
             stopWorker();
             setState('empty');
+            pulisciHash();
         });
     }
-    if (againBtn) againBtn.addEventListener('click', () => setState('empty'));
+    /* «Analizza un altro»: push del vuoto (indietro riapre il risultato) */
+    if (againBtn) againBtn.addEventListener('click', () => { vai(null); });
     /* svuota tutto: conferma nella pagina, mai il confirm() del browser */
     if (clearBtn && clearConfirm) {
         clearBtn.addEventListener('click', () => { clearConfirm.hidden = false; });
@@ -1283,6 +1822,60 @@ export function mountDna() {
             ui.result.bpm = fold(ui.result.bpm, Number(b.getAttribute('data-dna-fold')));
             const el = out('dna-bpm');
             if (el) el.textContent = fmt(ui.result.bpm, 0);
+            salvaPiega(ui.result);
+        });
+    }
+
+    /**
+     * La scelta ÷2/×2 va nel record (spec 20 §3: prima restava in memoria e
+     * al ricaricamento tornava il BPM di prima). Si rilegge il record, cosi'
+     * un nome cambiato nel frattempo non si perde. Un risultato non ancora
+     * salvato non serve: `mostraNuovo` salva lo stesso oggetto.
+     */
+    async function salvaPiega(result, id = ui.openId) {
+        /* senza id il salvataggio e' ancora in corso: ci pensa mostraNuovo */
+        if (id === null || !result) return;
+        try {
+            const prev = await get(TOOL, id);
+            if (!prev) return;
+            await put(TOOL, id, historyRecord({ ...migrate(prev, id), bpm: result.bpm }));
+            await renderHistory();
+        } catch (e) {
+            if (e && (e.codice === 'limite' || e.codice === 'grande')) toast('store-limit');
+        }
+    }
+
+    /* chip dei compatibili: filtro in memoria sullo storico */
+    if (compatBox) {
+        compatBox.addEventListener('click', (e) => {
+            const chip = e.target.closest('.dna-compat-chip');
+            if (chip) scegliFiltro(chip.getAttribute('data-dna-camelot'));
+        });
+    }
+    if (filterClear) filterClear.addEventListener('click', () => scegliFiltro(null));
+    if (searchIn) {
+        searchIn.addEventListener('input', () => {
+            ui.q = searchIn.value;
+            disegnaStorico();
+        });
+    }
+    if (exportBtn) exportBtn.addEventListener('click', () => { esportaCsv(); });
+    if (lufsHintClose) lufsHintClose.addEventListener('click', glossarioVisto);
+    /* chi apre la «i» ha visto il glossario: la riga non serve piu' */
+    if (lufsInfoBtn) lufsInfoBtn.addEventListener('click', glossarioVisto);
+    /* Condividi solo dove c'e' Web Share (spec 20 §3); annullato = niente,
+       altri errori = si copia */
+    if (shareBtn) {
+        shareBtn.hidden = typeof navigator.share !== 'function';
+        shareBtn.addEventListener('click', async () => {
+            const text = summary();
+            if (!text) return;
+            try {
+                await navigator.share({ title: nomeMostrato(ui.result), text });
+            } catch (e) {
+                if (e && e.name === 'AbortError') return;
+                copia(text);
+            }
         });
     }
     if (targetSelect) {
@@ -1293,16 +1886,26 @@ export function mountDna() {
         });
     }
     if (copyBtn) {
-        copyBtn.addEventListener('click', async () => {
-            const text = summary();
-            try {
-                await navigator.clipboard.writeText(text);
-                toast('dna-copied');
-            } catch (e) {
-                toast('dna-copy-manual');
-            }
+        copyBtn.addEventListener('click', () => { copia(summary()); });
+    }
+
+    /* l'hash e' la vista: la traversata manda popstate e hashchange in
+       coppia, applicaHash() serve un hash una volta sola */
+    window.addEventListener('hashchange', () => { applicaHash(); });
+    window.addEventListener('popstate', () => { applicaHash(); });
+
+    /* cambio lingua: le righe con variabili, il filtro, il confronto aperto */
+    function applicaSegnaposto() {
+        document.querySelectorAll('[data-i18n-placeholder]').forEach((e) => {
+            e.setAttribute('placeholder', t(e.getAttribute('data-i18n-placeholder')));
         });
     }
+    onLingua(() => {
+        applicaSegnaposto();
+        disegnaStorico();
+        if (ui.result && compatBox) aggiornaFiltro();
+        if (ui.confronto && ui.result && compareSheet && !compareSheet.hidden) disegnaConfronto(ui.result, ui.confronto);
+    });
 
     window.addEventListener('pagehide', () => {
         cancelled = true;
@@ -1317,11 +1920,22 @@ export function mountDna() {
     mountSelects(document);
     mountInfos(document);
     if (targetSelect) targetSelect.value = ui.target;
+    applicaSegnaposto();
+    const primoAvvio = document.getElementById('tb-hint');
+    if (primoAvvio && typeof MutationObserver === 'function') {
+        new MutationObserver(aggiornaFoldHint).observe(primoAvvio, { attributes: true, attributeFilter: ['hidden'] });
+    }
     setState('empty');
-    renderHistory();
-    /* analisi arrivate (o tolte) dalla sincronizzazione, di qui o di
-       un'altra scheda: «Recenti» si ridisegna (spec 18 §4) */
-    onArchivio(TOOL, (m) => { if (m && m.origine === 'sync') renderHistory(); }, { locali: true });
+    /* prima lo storico (serve a disegnare la voce aperta), poi l'hash o l'ultima voce */
+    renderHistory().then(avvia, avvia);
+    /* analisi arrivate (o tolte) dalla sincronizzazione o da un'altra
+       scheda: «Recenti» si ridisegna (spec 18 §4) e, se la voce aperta non
+       c'e' piu', «Analisi non trovata» e si torna al vuoto (spec 20 §3) */
+    onArchivio(TOOL, (m) => {
+        if (!m || !(m.origine === 'sync' || !m.locale)) return;
+        renderHistory();
+        if (ui.openId !== null && (m.id === null || m.id === undefined || String(m.id) === ui.openId)) controllaAperta();
+    }, { locali: true });
     if (needsGesture()) { /* nessun suono da sbloccare finche' non si registra */ }
 
     return {

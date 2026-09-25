@@ -82,7 +82,10 @@ export default {
         /* Intestazione "Conteggio" sopra Metrico/Grammaticale dentro
            pen-settings (revisione): il segmento non aveva etichetta. */
         'penna-count-heading': 'Conteggio',
-        'penna-export': 'Esporta',
+        /* Revisione (validator): "Esporta" da solo era ambiguo accanto al
+           nuovo "Esporta tutto in .txt" (stesso verbo, non si capiva quale
+           file uscisse); i due bottoni ora dicono anche il formato. */
+        'penna-export': 'Esporta (.json)',
         'penna-import': 'Importa',
         'penna-imported': '{n} nuovi, {m} aggiornati',
         'penna-import-fail': 'File non riconosciuto',
@@ -94,7 +97,25 @@ export default {
            non solo di Penna, #pen-sync e' sparita da questa pagina, resta
            solo il rimando (chiave non elencata dalla spec: aggiunta dal
            builder perche' il markup la richiede). */
-        'penna-sync-link': 'Sincronizza fra dispositivi → Impostazioni'
+        'penna-sync-link': 'Sincronizza fra dispositivi → Impostazioni',
+        /* Modalità prova (spec 19 §3): pulsante nella barra dell'editor,
+           controlli della vista a tutto schermo. */
+        'penna-prova': 'Prova',
+        'penna-prova-tip': 'Testo grande, schermo sempre acceso',
+        'penna-prova-smaller': 'A−',
+        'penna-prova-bigger': 'A+',
+        'penna-prova-exit': 'Fine',
+        /* Duplica ed export .txt (spec 19 §3), foglio impostazioni.
+           Revisione (validator): bottoni più corti ("Duplica",
+           "Tutti i testi (.txt)"), il testo lungo originale resta come
+           aria-label di #pen-duplicate (penna-duplicate-aria). */
+        'penna-duplicate': 'Duplica',
+        'penna-duplicate-aria': 'Duplica questo testo',
+        'penna-duplicated': 'Copia creata',
+        'penna-copy-suffix': ' (copia)',
+        'penna-export-txt': 'Tutti i testi (.txt)',
+        /* Toast di "Annulla" dopo l'eliminazione di un testo (spec 19 §3). */
+        'penna-restored': 'Testo ripristinato'
     },
     en: {
         'penna-title': 'Lyric Pad',
@@ -164,13 +185,24 @@ export default {
         'penna-settings': 'Settings',
         'penna-notebook': 'Notebook',
         'penna-count-heading': 'Count',
-        'penna-export': 'Export',
+        'penna-export': 'Export (.json)',
         'penna-import': 'Import',
         'penna-imported': '{n} new, {m} updated',
         'penna-import-fail': 'File not recognised',
         'penna-limit': 'The notebook is full (1000 lyrics): delete some to write more',
         'penna-print': 'Print',
         'penna-gone': 'Lyric not found',
-        'penna-sync-link': 'Sync across devices → Settings'
+        'penna-sync-link': 'Sync across devices → Settings',
+        'penna-prova': 'Stage',
+        'penna-prova-tip': 'Big text, screen stays on',
+        'penna-prova-smaller': 'A−',
+        'penna-prova-bigger': 'A+',
+        'penna-prova-exit': 'Done',
+        'penna-duplicate': 'Duplicate',
+        'penna-duplicate-aria': 'Duplicate this lyric',
+        'penna-duplicated': 'Copy created',
+        'penna-copy-suffix': ' (copy)',
+        'penna-export-txt': 'All lyrics (.txt)',
+        'penna-restored': 'Lyric restored'
     }
 };

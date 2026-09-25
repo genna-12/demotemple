@@ -14,6 +14,13 @@
  * #calc-cents-out, #calc-wavelength-out, #calc-period-out, #calc-table-sc,
  * #calc-status. Non tocca HTML ne' CSS.
  *
+ * Spec 22 §3: a cosa serve la scheda lo dice gia' la `.calc-intro` di ogni
+ * pannello (una riga sola, niente riga in piu' sotto le schede). Ogni
+ * .calc-cell diventa span.calc-cell-value (il numero) + svg.calc-copy-icon
+ * (aria-hidden, <use href="#tb-icon-copy">), scritti dal JS; dopo una
+ * copia la cella porta .is-copied per 800 ms (il CSS alza l'icona da 0,6
+ * a 1).
+ *
  * A4 condiviso (spec 12 §4): si legge `tt.shared.a4`, in mancanza
  * `tt.accordatore.a4`, e si scrive in entrambe, cosi' l'accordatore vede
  * lo stesso valore senza modifiche.
@@ -46,6 +53,35 @@ const A4_DEFAULT = 440;
 const HZ_MIN = 1;
 const HZ_MAX = 20000;
 const TABS = ['delay', 'note', 'sidechain'];
+const COPIATA_MS = 800;                  // .is-copied sulla cella (spec 22 §3)
+const SVG_NS = 'http://www.w3.org/2000/svg';
+
+/**
+ * Scrive il numero in una cella senza cancellare l'icona di copia: la
+ * cella diventa span.calc-cell-value + svg.calc-copy-icon (decorativa,
+ * l'aria-label della cella dice gia' «copia»).
+ */
+export function setCellText(cell, text) {
+    let value = cell.querySelector('.calc-cell-value');
+    if (!value) {
+        cell.textContent = '';
+        value = document.createElement('span');
+        value.className = 'calc-cell-value';
+        const svg = document.createElementNS(SVG_NS, 'svg');
+        svg.setAttribute('class', 'calc-copy-icon');
+        svg.setAttribute('aria-hidden', 'true');
+        svg.setAttribute('focusable', 'false');
+        /* misura di ripiego (il CSS la sovrascrive): un <svg> senza misura
+           e' 300x150 e allargherebbe la tabella */
+        svg.setAttribute('width', '16');
+        svg.setAttribute('height', '16');
+        const use = document.createElementNS(SVG_NS, 'use');
+        use.setAttribute('href', '#tb-icon-copy');
+        svg.appendChild(use);
+        cell.append(value, svg);
+    }
+    value.textContent = text;
+}
 
 /* Numeri: sempre due decimali per i millisecondi, tre per gli Hz. */
 function fmt(value, digits) {
@@ -137,7 +173,7 @@ export function mountCalculator() {
 
     function cellLabel(cell, ms, name) {
         const text = fmt(valueFor(ms), digits());
-        cell.textContent = text;
+        setCellText(cell, text);
         cell.setAttribute('data-calc-value', String(valueFor(ms)));
         cell.setAttribute('aria-label', name + ', ' + text + ' ' + unitLabel() + ', ' + t('calc-copy-action'));
     }
@@ -191,7 +227,7 @@ export function mountCalculator() {
                 const ms = soft ? rate.releaseSoft : rate.releaseHard;
                 const name = '1/' + den + ', '
                     + t(soft ? 'calc-release-soft' : 'calc-release-hard').toLowerCase();
-                btn.textContent = fmt(ms, 2);
+                setCellText(btn, fmt(ms, 2));
                 btn.setAttribute('data-calc-value', String(ms));
                 btn.setAttribute('aria-label', name + ', ' + fmt(ms, 2) + ' ' + t('calc-ms-full') + ', ' + t('calc-copy-action'));
             });
@@ -293,7 +329,19 @@ export function mountCalculator() {
         const raw = cell.getAttribute('data-calc-value');
         const text = raw ? fmt(Number(raw), digits()) : cell.textContent.trim();
         const how = await copyText(text, cell);
+        if (how !== 'manual') segnaCopiata(cell);
         toast(how === 'manual' ? 'calc-copy-manual' : 'calc-copied');
+    }
+
+    /* icona piena per 800 ms (spec 22 §3); un secondo tocco riparte da capo */
+    const copiate = new WeakMap();
+    function segnaCopiata(cell) {
+        clearTimeout(copiate.get(cell));
+        cell.classList.add('is-copied');
+        copiate.set(cell, setTimeout(() => {
+            cell.classList.remove('is-copied');
+            copiate.delete(cell);
+        }, COPIATA_MS));
     }
 
     /* ---------------- eventi ---------------- */

@@ -44,7 +44,11 @@
  *   #pen-mono       .tb-toggle monospazio (input[type=checkbox])
  *   #pen-colors     .tb-toggle rime a colori
  *   #pen-lines      livello sotto la textarea: il JS ci scrive un
- *                   <span class="pen-line pen-rima-N"> per verso. Si disegna
+ *                   <span class="pen-line"> per verso; con una lettera di rima
+ *                   (spec 19 §3-4) `pen-line pen-rima-N is-rima|is-assonanza`
+ *                   e dentro <i class="pen-lettera">A<b class="pen-lettera-n">2</b></i>
+ *                   (il <b> solo dal secondo gruppo perfetto); un marcatore
+ *                   `[Ritornello]` e' `pen-line pen-sezione`. Si disegna
  *                   SEMPRE, anche a colori spenti (spec 16 §4 punto 7): e' il
  *                   righello che misuraRighe() legge riga per riga per
  *                   scrivere --pen-h su ogni .pen-n e l'altezza della
@@ -119,6 +123,21 @@
  *   penna-import-fail, penna-copy-manual, penna-limit, penna-too-big, piu' le comuni
  *   (search, copy, share, delete, cancel, close).
  *
+ * =====================================================================
+ * PENNA COMPLETA (spec 19 §3-4) — markup che scrive il builder
+ * =====================================================================
+ *   #pen-prova-open  in barra: apre la modalita' prova (#t=<id>&prova)
+ *   #pen-prova       <section hidden> della vista prova (data-pen-vista=
+ *                    "prova"); dentro #pen-prova-title, #pen-prova-body (il JS
+ *                    ci mette un <p class="pen-prova-verso"> per verso, un
+ *                    <h3 class="pen-prova-sezione"> per marcatore), e
+ *                    #pen-prova-smaller #pen-prova-bigger #pen-prova-exit.
+ *                    Il corpo va in --pen-prova-size (pref `provaCorpo`);
+ *                    body.pen-prova-attiva mentre si e' in prova.
+ *   #pen-duplicate   foglio impostazioni: duplica il testo aperto
+ *   #pen-export-txt  foglio impostazioni: tutti i testi in un .txt
+ *   Nelle card la ricerca mostra il verso trovato col termine in <mark>.
+ *
  * Tutto il resto (documenti nell'archivio, salvataggio automatico, colori,
  * condivisione, preferenze) sta qui sotto.
  */
@@ -126,18 +145,25 @@
 import commonDict from '/shared/i18n-common.js';
 import toolDict from '/penna/i18n.js';
 import { init, t, lang, onChange } from '/shared/i18n.js';
-import { pressFeedback, setStatus, toast } from '/shared/ui.js';
+import { pressFeedback, setStatus, toast, wakeLock } from '/shared/ui.js';
 import { mountBar } from '/shared/nav.js';
 import { initPwa } from '/shared/pwa.js';
 import { mountAiuto } from '/shared/aiuto.js';
 import { mountSelects } from '/shared/select.js';
 import { mountInfos, openSheet, closeSheet } from '/shared/sheet.js';
 import { prefs, leggi, scrivi, elenca, elimina as eliminaDallArchivio, onChange as onArchivio } from '/shared/archivio.js';
-import { filtra, fondi, riassunto, idDaHash, hashDiId } from '/penna/elenco.js';
-import { condividi as condividiFileTesto, esporta, leggiFileScelto, leggiQuaderno, stampa } from '/penna/file.js';
+import {
+    filtra, fondi, riassunto, idDaHash, hashDiId, provaDaHash, titoloMostrato, versoTrovato, primoVerso, normalizza
+} from '/penna/elenco.js';
+import { condividi as condividiFileTesto, esporta, esportaTxt, leggiFileScelto, leggiQuaderno, stampa } from '/penna/file.js';
 import { avviaPagina as avviaSync } from '/shared/sync.js';
+/* preferenze SOLO di questo dispositivo (spec 19 §3): filtri e parola del
+   rimario, corpo della prova. Le `tt.penna.*` di archivio.js viaggerebbero
+   con la sincronizzazione (e la parola si riscrive a ogni ricerca). */
+import { prefs as prefsLocali } from '/shared/storage.js';
 import { versoMetrico, contaVerso, ultimaParola, parole as paroleDelVerso } from '/shared/testo/metrica.js';
-import { chiaveRima } from '/shared/testo/fonetica.js';
+import { chiavi as chiaviIt } from '/shared/testo/fonetica.js';
+import { schemaRime, isSezione } from '/shared/testo/schema.js';
 import { LINGUE, CODICI, normalizzaCodice, moduli } from '/shared/testo/lingue.js';
 import {
     DATA_BASE, CATALOGO_BASE, caricaCatalogo, scaricaFile, togliDallaCache, pesoLeggibile
@@ -157,8 +183,10 @@ const WORKER_URL = '/penna/rimario-worker.js';
    shared/pacchetti-lingua.js, condivisi con la pagina Impostazioni */
 const SALVA_DOPO = 600;      // ms di quiete prima di salvare
 const MISURA_DOPO = 100;     // ms di quiete del ResizeObserver (spec 16 §4)
-const COLORI = 6;            // classi di rima colorate (spec §3)
-const LETTERE = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+const CORPI_PROVA = [20, 24, 28, 34, 40];   // px della modalita' prova (spec 19 §3)
+const CORPO_PROVA = 28;
+const ANNULLA_PER = 6000;    // ms in cui "Annulla" rianima un testo eliminato
+const TIPI_RIMARIO = ['rime', 'assonanze', 'consonanze', 'multi'];
 
 const nuovoId = () => new Date().toISOString() + '-' + Math.random().toString(36).slice(2, 7);
 
@@ -170,36 +198,27 @@ export function documentoVuoto(titolo = '', lingua = 'it') {
 }
 
 /**
- * Colori di rima: l'ultima parola di ogni verso entra in una classe; le
- * classi con almeno due versi prendono un colore (ciclico dopo sei) e una
- * LETTERA, che non si ricicla mai (spec §3: leggibile senza colore).
- * -> [{ riga, chiave, gruppo, colore, lettera } ...] solo per i versi in rima
+ * Colori di rima su due livelli (spec 19 §3): lo schema lo calcola
+ * shared/testo/schema.js (famiglia = lettera e colore, rima perfetta =
+ * lettera piena, assonanza = lettera vuota). Qui si sceglie la lingua:
+ * `regole` = moduli della lingua del testo (null = italiano); `classe` =
+ * (parola) -> classe vera dal rimario o null; `nota` = (parola) ->
+ * { rima, classe, sillabe } dal rimario caricato (la sua chiave vince sulle
+ * regole, schema.js); `chiavi` sostituisce quella della lingua (penna.js ci
+ * passa la sua, in cache).
+ * -> [{ riga, chiave, gruppo, famiglia, rima, colore, lettera, indice, livello }]
+ *    solo per i versi con una lettera, per riga; `gruppo` = numero della
+ *    famiglia (0 = A), `chiave` = la chiave di rima perfetta.
  */
-export function gruppiDiRima(testo, regole = null) {
-    const righe = String(testo == null ? '' : testo).split('\n');
-    /* i colori seguono la lingua del documento: senza regole caricate si
-       resta all'italiano, che e' sempre in pagina */
+export function gruppiDiRima(testo, regole = null, { classe = null, nota = null, chiavi = null } = {}) {
     const pulisci = regole && regole.sillabe && regole.sillabe.normalizza ? regole.sillabe.normalizza : null;
-    const chiaveDi = regole && regole.fonetica && regole.fonetica.chiaveRima ? regole.fonetica.chiaveRima : chiaveRima;
-    const perChiave = new Map();
-    righe.forEach((riga, i) => {
-        const parola = pulisci ? ultimaParola(riga, pulisci) : ultimaParola(riga);
-        if (!parola) return;
-        const chiave = chiaveDi(parola);
-        if (!chiave) return;
-        const arr = perChiave.get(chiave);
-        if (arr) arr.push(i); else perChiave.set(chiave, [i]);
+    const chiaviDi = chiavi
+        || (regole && regole.fonetica && typeof regole.fonetica.chiavi === 'function' ? regole.fonetica.chiavi : chiaviIt);
+    const famiglie = new Map();
+    return schemaRime(testo, { chiavi: chiaviDi, pulisci, classe, nota }).map((g) => {
+        if (!famiglie.has(g.lettera)) famiglie.set(g.lettera, famiglie.size);
+        return { ...g, chiave: g.rima, gruppo: famiglie.get(g.lettera) };
     });
-    const out = [];
-    let gruppo = 0;
-    perChiave.forEach((righeDelGruppo, chiave) => {
-        if (righeDelGruppo.length < 2) return;   // una rima da sola non e' una rima
-        const colore = gruppo % COLORI;
-        const lettera = LETTERE[gruppo % LETTERE.length];
-        righeDelGruppo.forEach((riga) => out.push({ riga, chiave, gruppo, colore, lettera }));
-        gruppo++;
-    });
-    return out.sort((a, b) => a.riga - b.riga);
 }
 
 export function mountPenna() {
@@ -257,6 +276,16 @@ export function mountPenna() {
     const packFonti = el('pen-pack-fonti');
     const docLang = el('pen-doc-lang');
     const emuetTgl = el('pen-emuet');
+    /* --- spec 19: prova, duplica, esporta .txt --- */
+    const provaBox = el('pen-prova');
+    const provaTitle = el('pen-prova-title');
+    const provaBody = el('pen-prova-body');
+    const provaOpen = el('pen-prova-open');
+    const provaSmaller = el('pen-prova-smaller');
+    const provaBigger = el('pen-prova-bigger');
+    const provaExit = el('pen-prova-exit');
+    const duplicateBtn = el('pen-duplicate');
+    const exportTxtBtn = el('pen-export-txt');
 
     const ui = {
         vista: 'elenco',
@@ -267,8 +296,19 @@ export function mountPenna() {
         mono: !!prefs.get(TOOL, 'mono', false),
         colori: prefs.get(TOOL, 'colori', true) !== false,
         copia: !!prefs.get(TOOL, 'copia', false),
-        tipo: 'rime',
-        sillabe: 'tutte',
+        /* filtri del rimario ricordati (spec 19 §3) */
+        tipo: (() => {
+            const v = prefsLocali.get(TOOL, 'rimTipo', 'rime');
+            return TIPI_RIMARIO.includes(v) ? v : 'rime';
+        })(),
+        sillabe: (() => {
+            const v = String(prefsLocali.get(TOOL, 'rimSillabe', 'tutte'));
+            return sylSel && ![...sylSel.options].some((o) => o.value === v) ? 'tutte' : v;
+        })(),
+        provaCorpo: (() => {
+            const v = Number(prefsLocali.get(TOOL, 'provaCorpo', CORPO_PROVA));
+            return CORPI_PROVA.includes(v) ? v : CORPO_PROVA;
+        })(),
         forza: null,
         doc: null,
         id: null,
@@ -318,10 +358,15 @@ export function mountPenna() {
     let daStoria = false;
 
     function setVista(vista) {
-        const nuova = vista === 'editor' ? 'editor' : 'elenco';
+        const nuova = vista === 'editor' || vista === 'prova' ? vista : 'elenco';
         const cambia = ui.vista !== nuova;
+        const eraProva = ui.vista === 'prova';
         ui.vista = nuova;
         root.setAttribute('data-pen-vista', nuova);
+        if (provaBox) provaBox.hidden = nuova !== 'prova';
+        /* "Duplica" c'e' solo con un testo aperto (spec 19 §3) */
+        if (duplicateBtn) duplicateBtn.hidden = nuova !== 'editor';
+        if (eraProva && nuova !== 'prova') lasciaProva();
         if (cambia || primaVista) annunciaVista();
         primaVista = false;
     }
@@ -343,11 +388,15 @@ export function mountPenna() {
 
     /** Il cambio vista si sente anche con lo schermo letto (spec 16 §6.11). */
     function annunciaVista() {
+        if (ui.vista === 'prova') {
+            annuncia(titoloDelTesto());
+            return;
+        }
         if (ui.vista === 'editor') {
             if (!statusOut) return;
             statusOut.removeAttribute('data-i18n');
             statusOut.setAttribute('aria-live', 'polite');
-            statusOut.textContent = (ui.doc && ui.doc.titolo) || t('penna-untitled');
+            statusOut.textContent = titoloDelTesto();
             return;
         }
         if (primaVista) return;
@@ -368,13 +417,14 @@ export function mountPenna() {
     }
 
     /** Porta a un testo (id) o all'elenco (null), scrivendo l'hash. */
-    function vai(id, { sostituisci = false } = {}) {
-        const url = location.pathname + location.search + (id ? hashDiId(id) : '');
+    function vai(id, { sostituisci = false, prova = false } = {}) {
+        const hash = id ? hashDiId(id, { prova }) : '';
+        const url = location.pathname + location.search + hash;
         try {
             if (sostituisci) history.replaceState(null, '', url);
             else history.pushState(null, '', url);
         } catch (e) {
-            location.hash = id ? hashDiId(id) : '';
+            location.hash = hash;
             return;                      // l'hashchange fara' il resto
         }
         applicaHash();
@@ -389,9 +439,15 @@ export function mountPenna() {
         if (hash === hashApplicato) return;
         hashApplicato = hash;
         const id = idDaHash(hash);
+        const prova = provaDaHash(hash);
         await salvaPrimaDiUscire();
         if (!id) { mostraElenco(); return; }
-        if (ui.id === id && ui.doc) { setVista('editor'); dopoEditor(); return; }
+        if (ui.id === id && ui.doc) {
+            if (prova) { entraProva(); return; }
+            setVista('editor');
+            dopoEditor();
+            return;
+        }
         let doc = null;
         try { doc = await get(TOOL, id); } catch (e) { doc = null; }
         if (!doc) {
@@ -399,7 +455,7 @@ export function mountPenna() {
             vai(null, { sostituisci: true });
             return;
         }
-        apri(id, doc);
+        apri(id, doc, { prova });
     }
 
     function setConteggio(modo) {
@@ -470,7 +526,9 @@ export function mountPenna() {
         /* i nodi che ci sono gia' si riusano (tengono il loro --pen-h): si
            tocca solo quel che cambia, cosi' il reflow resta piccolo */
         righe.forEach((riga, i) => {
-            const a = analisiVerso(riga, dialefe[String(i)]);
+            /* un marcatore di sezione non e' un verso: numero vuoto (spec 19 §3) */
+            const sezione = isSezione(riga);
+            const a = sezione ? { grammaticale: 0, metrico: 0, sinalefi: [], stimato: false } : analisiVerso(riga, dialefe[String(i)]);
             const n = ui.conteggio === 'grammaticale' ? a.grammaticale : a.metrico;
             const haSin = a.sinalefi.length > 0 && ui.conteggio === 'metrico';
             const tag = haSin ? 'BUTTON' : 'SPAN';
@@ -489,7 +547,7 @@ export function mountPenna() {
             if (nodo.className !== classe) nodo.className = classe;
             if (haSin && nodo.getAttribute('data-pen-line') !== String(i)) nodo.setAttribute('data-pen-line', String(i));
             if (nodo.getAttribute('data-riga') !== String(i)) nodo.setAttribute('data-riga', String(i));
-            const testo = riga.trim() ? String(n) : '';
+            const testo = riga.trim() && !sezione ? String(n) : '';
             if (nodo.textContent !== testo) nodo.textContent = testo;
             if (a.stimato) {
                 if (nodo.getAttribute('aria-description') !== stimato) nodo.setAttribute('aria-description', stimato);
@@ -508,17 +566,63 @@ export function mountPenna() {
         const prima = String(textIn.value || '').slice(0, textIn.selectionStart || 0);
         const riga = prima.split('\n').length - 1;
         const righe = String(textIn.value || '').split('\n');
-        if (!righe[riga] || !righe[riga].trim()) return;
+        if (!righe[riga] || !righe[riga].trim() || isSezione(righe[riga])) return;
         const dialefe = (ui.doc && ui.doc.dialefe) || {};
         const n = contaVerso(righe[riga], ui.conteggio, dialefe[String(riga)], classi, opzioniLingua());
         statusOut.setAttribute('aria-live', 'polite');
         statusOut.textContent = n + ' ' + t('penna-syllables');
     }
 
+    /* Chiavi di rima delle ultime parole, in cache (spec 19 §4): a ogni
+       tasto cambia un verso solo. La cache vale finche' non cambia quello
+       che chiavi() legge oltre alla parola: lingua e regole del testo, e la
+       classe vera che arriva dal rimario (classi, tratti). */
+    const chiaviCache = new Map();
+    let chiaviFirma = [];
+
+    function chiaviDelTesto() {
+        const firma = [ui.docLingua, ui.lingua, regoleDoc, regoleLingua, pronto, classi, rimario, trattiGiro];
+        if (firma.some((v, i) => v !== chiaviFirma[i])) { chiaviCache.clear(); chiaviFirma = firma; }
+        const base = regoleDoc && regoleDoc.fonetica && typeof regoleDoc.fonetica.chiavi === 'function'
+            ? regoleDoc.fonetica.chiavi : chiaviIt;
+        return (parola, opzioni) => {
+            const k = parola + '\u0001' + ((opzioni && opzioni.forza) || '') + '\u0001' + ((opzioni && opzioni.conteggio) || '');
+            let v = chiaviCache.get(k);
+            if (v === undefined) {
+                v = base(parola, opzioni);
+                if (chiaviCache.size > 4000) chiaviCache.clear();
+                chiaviCache.set(k, v);
+            }
+            return v;
+        };
+    }
+
+    /**
+     * Quello che il rimario caricato sa di una parola del testo (spec 19):
+     * chiave di rima dell'indice inverso, classe e sillabe vere. Le lettere
+     * colorate le prendono da qui, non dalle regole (iati: "follìa").
+     */
+    function notaDi(parola) {
+        const tr = trattiDiParola(parola);
+        if (!tr) return null;
+        return { rima: tr.rima || null, classe: tr.classe || null, sillabe: Number.isInteger(tr.sillabe) ? tr.sillabe : null };
+    }
+
+    /** La classe vera dell'accento, se il rimario la conosce: stessa fonte del gutter. */
+    function classeVera(parola) {
+        const tr = trattiDiParola(parola);
+        if (tr && tr.classe) return tr.classe;
+        if (classi && pronto && ui.lingua === ui.docLingua) {
+            try { return classi(parola) || null; } catch (e) { return null; }
+        }
+        return null;
+    }
+
     /**
      * Il mirror sotto la textarea. Si disegna SEMPRE, anche a colori spenti
      * (spec 16 §4 punto 7): e' il righello di misuraRighe(); i colori li
-     * toglie il CSS con #penna:not(.is-colori).
+     * toglie il CSS con #penna:not(.is-colori). Le lettere sono su due
+     * livelli (spec 19 §3): `is-rima` piena, `is-assonanza` vuota.
      */
     function renderColori() {
         if (!linesBox || !textIn) return;
@@ -528,13 +632,18 @@ export function mountPenna() {
         /* le regole della lingua del testo non sono ancora arrivate (o sono
            quelle di un'altra lingua): il righello si disegna lo stesso, i
            colori arrivano con caricaRegoleDoc(), mai quelli sbagliati */
-        if (regoleLingua === ui.docLingua) gruppiDiRima(textIn.value, regoleDoc).forEach((g) => mappa.set(g.riga, g));
+        if (regoleLingua === ui.docLingua) {
+            gruppiDiRima(textIn.value, regoleDoc, { classe: classeVera, nota: notaDi, chiavi: chiaviDelTesto() })
+                .forEach((g) => mappa.set(g.riga, g));
+        }
         const spans = linesBox.children;
         /* span gia' in pagina riusati: si riscrive solo il verso cambiato */
         righe.forEach((riga, i) => {
             const g = mappa.get(i);
-            const classe = 'pen-line' + (g ? ' pen-rima-' + g.colore : '');
-            const firma = classe + '\u0001' + (g ? g.lettera : '') + '\u0001' + riga;
+            let classe = 'pen-line';
+            if (g) classe += ' pen-rima-' + g.colore + (g.livello === 'rima' ? ' is-rima' : ' is-assonanza');
+            else if (isSezione(riga)) classe += ' pen-sezione';
+            const firma = classe + '\u0001' + (g ? g.lettera + '\u0002' + g.indice : '') + '\u0001' + riga;
             let span = spans[i];
             if (!span) { span = document.createElement('span'); linesBox.appendChild(span); }
             if (span.__penFirma === firma) return;
@@ -545,6 +654,12 @@ export function mountPenna() {
                 const lettera = document.createElement('i');
                 lettera.className = 'pen-lettera';
                 lettera.textContent = g.lettera;
+                if (g.indice >= 2) {
+                    const n = document.createElement('b');
+                    n.className = 'pen-lettera-n';
+                    n.textContent = String(g.indice);
+                    lettera.appendChild(n);
+                }
                 span.appendChild(lettera);
             }
         });
@@ -672,8 +787,8 @@ export function mountPenna() {
         salvaTimer = setTimeout(() => { salvaTimer = null; salvaOra(); }, SALVA_DOPO);
     }
 
-    /** Apre un testo nell'editor (ci arriva solo il router dell'hash). */
-    function apri(id, doc) {
+    /** Apre un testo nell'editor, o in prova (ci arriva solo il router dell'hash). */
+    function apri(id, doc, { prova = false } = {}) {
         ui.id = id;
         ui.doc = { ...documentoVuoto(), ...doc };
         ui.docLingua = normalizzaCodice(ui.doc.lingua || ui.lingua);
@@ -682,15 +797,32 @@ export function mountPenna() {
         renderLingue();
         if (titleIn) titleIn.value = ui.doc.titolo || '';
         if (textIn) textIn.value = ui.doc.testo || '';
+        segnapostoTitolo();
         /* setVista annuncia il titolo in aria-live (spec 16 §6.11); la riga
            diventa "Salvato" al primo salvataggio, non prima. */
-        setVista('editor');
+        if (prova) { entraProva(); } else setVista('editor');
         /* disegna numeri e mirror col testo gia' in pagina: in italiano
            subito, nelle altre lingue il righello subito e i colori appena
            arrivano le regole giuste */
         caricaRegoleDoc();
         prefs.set(TOOL, 'ultimo', id);
-        dopoEditor();
+        if (!prova) dopoEditor();
+    }
+
+    /** Il titolo del testo aperto, quello scritto o il primo verso (spec 19 §3). */
+    function titoloDelTesto() {
+        const titolo = titleIn ? titleIn.value : (ui.doc && ui.doc.titolo) || '';
+        const testo = textIn ? textIn.value : (ui.doc && ui.doc.testo) || '';
+        return titoloMostrato({ titolo, testo }) || t('penna-untitled');
+    }
+
+    /** Senza titolo, il segnaposto di #pen-title e' il primo verso (solo mostrato). */
+    function segnapostoTitolo() {
+        if (!titleIn) return;
+        const primo = textIn ? primoVerso(textIn.value) : '';
+        const chiave = titleIn.getAttribute('data-i18n-placeholder');
+        const testo = primo || (chiave ? t(chiave) : t('penna-untitled'));
+        if (titleIn.getAttribute('placeholder') !== testo) titleIn.setAttribute('placeholder', testo);
     }
 
     /** Quello che va fatto ogni volta che l'editor torna a video. */
@@ -769,10 +901,29 @@ export function mountPenna() {
             const e = nodo.querySelector(sel);
             if (e) e.textContent = testo;
         };
-        const titolo = rec.titolo.trim() || t('penna-untitled');
+        /* titolo automatico (spec 19 §3): senza titolo il primo verso fa da
+           titolo e il secondo da riga; solo mostrato, mai salvato */
+        const mostrato = titoloMostrato(rec);
+        const titolo = mostrato || t('penna-untitled');
         nodo.setAttribute('data-id', rec.id);
         scrivi('.pen-card-title', titolo);
-        scrivi('.pen-card-verse', rec.prima);
+        const riga = rec.titolo.trim() ? rec.prima : (rec.seconda || '');
+        const versoBox = nodo.querySelector('.pen-card-verse');
+        if (versoBox) {
+            /* in ricerca, se il termine non e' nel titolo, il verso che lo contiene */
+            const q = searchIn ? searchIn.value : '';
+            const ago = normalizza(q).trim();
+            const trovato = ago && !normalizza(mostrato).includes(ago) ? versoTrovato(rec.testo, q) : null;
+            versoBox.textContent = '';
+            versoBox.classList.toggle('is-trovato', !!trovato);
+            if (!trovato) versoBox.textContent = riga;
+            else if (trovato.da < 0) versoBox.textContent = trovato.verso;
+            else {
+                const mark = document.createElement('mark');
+                mark.textContent = trovato.verso.slice(trovato.da, trovato.a);
+                versoBox.append(trovato.verso.slice(0, trovato.da), mark, trovato.verso.slice(trovato.a));
+            }
+        }
         scrivi('.pen-card-lang', String(rec.lingua || 'it').toUpperCase());
         scrivi('.pen-card-date', dataBreve(rec.modificato));
         scrivi('.pen-card-verses', rec.versi === 1 ? t('penna-verse-one') : t('penna-verses', { n: rec.versi }));
@@ -845,6 +996,17 @@ export function mountPenna() {
         if (si) { try { si.focus({ preventScroll: true }); } catch (e) { /* niente fuoco */ } }
     }
     async function elimina(id) {
+        /* il documento di prima, per "Annulla" (spec 19 §3): quello aperto
+           col testo che c'e' in pagina, anche se non ancora salvato */
+        let docPrima = null;
+        try { docPrima = await get(TOOL, id); } catch (e) { docPrima = null; }
+        if (ui.id === id && ui.doc) {
+            docPrima = {
+                ...documentoVuoto(), ...(docPrima || {}), ...ui.doc,
+                titolo: titleIn ? titleIn.value : ui.doc.titolo,
+                testo: textIn ? textIn.value : ui.doc.testo
+            };
+        }
         /* l'archivio lascia la lapide nel record stesso (spec 18 §3): la
            sincronizzazione la porta agli altri dispositivi */
         try { await eliminaDallArchivio(TOOL, id); } catch (e) { /* niente da fare */ }
@@ -852,7 +1014,12 @@ export function mountPenna() {
         if (box) box.hidden = true;
         daEliminare = null;
         togliRecord(id);
-        toast('penna-deleted');
+        if (docPrima) {
+            toast('penna-deleted', {
+                action: { key: 'penna-undo', onClick: () => { ripristina(id, docPrima); } },
+                timeout: ANNULLA_PER
+            });
+        } else toast('penna-deleted');
         if (ui.id === id) {
             ui.id = null;
             ui.doc = null;
@@ -860,6 +1027,154 @@ export function mountPenna() {
             prefs.set(TOOL, 'ultimo', undefined);
             vai(null);
         }
+    }
+
+    /**
+     * "Annulla" dopo Elimina (spec 19 §3): si riscrive lo stesso id sopra la
+     * lapide. L'archivio gli da' un `modificato` piu' recente della lapide,
+     * quindi la sincronizzazione porta ovunque il testo vivo.
+     */
+    async function ripristina(id, doc) {
+        try {
+            await put(TOOL, id, doc);
+        } catch (e) {
+            toast(e && e.codice === 'limite' ? 'penna-limit' : 'penna-save-fail');
+            return false;
+        }
+        aggiornaRecord(id, doc);
+        toast('penna-restored');
+        return true;
+    }
+
+    /* ---------------- duplica, esporta .txt (spec 19 §3) ---------------- */
+
+    function suffissoCopia() {
+        const s = t('penna-copy-suffix');
+        if (!s || s === 'penna-copy-suffix') return lang() === 'en' ? ' (copy)' : ' (copia)';
+        return /^\s/.test(s) ? s : ' ' + s;
+    }
+
+    /** Una copia del testo aperto: nuovo id, titolo "... (copia)", si apre la copia. */
+    async function duplica() {
+        if (!ui.doc || !ui.id) return null;
+        await salvaPrimaDiUscire();
+        const titolo = titleIn ? titleIn.value : (ui.doc.titolo || '');
+        const testo = textIn ? textIn.value : (ui.doc.testo || '');
+        const base = titolo.trim() || titoloMostrato({ titolo: '', testo });
+        const doc = {
+            ...documentoVuoto((base + suffissoCopia()).trim(), ui.docLingua),
+            testo,
+            dialefe: JSON.parse(JSON.stringify(ui.doc.dialefe || {})),
+            lingua: ui.docLingua,
+            emuet: !!ui.emuet
+        };
+        const id = nuovoId();
+        try {
+            await put(TOOL, id, doc);
+        } catch (e) {
+            if (e && e.codice === 'limite') toast('penna-limit');
+            else if (e && e.codice === 'migrazione') toast('store-migrate-fail');
+            else toast(e && e.codice === 'grande' ? 'penna-too-big' : 'penna-save-fail');
+            return null;
+        }
+        aggiornaRecord(id, doc);
+        closeSheet();
+        toast('penna-duplicated');
+        vai(id);
+        return id;
+    }
+
+    /** Tutti i testi in un .txt, nell'ordine dell'elenco (spec 19 §3). */
+    async function esportaTesti() {
+        await salvaPrimaDiUscire();
+        let tutti = [];
+        try { tutti = await list(TOOL); } catch (e) { tutti = []; }
+        const ordinati = filtra(tutti.map((rec) => riassunto(rec.id, rec.value || {})), '', ui.ordine);
+        const esito = await esportaTxt(ordinati.map((r) => ({ titolo: r.titolo, testo: r.testo })), { ripiego: apriFoglioTesto });
+        return esito;
+    }
+
+    /* ---------------- modalita' prova (spec 19 §3) ---------------- */
+
+    let provaDaQui = false;    // entrati col pulsante: "Fine" torna indietro nella storia
+
+    /** Titolo e versi in sola lettura, senza numeri, lettere, colori. */
+    function renderProva() {
+        if (provaTitle) provaTitle.textContent = titoloDelTesto();
+        if (provaBody) {
+            const righe = String(textIn ? textIn.value : (ui.doc && ui.doc.testo) || '').split('\n');
+            const frag = document.createDocumentFragment();
+            righe.forEach((riga) => {
+                let nodo;
+                if (!riga.trim()) {
+                    nodo = document.createElement('div');
+                    nodo.className = 'pen-prova-stacco';
+                    nodo.setAttribute('aria-hidden', 'true');
+                } else if (isSezione(riga)) {
+                    nodo = document.createElement('h3');
+                    nodo.className = 'pen-prova-sezione';
+                    nodo.textContent = riga.trim().slice(1, -1).trim();
+                } else {
+                    nodo = document.createElement('p');
+                    nodo.className = 'pen-prova-verso';
+                    nodo.textContent = riga;
+                }
+                frag.appendChild(nodo);
+            });
+            provaBody.textContent = '';
+            provaBody.appendChild(frag);
+            provaBody.setAttribute('lang', ui.docLingua);
+        }
+        applicaCorpoProva();
+    }
+
+    function applicaCorpoProva() {
+        const px = ui.provaCorpo + 'px';
+        root.style.setProperty('--pen-prova-size', px);
+        if (provaBox) provaBox.style.setProperty('--pen-prova-size', px);
+        if (provaBody) provaBody.style.fontSize = px;
+        const i = CORPI_PROVA.indexOf(ui.provaCorpo);
+        if (provaSmaller) provaSmaller.disabled = i <= 0;
+        if (provaBigger) provaBigger.disabled = i >= CORPI_PROVA.length - 1;
+    }
+
+    function corpoProva(passo) {
+        const i = CORPI_PROVA.indexOf(ui.provaCorpo);
+        const j = Math.max(0, Math.min(CORPI_PROVA.length - 1, (i < 0 ? CORPI_PROVA.indexOf(CORPO_PROVA) : i) + passo));
+        ui.provaCorpo = CORPI_PROVA[j];
+        prefsLocali.set(TOOL, 'provaCorpo', ui.provaCorpo);
+        applicaCorpoProva();
+    }
+
+    /** Dentro la prova (ci arriva il router con `#t=<id>&prova`). */
+    function entraProva() {
+        const entrando = ui.vista !== 'prova';
+        setVista('prova');
+        renderProva();
+        document.body.classList.add('pen-prova-attiva');
+        /* schermo acceso; se l'API manca la prova funziona uguale */
+        wakeLock(true);
+        if (entrando && provaExit) {
+            try { provaExit.focus({ preventScroll: true }); } catch (e) { /* niente fuoco */ }
+        }
+        if (entrando) { try { window.scrollTo(0, 0); } catch (e) { /* niente */ } }
+    }
+
+    /** Uscendo dalla prova (la chiama setVista): schermo libero. */
+    function lasciaProva() {
+        provaDaQui = false;
+        document.body.classList.remove('pen-prova-attiva');
+        wakeLock(false);
+    }
+
+    /** "Fine", Esc: di nuovo l'editor dello stesso testo. */
+    function esciProva() {
+        if (ui.vista !== 'prova') return;
+        if (provaDaQui) {
+            provaDaQui = false;
+            try { history.back(); return; } catch (e) { /* si sostituisce l'hash */ }
+        }
+        vai(ui.id, { sostituisci: true });
     }
 
     /* ---------------- sincronizza fra dispositivi (spec 18 §4) ---------------- */
@@ -877,7 +1192,7 @@ export function mountPenna() {
         const piuNuovo = Date.parse(doc.modificato || '') > Date.parse(ui.doc.modificato || '');
         /* mai mentre si scrive: se c'e' un salvataggio in coda si lascia stare */
         if (!piuNuovo || salvaTimer) return;
-        if (ui.vista === 'editor') apri(id, doc);
+        if (ui.vista === 'editor' || ui.vista === 'prova') apri(id, doc, { prova: ui.vista === 'prova' });
         else ui.doc = { ...ui.doc, ...doc };
     }
 
@@ -959,7 +1274,8 @@ export function mountPenna() {
             if (nuovo) trattiGiro++;
             if (nuovo && dove === ui.lingua) {
                 clearTimeout(trattiTimer);
-                trattiTimer = setTimeout(() => { renderGutter(); }, 30);
+                /* numeri e lettere: la classe vera puo' cambiare una famiglia */
+                trattiTimer = setTimeout(() => { renderGutter(); renderColori(); }, 30);
             }
         });
         worker.postMessage({ type: 'tratti', id, parole: lista });
@@ -1215,6 +1531,8 @@ export function mountPenna() {
         };
         prefs.set(TOOL, 'rimario', true);
         renderGutter();
+        renderColori();
+        /* la parola e i filtri ricordati (spec 19 §3): la ricerca riparte */
         if (queryIn && queryIn.value.trim()) cerca(queryIn.value);
     }
 
@@ -1239,6 +1557,7 @@ export function mountPenna() {
         /* NFC una volta sola, qui all'ingresso: quello che arriva dal
            textarea o dagli appunti puo' avere gli accenti combinanti. */
         const parola = String(parolaGrezza || '').normalize('NFC').trim();
+        prefsLocali.set(TOOL, 'rimParola', parola);
         if (!resultsBox) return null;
         if (!parola) { resultsBox.textContent = ''; if (unknownBox) unknownBox.hidden = true; return null; }
         if (!pronto) { const ok = await scarica(); if (!ok && !pronto) return null; }
@@ -1391,9 +1710,12 @@ export function mountPenna() {
     /** Condividi il testo aperto come .txt (spec 16 §3, ripieghi in file.js). */
     async function condividi() {
         const testo = (textIn ? textIn.value : '') || (ui.doc && ui.doc.testo) || '';
-        const titolo = (titleIn && titleIn.value.trim()) || t('penna-untitled');
+        const titolo = (titleIn && titleIn.value.trim()) || '';
         if (!testo.trim()) return;
-        const esito = await condividiFileTesto({ titolo, testo, ripiego: apriFoglioTesto });
+        /* senza titolo: nome del file e titolo della condivisione dal primo
+           verso (spec 19 §3), il corpo resta solo il testo */
+        const mostrato = titoloMostrato({ titolo, testo }) || t('penna-untitled');
+        const esito = await condividiFileTesto({ titolo, mostrato, testo, ripiego: apriFoglioTesto });
         if (esito === 'copiato') toast('penna-copied');
         else if (esito === 'niente') toast('penna-copy-manual');
     }
@@ -1478,7 +1800,7 @@ export function mountPenna() {
 
     if (textIn) {
         textIn.addEventListener('input', () => {
-            const fai = () => { renderGutter(); renderColori(); };
+            const fai = () => { renderGutter(); renderColori(); segnapostoTitolo(); };
             if (typeof window.requestIdleCallback === 'function') window.requestIdleCallback(fai, { timeout: 120 });
             else fai();
             salvaPresto();
@@ -1549,6 +1871,28 @@ export function mountPenna() {
         });
     });
     if (exportBtn) exportBtn.addEventListener('click', esportaTutto);
+    if (exportTxtBtn) exportTxtBtn.addEventListener('click', () => { esportaTesti(); });
+    if (duplicateBtn) duplicateBtn.addEventListener('click', () => { duplica(); });
+    /* --- modalita' prova (spec 19 §3) --- */
+    if (provaOpen) {
+        provaOpen.addEventListener('click', () => {
+            if (!ui.id || !ui.doc) return;
+            provaDaQui = true;
+            vai(ui.id, { prova: true });
+        });
+    }
+    if (provaExit) provaExit.addEventListener('click', esciProva);
+    if (provaSmaller) provaSmaller.addEventListener('click', () => corpoProva(-1));
+    if (provaBigger) provaBigger.addEventListener('click', () => corpoProva(1));
+    document.addEventListener('keydown', (e) => {
+        if (ui.vista !== 'prova' || (e.key !== 'Escape' && e.key !== 'Esc')) return;
+        e.preventDefault();
+        esciProva();
+    });
+    /* il sistema rilascia il wake lock quando la pagina si nasconde */
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible' && ui.vista === 'prova') wakeLock(true);
+    });
     if (importBtn && importIn) importBtn.addEventListener('click', () => importIn.click());
     if (importIn) {
         importIn.addEventListener('change', async () => {
@@ -1587,6 +1931,17 @@ export function mountPenna() {
         document.querySelectorAll('[data-i18n-placeholder]').forEach((e) => {
             e.setAttribute('placeholder', t(e.getAttribute('data-i18n-placeholder')));
         });
+        segnapostoTitolo();
+    }
+
+    /** Il tipo del rimario acceso nel segmento. */
+    function segnaTipo() {
+        if (!typeBox) return;
+        [...typeBox.querySelectorAll('[data-pen-type]')].forEach((x) => {
+            const on = x.getAttribute('data-pen-type') === ui.tipo;
+            x.setAttribute('aria-checked', on ? 'true' : 'false');
+            x.classList.toggle('is-active', on);
+        });
     }
 
     /* le card le scrive il JS (t('penna-verses'), data breve, "Senza
@@ -1616,17 +1971,15 @@ export function mountPenna() {
             const b = e.target.closest('[data-pen-type]');
             if (!b) return;
             ui.tipo = b.getAttribute('data-pen-type');
-            [...typeBox.querySelectorAll('[data-pen-type]')].forEach((x) => {
-                const on = x === b;
-                x.setAttribute('aria-checked', on ? 'true' : 'false');
-                x.classList.toggle('is-active', on);
-            });
+            prefsLocali.set(TOOL, 'rimTipo', ui.tipo);
+            segnaTipo();
             if (queryIn) cerca(queryIn.value);
         });
     }
     if (sylSel) {
         sylSel.addEventListener('change', () => {
             ui.sillabe = sylSel.value || 'tutte';
+            prefsLocali.set(TOOL, 'rimSillabe', ui.sillabe);
             if (queryIn) cerca(queryIn.value);
         });
     }
@@ -1670,6 +2023,12 @@ export function mountPenna() {
 
     /* ---------------- avvio ---------------- */
 
+    /* filtri e parola del rimario ricordati (spec 19 §3): si rimettono
+       PRIMA di mountSelects (che legge il <select> nativo) e senza eventi,
+       cosi' non parte nessuna ricerca, e quindi nessun download, da sola */
+    segnaTipo();
+    if (sylSel && sylSel.value !== ui.sillabe) sylSel.value = ui.sillabe;
+    if (queryIn && !queryIn.value) queryIn.value = String(prefsLocali.get(TOOL, 'rimParola', '') || '');
     mountSelects(document);
     /* i font arrivano dopo il primo disegno: a capo e altezze dei versi
        cambiano, la colonna no (il ResizeObserver non lo vede) */
@@ -1720,6 +2079,11 @@ export function mountPenna() {
         misuraRighe,
         vai,
         esportaTutto,
+        esportaTesti,
+        duplica,
+        ripristina,
+        entraProva,
+        esciProva,
         importa,
         stampaTesto,
         renderGutter,

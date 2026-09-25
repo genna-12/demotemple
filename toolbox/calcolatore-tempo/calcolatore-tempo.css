@@ -94,10 +94,24 @@
 /* --- Tabella (spec 18 §7.9: righe a --tap/44px vere, non simulate con uno
    pseudo-elemento, tabular-nums, scorre in verticale se serve ma mai in
    orizzontale). --- */
+/* table-layout:fixed (validator 521cdd3 punto 1): le colonne dei valori si
+   dividono lo spazio rimasto in parti uguali SEMPRE, indipendentemente dal
+   testo. Con l'auto layout di prima la colonna piu' larga si allargava
+   secondo il numero piu' lungo (i millisecondi ai BPM bassi arrivano a 5
+   cifre, es. "32.000,00") e a 390 px la tabella superava il viewport. */
 .calc-table {
     width: 100%;
+    table-layout: fixed;
     border-collapse: collapse;
     font-variant-numeric: tabular-nums;
+}
+
+.calc-col-label {
+    width: 44px;
+}
+
+.calc-col-label--sc {
+    width: 124px;
 }
 
 .calc-table caption {
@@ -134,6 +148,8 @@
     font-weight: 600;
     color: var(--text-muted);
     white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 /* Riga a --tap (44px): il bottone stesso e' il bersaglio, non serve piu'
@@ -145,10 +161,27 @@
     width: 100%;
     height: var(--tap);
     line-height: var(--tap);
+    padding: 0 26px 0 6px;
     color: var(--text-primary);
     font-size: 0.82rem;
     font-weight: 600;
     transition: color var(--dur-fast) ease, background var(--dur-fast) ease;
+}
+
+/* Sotto i 400 px i numeri a 5 cifre (BPM bassi) hanno meno spazio nella
+   riga del riverbero (validator 521cdd3 punto 1): cifra un po' piu'
+   piccola solo li', tabular-nums le tiene allineate. */
+@media (max-width: 400px) {
+    .calc-cell {
+        font-size: 0.76rem;
+        padding: 0 24px 0 4px;
+    }
+    /* la riga "Coda" e' la piu' stretta (etichetta + 3 celle): cifra
+       ancora un po' piu' piccola solo li'. */
+    .calc-reverb-row .calc-cell {
+        font-size: 0.68rem;
+        padding: 0 20px 0 3px;
+    }
 }
 
 .calc-cell::before {
@@ -165,6 +198,35 @@
 @media (hover: hover) and (pointer: fine) {
     .calc-cell:hover {
         color: var(--accent-orange);
+    }
+}
+
+/* Spec 22 §3/§4: icona di copia persistente a destra, il JS scrive
+   span.calc-cell-value (il numero) + svg.calc-copy-icon (aria-hidden).
+   L'icona e' decorativa e non allarga il bersaglio: assoluta dentro la
+   cella, che resta a --tap (44px) come prima. */
+.calc-cell-value {
+    display: inline-block;
+}
+
+.calc-copy-icon {
+    position: absolute;
+    top: 50%;
+    right: 4px;
+    width: 14px;
+    height: 14px;
+    transform: translateY(-50%);
+    opacity: 0.6;
+    transition: opacity var(--dur-fast) ease;
+}
+
+.calc-cell.is-copied .calc-copy-icon {
+    opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .calc-copy-icon {
+        transition: none;
     }
 }
 
@@ -186,18 +248,27 @@
 .calc-reverb-row {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 4px;
 }
 
+/* 60px = "Pre-delay" (la piu' lunga delle due etichette) + un filo di
+   margine: la riga "Coda" (3 celle, l'unica che ai BPM bassi arriva a 5
+   cifre, "32.000,00") ne approfitta per avere piu' spazio. */
 .calc-reverb-label {
     flex-shrink: 0;
-    width: 72px;
+    width: 60px;
     font-size: 0.78rem;
     color: var(--text-muted);
 }
 
+/* flex: 1 1 0 + min-width: 0 (invece del solo "flex: 1"): le celle si
+   dividono lo spazio rimasto in parti uguali SEMPRE, senza che il loro
+   contenuto (i millisecondi a 5 cifre dei BPM bassi) possa allargarle
+   oltre la riga - stessa ragione del table-layout:fixed sopra
+   (validator 521cdd3 punto 1). */
 .calc-reverb-row .calc-cell {
-    flex: 1;
+    flex: 1 1 0;
+    min-width: 0;
     border-radius: var(--r-sm);
     background: var(--surface-1);
 }

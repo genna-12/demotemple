@@ -43,6 +43,33 @@
     min-height: 32px;
 }
 
+/* Revisione ui-ux: icona del microfono dentro il bottone «Ascolto» del
+   segment (stesso sprite di #tb-mic-live), cosi' il testo visibile resta
+   corto e a 360px non va a capo (il nome completo sta nell'aria-label). */
+.acc-mode-listen-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+}
+
+.acc-mode-listen-btn svg {
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
+}
+
+/* Bersaglio di #tb-mic-live da 44px (spec 18 §7.9), senza spostare
+   l'icona: box-sizing content-box porta il bordo+padding oltre i 24x24
+   dell'icona, i margini negativi sui due lati ancorati (top/right, vedi
+   base.css) riportano l'icona esattamente dov'era. */
+#tb-mic-live {
+    box-sizing: content-box;
+    padding: 10px;
+    margin-top: -10px;
+    margin-right: -10px;
+}
+
 /* --- `main#acc` --- */
 .acc {
     display: flex;
@@ -67,6 +94,16 @@
    seconda riga sotto, meta' larghezza ciascuno. */
 .acc-field .tb-select {
     flex: 1 1 100%;
+    min-width: 0;
+}
+
+/* Nome lungo (spec 21 §6.12: fino a 24 caratteri) -> ellissi, mai scroll
+   orizzontale (components.css gia' da' .tb-select-value flex:1/min-width:0,
+   qui solo la conferma nel perimetro di pagina). */
+.acc-field .tb-select-value {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 #acc-custom-edit,

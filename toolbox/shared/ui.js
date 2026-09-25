@@ -132,18 +132,36 @@ export function pressFeedback(root = document) {
 }
 
 let wakeLockSentinel = null;
+let wakeLockVoluto = false;      // l'ultima cosa chiesta: acceso o spento
+let wakeLockInArrivo = false;    // una request() che non ha ancora risposto
 
-/** Richiede/rilascia lo screen wake lock; no-op se l'API non e' supportata. */
+/**
+ * Richiede/rilascia lo screen wake lock; no-op se l'API non e' supportata.
+ * La richiesta puo' rispondere tardi (iPhone): se nel frattempo e' stato
+ * chiesto lo spegnimento, il lock appena arrivato si rilascia subito, cosi'
+ * lo schermo non resta acceso per sempre.
+ */
 export async function wakeLock(on) {
+    wakeLockVoluto = !!on;
     if (!('wakeLock' in navigator)) return;
     try {
         if (on) {
-            if (!wakeLockSentinel) {
-                wakeLockSentinel = await navigator.wakeLock.request('screen');
-                wakeLockSentinel.addEventListener('release', () => {
-                    wakeLockSentinel = null;
-                });
+            if (wakeLockSentinel || wakeLockInArrivo) return;
+            wakeLockInArrivo = true;
+            let sentinel;
+            try {
+                sentinel = await navigator.wakeLock.request('screen');
+            } finally {
+                wakeLockInArrivo = false;
             }
+            if (!wakeLockVoluto) {
+                await sentinel.release();
+                return;
+            }
+            wakeLockSentinel = sentinel;
+            sentinel.addEventListener('release', () => {
+                if (wakeLockSentinel === sentinel) wakeLockSentinel = null;
+            });
         } else if (wakeLockSentinel) {
             const sentinel = wakeLockSentinel;
             wakeLockSentinel = null;

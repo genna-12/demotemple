@@ -30,6 +30,14 @@ export default {
         {
             t: 'Suono e volume',
             d: 'Legno, beep o rimshot: cambia solo il timbro del click, per sentirlo meglio in sala prove o in cuffia.'
+        },
+        {
+            t: 'Preset e scaletta',
+            d: 'Salva il tempo di un brano con «Salva preset»: nome, battuta, suddivisione e suono restano pronti in una riga, anche a metronomo fermo. Tocca una riga per applicarla; «Avanti» passa alla prossima della scaletta, comodo dal vivo.'
+        },
+        {
+            t: 'Battuta d’attacco',
+            d: 'Accendila e, ogni volta che parti da fermo, senti una battuta di soli accenti prima del click vero: il tempo per prendere fiato o alzare lo strumento.'
         }
     ],
     en: [
@@ -56,10 +64,18 @@ export default {
         {
             t: 'Sound and volume',
             d: 'Wood, beep or rimshot: only changes the click’s tone, to hear it better in rehearsal or on headphones.'
+        },
+        {
+            t: 'Presets and setlist',
+            d: 'Save a song’s tempo with “Save preset”: name, meter, subdivision and sound stay ready in a row, even while stopped. Tap a row to apply it; “Next” moves to the next one in the setlist, handy live.'
+        },
+        {
+            t: 'Count-in',
+            d: 'Turn it on and, every time you start from a stop, you’ll hear one bar of accents only before the real click: time to catch your breath or lift your instrument.'
         }
     ],
     hint: {
-        it: 'La rotella si trascina, e tocca il numero se preferisci scriverlo.',
-        en: 'Drag the wheel, or tap the number if you’d rather type it.'
+        it: 'Trascina la rotella per cambiare · tocca il numero per scriverlo.',
+        en: 'Drag the wheel to change · tap the number to type it.'
     }
 };

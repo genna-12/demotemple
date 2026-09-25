@@ -73,14 +73,35 @@ export function suoni(testo) {
     return out;
 }
 
+/*
+ * Iato finale dei monosillabi (spec 19, validator): consonante + i/u +
+ * a/e/o in fondo a una parola di una sillaba sola. La i/u e' tonica
+ * ("mì-o", "vì-a", "tù-o"): la rima e' "io"/"ia"/"uo", non "o"/"a" come
+ * "no" e "pero'". Restano fuori la i muta di ci/gi e la u di qu/gu ("qua"
+ * rima con "la'"), e "io", che non ha consonante davanti (spec 19 §7: resta
+ * com'e', lo sistema il rimario quando c'e').
+ */
+const IATO_MONOSILLABO = /[bcdfghjklmnpqrstvwxyz][iu][aeo]$/;
+function iatoFinale(piatta, { conteggio = false } = {}) {
+    if (!IATO_MONOSILLABO.test(piatta)) return false;
+    const prima = piatta[piatta.length - 3];
+    const debole = piatta[piatta.length - 2];
+    /* col conteggio vero la sillaba in piu' dice che la i non e' muta: "bu-gì-a" */
+    if (!conteggio && debole === 'i' && (prima === 'c' || prima === 'g')) return false;
+    if (debole === 'u' && (prima === 'q' || prima === 'g')) return false;
+    return true;
+}
+
 /**
  * Dove comincia la rima: indice, nella parola piatta, della vocale tonica.
  * Nel nucleo si prende la vocale accentata, se no la prima forte, se no
- * l'ultima ("cuo-re" -> la o, "mai" -> la a).
+ * l'ultima ("cuo-re" -> la o, "mai" -> la a). Monosillabo con iato finale:
+ * la i/u ("mio" -> la i).
  */
 export function inizioRima(parola, { sillabe: sill = null, accento: acc = null } = {}) {
     const parti = sill || sillabe(parola);
     if (!parti.length) return 0;
+    if (parti.length === 1 && iatoFinale(parti[0])) return parti[0].length - 2;
     const a = acc || accento(parola, { sillabe: parti });
     const prima = parti.slice(0, a.sillaba).join('').length;
     const tonica = parti[a.sillaba] || '';
@@ -143,8 +164,12 @@ export function chiaveMulti(parola, quante = 3, parti0 = null) {
  * `sillabe`: sillabazione gia' nota (Wikizionario), con la vocale tonica
  * accentata se si conosce ("in","for","mà","ti","ca"); deve ricomporre
  * la parola piatta, altrimenti si ignora e si torna alle regole.
+ * `conteggio`: il numero di sillabe VERO (tratti del rimario). Se supera di
+ * uno quello delle regole e la parola finisce in consonante + i/u + vocale,
+ * il dittongo finale e' uno iato tonico: "fol-lì-a", "po-e-sì-a" (le regole
+ * dicono "fol-lia", come "sto-ria"). Senza conteggio restano le regole.
  */
-export function chiavi(parola, { forza = null, sillabe: date = null } = {}) {
+export function chiavi(parola, { forza = null, sillabe: date = null, conteggio = null } = {}) {
     const piatta = normalizza(parola).replace(/'/g, '');
     let parti = null;
     if (Array.isArray(date) && date.length) {
@@ -153,6 +178,14 @@ export function chiavi(parola, { forza = null, sillabe: date = null } = {}) {
         if (senza(pulite.join('')) === senza(piatta) && pulite.every((s) => s.length)) parti = pulite;
     }
     if (!parti) parti = sillabe(piatta);
+    if (Number.isInteger(conteggio) && conteggio === parti.length + 1 && parti.length >= 1) {
+        const ultima = parti[parti.length - 1];
+        if (ultima.length >= 3 && iatoFinale(ultima, { conteggio: true })) {
+            parti = [...parti.slice(0, -1), ultima.slice(0, -1), ultima.slice(-1)];
+            /* la tonica e' la i/u: piana, qualunque cosa dica `forza` */
+            forza = 'piana';
+        }
+    }
     const acc = accento(piatta, { sillabe: parti, forza });
     const opts = { sillabe: parti, accento: acc };
     const rima = chiaveRima(piatta, opts);

@@ -12,6 +12,7 @@ export default {
     it: {
         'acc-title': 'Accordatore',
         'acc-mode-listen': 'Ascolto',
+        'acc-mode-listen-aria': 'Ascolto (microfono)',
         'acc-mode-reference': 'Riferimento',
         'acc-instrument': 'Strumento',
         'acc-inst-guitar': 'Chitarra',
@@ -28,6 +29,7 @@ export default {
         'acc-a4-info-title': 'Riferimento A4',
         'acc-a4-info-text': 'Gli strumenti si accordano su un La di riferimento: 440 Hz è lo standard. Cambialo solo se suoni con chi ne usa un altro.',
         'acc-mic-off': 'Disattiva microfono',
+        'acc-mic-live-tip': "Microfono acceso: l'audio resta nel dispositivo",
         'acc-octave': 'Ottava',
         'acc-note-empty': 'nessuna nota',
         'acc-keys-aria': 'Tastiera cromatica',
@@ -42,7 +44,7 @@ export default {
         'acc-inapp': 'Apri in Safari per il microfono',
         'acc-gauge-aria': 'Scostamento in cent',
 
-        'acc-custom-new': 'Personalizzata…',
+        'acc-custom-new': 'Crea la tua accordatura…',
         'acc-custom-title': 'Accordatura personalizzata',
         'acc-custom-name': 'Nome',
         'acc-custom-count': 'Corde',
@@ -62,6 +64,7 @@ export default {
     en: {
         'acc-title': 'Tuner',
         'acc-mode-listen': 'Listen',
+        'acc-mode-listen-aria': 'Listen (mic)',
         'acc-mode-reference': 'Reference',
         'acc-instrument': 'Instrument',
         'acc-inst-guitar': 'Guitar',
@@ -78,6 +81,7 @@ export default {
         'acc-a4-info-title': 'A4 reference',
         'acc-a4-info-text': 'Instruments tune to a reference A: 440 Hz is the standard. Change it only if you play with someone using another one.',
         'acc-mic-off': 'Turn the microphone off',
+        'acc-mic-live-tip': 'Mic on: audio stays on this device',
         'acc-octave': 'Octave',
         'acc-note-empty': 'no note',
         'acc-keys-aria': 'Chromatic keyboard',
@@ -92,7 +96,7 @@ export default {
         'acc-inapp': 'Open in Safari for the microphone',
         'acc-gauge-aria': 'Deviation in cents',
 
-        'acc-custom-new': 'Custom…',
+        'acc-custom-new': 'Make your own tuning…',
         'acc-custom-title': 'Custom tuning',
         'acc-custom-name': 'Name',
         'acc-custom-count': 'Strings',

@@ -126,6 +126,9 @@ const NEAR_CENTS = 150;       // oltre, la corda non e' quella
 const LOOP_EVERY = 4000;      // ms fra due ripetizioni con #acc-loop attivo
 const SPRING_MS = 60;         // costante dell'ago (molla critica)
 const SPEAK_MS = 700;         // throttle degli annunci
+/* la frase «l'audio resta nel dispositivo» accanto a «In ascolto…»: la
+   prima volta in questa pagina, poi basta (in memoria, non una pref) */
+let micTipDetto = false;
 
 /* Accordature (spec 11 §5). `flats` cambia solo come si scrivono le note. */
 export const TUNINGS = {
@@ -274,6 +277,13 @@ export function mountTuner() {
 
     let custom = readCustom();
     let instrumentSelect = null;   // api di shared/select.js sulla pillola
+    /* ultima corda toccata in Riferimento, per accordatura (spec 21 §3):
+       { <strumento o custom:<id>>: indice }. Preferenza LOCALE
+       (`tt.accordatore.corda`, fuori da PORTABILI in archivio.js). */
+    const leggiCorde = () => {
+        const v = prefs.get(TOOL, 'corda', {});
+        return v && typeof v === 'object' && !Array.isArray(v) ? { ...v } : {};
+    };
     let editing = null;            // bozza aperta nell'editor
 
     const customById = (value) => {
@@ -310,6 +320,32 @@ export function mountTuner() {
         });
         target = -1;
         markStrings(-1);
+    }
+
+    /** Riprende la corda ricordata: solo in Riferimento, senza suonarla. */
+    function ripristinaCorda() {
+        if (ui.mode !== 'reference') return;
+        const i = leggiCorde()[ui.instrument];
+        if (!Number.isInteger(i) || i < 0 || i >= stringBtns.length) return;
+        target = i;
+        markStrings(-1);
+    }
+
+    function ricordaCorda(i) {
+        const corde = leggiCorde();
+        if (corde[ui.instrument] === i) return;
+        corde[ui.instrument] = i;
+        prefs.set(TOOL, 'corda', corde);
+    }
+
+    /* un'accordatura personalizzata che non c'e' piu' (anche via sync): via la sua chiave */
+    function potaCorde() {
+        const corde = leggiCorde();
+        let tolte = false;
+        Object.keys(corde).forEach((k) => {
+            if (isCustom(k) && !customById(k)) { delete corde[k]; tolte = true; }
+        });
+        if (tolte) prefs.set(TOOL, 'corda', corde);
     }
 
     function markStrings(nearIndex) {
@@ -492,6 +528,10 @@ export function mountTuner() {
         if (s === 'denied') { setStatus(status, { kind: 'denied', key: 'mic-denied' }); return; }
         if (s === 'granted' && tracker && tracker.running()) {
             setStatus(status, { kind: 'busy', key: 'acc-listening' });
+            if (!micTipDetto && status) {
+                micTipDetto = true;
+                status.textContent = t('acc-listening') + ' ' + t('acc-mic-live-tip');
+            }
             return;
         }
         setStatus(status, { kind: 'idle', key: 'acc-no-signal' });
@@ -701,6 +741,7 @@ export function mountTuner() {
         stopLoop();
         keyNote = null;
         buildStrings();
+        ripristinaCorda();
         applyRange();
         clearReading();
         renderCustomButtons();
@@ -729,6 +770,7 @@ export function mountTuner() {
             if (ui.mode === 'reference') {
                 target = i;
                 markStrings(-1);
+                ricordaCorda(i);
                 playChosen();
                 return;
             }
@@ -997,6 +1039,7 @@ export function mountTuner() {
     function removeCustom(id) {
         custom = custom.filter((x) => x.id !== id);
         deleteCustom(id, custom);
+        potaCorde();
         syncCustomOptions();
         if (confirmBox) confirmBox.hidden = true;
         setInstrument('guitar');
@@ -1075,6 +1118,7 @@ export function mountTuner() {
     setMode('reference');
     root.setAttribute('data-acc-mode', 'reference');
     if (prefs.get(TOOL, 'mode', 'reference') === 'listen') setMode('listen');
+    ripristinaCorda();   // dopo la modalita': in Ascolto non si riprende
 
     /* la prefs ha disegnato subito; poi vince l'archivio, dopo le scritture
        gia' in coda di questa scheda. Di nuovo a ogni cambio fatto da
@@ -1084,6 +1128,7 @@ export function mountTuner() {
             if (inSolaLettura() || JSON.stringify(stored) === JSON.stringify(custom)) return;
             custom = stored;
             prefs.set(TOOL, 'custom', custom);
+            potaCorde();
             syncCustomOptions();
             const wanted = prefs.get(TOOL, 'instrument', 'guitar');
             if (isCustom(wanted) && customById(wanted) && ui.instrument !== wanted) setInstrument(wanted);

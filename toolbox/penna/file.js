@@ -1,7 +1,8 @@
 /**
  * Tiny Temple Toolbox - Penna: i file del quaderno (spec 16 §3/§4).
  *
- * Esporta tutto (.json), importa, condividi il testo (.txt), stampa.
+ * Esporta tutto (.json), importa, condividi il testo (.txt), stampa;
+ * esporta tutti i testi in un .txt solo (spec 19 §3).
  * Nessuna richiesta di rete: il download e' `URL.createObjectURL` +
  * `<a download>`, lo stesso di `pianificatore.js` sotto questa CSP, con lo
  * stesso ripiego (foglio col testo e "Copia") quando iOS in standalone lo
@@ -107,6 +108,26 @@ export function nomeTxt(titolo, senzaTitolo = 'testo') {
     return (base || senzaTitolo) + '.txt';
 }
 
+/** Il separatore fra un testo e l'altro nel .txt di tutto il quaderno. */
+export const SEPARATORE_TXT = '\n\n\u2014 \u2014 \u2014\n\n';
+
+/** penna-testi-AAAA-MM-GG.txt (data locale). */
+export function nomeQuadernoTxt(data = new Date()) {
+    return 'penna-testi-' + data.getFullYear() + '-' + due(data.getMonth() + 1) + '-' + due(data.getDate()) + '.txt';
+}
+
+/**
+ * Tutti i testi in un solo testo semplice (spec 19 §3): per ognuno
+ * `testoTxt(titolo, testo)`, separati da `— — —`. `testi` e'
+ * [{ titolo, testo }] nell'ordine voluto; i testi vuoti restano fuori.
+ */
+export function quadernoTxt(testi) {
+    return (Array.isArray(testi) ? testi : [])
+        .map((d) => testoTxt(d && d.titolo, d && d.testo))
+        .filter((t) => t.trim())
+        .join(SEPARATORE_TXT);
+}
+
 /** Download vero e proprio. -> true se il browser l'ha accettato. */
 export function scaricaBlob(blob, nome) {
     try {
@@ -168,6 +189,21 @@ export async function esporta(testi, { ripiego, adesso = new Date() } = {}) {
     return 'niente';
 }
 
+/**
+ * Esporta tutti i testi in un .txt (spec 19 §3), stessi ripieghi di
+ * `esporta`. -> 'condiviso' | 'scaricato' | 'foglio' | 'niente'
+ */
+export async function esportaTxt(testi, { ripiego, adesso = new Date() } = {}) {
+    const corpo = quadernoTxt(testi);
+    if (!corpo.trim()) return 'niente';
+    const nome = nomeQuadernoTxt(adesso);
+    const blob = new Blob([corpo], { type: 'text/plain;charset=utf-8' });
+    if (inStandaloneIos() && await condividiFile(blob, nome, 'text/plain', nome)) return 'condiviso';
+    if (scaricaBlob(blob, nome)) return 'scaricato';
+    if (typeof ripiego === 'function') { ripiego({ titolo: nome, testo: corpo }); return 'foglio'; }
+    return 'niente';
+}
+
 /** Legge il file scelto nell'`<input type="file">`. -> testo o null. */
 export function leggiFileScelto(file) {
     return new Promise((resolve) => {
@@ -183,22 +219,26 @@ export function leggiFileScelto(file) {
  * Condivide un testo come `.txt` (spec 16 §3): Web Share col file ->
  * Web Share col testo (il "Condividi" della 14, resta come ripiego) ->
  * download -> copia -> foglio.
+ * `mostrato` (spec 19 §3): il titolo automatico di un testo senza titolo,
+ * usato solo per il nome del file e il titolo della condivisione; il corpo
+ * porta in testa soltanto il titolo vero.
  * -> 'file' | 'testo' | 'scaricato' | 'copiato' | 'foglio' | 'niente'
  */
-export async function condividi({ titolo, testo, ripiego } = {}) {
+export async function condividi({ titolo, testo, ripiego, mostrato = '' } = {}) {
     const corpo = testoTxt(titolo, testo);
     if (!corpo.trim()) return 'niente';
-    const nome = nomeTxt(titolo);
+    const etichetta = String(titolo == null ? '' : titolo).trim() || String(mostrato || '').trim();
+    const nome = nomeTxt(etichetta);
     const blob = new Blob([corpo], { type: 'text/plain;charset=utf-8' });
-    if (await condividiFile(blob, nome, 'text/plain', titolo || nome)) return 'file';
+    if (await condividiFile(blob, nome, 'text/plain', etichetta || nome)) return 'file';
     if (navigator.share) {
-        try { await navigator.share({ title: titolo || nome, text: corpo }); return 'testo'; }
+        try { await navigator.share({ title: etichetta || nome, text: corpo }); return 'testo'; }
         catch (e) { /* annullato o non permesso: si scende ancora */ }
     }
     if (scaricaBlob(blob, nome)) return 'scaricato';
     try { await navigator.clipboard.writeText(corpo); return 'copiato'; }
     catch (e) { /* appunti negati: resta il foglio */ }
-    if (typeof ripiego === 'function') { ripiego({ titolo: titolo || nome, testo: corpo }); return 'foglio'; }
+    if (typeof ripiego === 'function') { ripiego({ titolo: etichetta || nome, testo: corpo }); return 'foglio'; }
     return 'niente';
 }
 

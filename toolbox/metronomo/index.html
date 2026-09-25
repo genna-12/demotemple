@@ -212,8 +212,14 @@
                     <button type="button" class="tb-btn tb-btn--icon" data-met-step="+5" data-i18n-aria="met-step-plus5" aria-label="Più 5">+5</button>
                 </div>
                 <div class="met-taps">
-                    <button type="button" id="met-tap" class="tb-btn" data-i18n="met-tap" data-i18n-aria="met-tap-aria" aria-label="Tocca a tempo per impostare il BPM">Tap</button>
-                    <button type="button" id="met-count" class="tb-btn tb-btn--ghost" data-i18n="met-count" data-i18n-aria="met-count-aria" aria-label="Conta i tap per impostare il BPM">Conta</button>
+                    <button type="button" id="met-tap" class="tb-btn" data-i18n-aria="met-tap-aria" aria-label="Tocca a tempo per impostare il BPM">
+                        <span data-i18n="met-tap">Tap</span>
+                        <span class="met-btn-sub" data-i18n="met-tap-sub">dai tu il tempo</span>
+                    </button>
+                    <button type="button" id="met-count" class="tb-btn tb-btn--ghost" data-i18n-aria="met-count-aria" aria-label="Conta i tap per impostare il BPM">
+                        <span data-i18n="met-count">Conta</span>
+                        <span class="met-btn-sub" data-i18n="met-count-sub">a tutto schermo</span>
+                    </button>
                 </div>
             </div>
 
@@ -257,13 +263,57 @@
                 </div>
             </div>
 
-            <button type="button" id="met-toggle" class="tb-btn tb-btn--lg tb-btn--primary" aria-pressed="false"
-                data-i18n-aria="met-toggle-aria" aria-label="Avvia o ferma (barra spaziatrice)">
-                <span id="met-toggle-label" data-i18n="met-start">Avvia</span>
-            </button>
+            <!-- Riga della CTA (revisione ui-ux): Avvia + Avanti (scaletta,
+                 CONTRATTO metronomo.js: [hidden] con meno di 2 preset,
+                 [disabled] sull'ultimo applicato) fianco a fianco. -->
+            <div class="met-cta-row">
+                <button type="button" id="met-toggle" class="tb-btn tb-btn--primary met-cta-btn" aria-pressed="false"
+                    data-i18n-aria="met-toggle-aria" aria-label="Avvia o ferma (barra spaziatrice)">
+                    <span id="met-toggle-label" data-i18n="met-start">Avvia</span>
+                </button>
+                <button type="button" id="met-preset-next" class="tb-btn met-cta-btn" hidden
+                    data-i18n-aria="met-preset-next-aria" aria-label="Passa al preset successivo">
+                    <span data-i18n="met-preset-next">Avanti ▸</span>
+                    <!-- CONTRATTO metronomo.js: testo del preset successivo
+                         (chiave met-preset-next-sub, segnaposto {nome}). -->
+                    <span id="met-preset-next-sub" class="met-btn-sub"></span>
+                </button>
+            </div>
+
+            <!-- Battuta d'attacco (revisione ui-ux): riga interruttore come
+                 le sezioni di impostazioni/index.html (.imp-toggle-row +
+                 .tb-toggle[role=switch]). CONTRATTO metronomo.js: l'id
+                 #met-countin resta sul controllo (ora lo switch), ma lo
+                 stato si legge/scrive con aria-checked (non piu' aria-pressed). -->
+            <div class="met-countin-row">
+                <span id="met-countin-label" class="met-countin-label">
+                    <span data-i18n="met-countin">Battuta d’attacco</span>
+                    <span class="met-sub" data-i18n="met-countin-sub">una battuta prima di partire</span>
+                </span>
+                <button type="button" id="met-countin" class="tb-toggle" role="switch"
+                    aria-checked="false" aria-labelledby="met-countin-label">
+                    <span class="tb-toggle-thumb" aria-hidden="true"></span>
+                </button>
+            </div>
 
             <p id="met-status" class="tb-status" aria-live="polite"></p>
             <p class="met-hint" data-i18n="met-hint">Barra spaziatrice per avviare</p>
+
+            <!-- CONTRATTO metronomo.js (spec 21 §4): #met-presets contiene solo
+                 «Salva preset» + le righe (JS: li.met-preset[data-met-preset]
+                 dentro #met-preset-list); «Avanti» e' salito accanto ad Avvia,
+                 vedi .met-cta-row sopra. Niente markup dentro #met-preset-list:
+                 lo crea metronomo.js. -->
+            <section id="met-presets" class="met-presets">
+                <div class="met-presets-head">
+                    <h2 class="met-presets-title" data-i18n="met-presets">Preset</h2>
+                    <button type="button" id="met-preset-save" class="tb-btn"
+                        data-i18n="met-preset-save">Salva preset</button>
+                </div>
+                <ul id="met-preset-list" class="met-preset-list"></ul>
+                <p id="met-preset-empty" class="met-preset-empty" data-i18n="met-preset-empty">Nessun preset: imposta il tempo e salva.</p>
+                <p id="met-preset-status" class="tb-status" aria-live="polite"></p>
+            </section>
         </main>
 
         <!-- Riga sola su ogni pagina (spec 03 §4): niente piu' cookie/note

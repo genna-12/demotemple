@@ -32,8 +32,12 @@ export default {
             d: 'Quando l’analisi viene dal microfono, un avviso lo ricorda: BPM e tonalità sono un buon punto di partenza, ma solo il file audio dà un risultato affidabile al 100%.'
         },
         {
-            t: 'Storico',
-            d: 'Ogni analisi resta salvata qui sotto: tocca una voce per riaprirla, la matita per rinominarla, o svuota tutto lo storico da “Svuota storico”.'
+            t: 'Recenti',
+            d: 'Ogni analisi resta salvata qui sotto, anche dopo un risultato: tocca una voce per riaprirla, la matita per rinominarla, cerca per nome, confronta due brani o esporta tutto in .csv.'
+        },
+        {
+            t: 'Compatibili',
+            d: 'I chip Camelot sotto la tonalità (es. 8A): ogni chip mostra i brani in quella tonalità, per trovare cosa mixare col brano appena analizzato.'
         }
     ],
     en: [
@@ -62,8 +66,12 @@ export default {
             d: 'When the analysis comes from the microphone, a note reminds you: BPM and key are a good starting point, but only the audio file gives a fully reliable result.'
         },
         {
-            t: 'History',
-            d: 'Every analysis stays saved below: tap an entry to reopen it, the pencil to rename it, or clear all of it from “Clear history”.'
+            t: 'Recent',
+            d: 'Every analysis stays saved below, even after a result: tap an entry to reopen it, the pencil to rename it, search by name, compare two tracks or export it all as .csv.'
+        },
+        {
+            t: 'Compatible',
+            d: 'The Camelot chips under the key (e.g. 8A): each chip shows the tracks in that key, to find what to mix with the track you just analysed.'
         }
     ],
     hint: {

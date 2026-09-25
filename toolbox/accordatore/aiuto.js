@@ -13,7 +13,7 @@ export default {
         },
         {
             t: 'Corde e tastiera',
-            d: 'Tocca una corda (o un tasto, per la Cromatica) per sentirla. In Riferimento puoi ritoccarla quante volte vuoi, resta accesa finche’ non ne scegli un’altra.'
+            d: 'Tocca una corda (o un tasto, per la Cromatica) per sentirla. In Riferimento puoi ritoccarla quante volte vuoi, resta accesa finché non ne scegli un’altra. La prossima volta che apri l’Accordatore ritrova da sola l’ultima corda scelta.'
         },
         {
             t: 'Strumento e accordature',
@@ -35,7 +35,7 @@ export default {
         },
         {
             t: 'Strings and keyboard',
-            d: 'Tap a string (or a key, for Chromatic) to hear it. In Reference you can retouch it as many times as you like, it stays lit until you pick another.'
+            d: 'Tap a string (or a key, for Chromatic) to hear it. In Reference you can retouch it as many times as you like, it stays lit until you pick another. Next time you open the Tuner it picks up the last string you chose.'
         },
         {
             t: 'Instrument and tunings',

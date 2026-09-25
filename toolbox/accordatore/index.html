@@ -46,8 +46,8 @@
         <!-- CONTRATTO shared/nav.js: fratello di .tb-menu-toggle, [hidden]
              di default, nav.js toglie [hidden] mentre uno stream del
              microfono e' attivo in QUALSIASI strumento (mic.onStateChange). -->
-        <span id="tb-mic-live" class="tb-mic-live" hidden role="status"
-            data-i18n-aria="mic-live-aria" aria-label="Microfono attivo">
+        <span id="tb-mic-live" class="tb-mic-live" hidden role="status" tabindex="0"
+            data-tip="acc-mic-live-tip" data-i18n-aria="mic-live-aria" aria-label="Microfono attivo">
             <svg aria-hidden="true"><use href="#tb-icon-mic"></use></svg>
         </span>
     </header>
@@ -201,7 +201,14 @@
         <main id="acc" class="acc" data-acc-mode="reference" data-acc-instrument="guitar">
             <div id="acc-mode" class="tb-segment" role="radiogroup" aria-label="Ascolto o riferimento / Listen or reference">
                 <button type="button" class="tb-segment-btn" data-acc-mode="reference" role="radio" aria-checked="true" data-i18n="acc-mode-reference">Riferimento</button>
-                <button type="button" class="tb-segment-btn" data-acc-mode="listen" role="radio" aria-checked="false" data-i18n="acc-mode-listen">Ascolto</button>
+                <!-- Revisione ui-ux: icona del microfono dentro il bottone
+                     (niente parentetica nel testo visibile, cosi' a 360px
+                     non va a capo), aria-label piu' esplicita. -->
+                <button type="button" class="tb-segment-btn acc-mode-listen-btn" data-acc-mode="listen" role="radio"
+                    aria-checked="false" data-i18n-aria="acc-mode-listen-aria" aria-label="Ascolto (microfono)">
+                    <svg aria-hidden="true"><use href="#tb-icon-mic"></use></svg>
+                    <span data-i18n="acc-mode-listen">Ascolto</span>
+                </button>
             </div>
 
             <!-- .tb-select (spec 03 §2/§6, contratto in shared/components.css):

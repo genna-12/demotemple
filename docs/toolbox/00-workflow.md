@@ -93,16 +93,21 @@ indipendenti possono avere spec in parallelo.
 - [x] T1 giro 2 (24/09): pagina `/impostazioni/` (lingua, aspetto, microfono, pacchetti, dati, informative, versione)
 - [x] T1 giro 3 (24/09): sincronizzazione generalizzata `shared/sync.js` (un codice per tutti i dati, lotti, potatura lapidi sul server, offline, `vuoto-remoto`), sezione in Impostazioni
 - [x] T1 giro 4 (24/09): aiuto in-app «Come funziona» + hint al primo avvio + popover sui pulsanti icona (`shared/aiuto.js`, `<slug>/aiuto.js`)
-- [ ] **Genna:** database D1 + binding (guida §3c) e testo Iubenda (guida §3c punto 6) → poi la sincronizzazione è attiva per tutti
-- [ ] T2: Penna, DNA, Accordatore, Metronomo a «completo» (roadmap)
+- [x] D1 + binding `QUADERNO` verificati online il 25/09 (PUT/GET/DELETE, `no-store`, nessun cookie)
+- [x] T2/1 (25/09) Penna completa (spec 19): rime piene e assonanze vuote per famiglia (8 colori), [Strofa], modalità Prova con wake lock, Annulla dopo Elimina, Duplica, titolo automatico, filtri del rimario ricordati, esporta tutto `.txt`; 301 e2e verdi
+- [x] T2/2 (25/09) DNA completo (spec 20): riapertura del risultato (`#r=<id>`), Recenti anche sotto il risultato con ricerca e «Mostra tutte», chip Camelot che filtrano, confronto di due analisi, esporta `.csv` (formato della lingua), condividi, ÷2/×2 salvato nel record, glossario e suggerimenti; validator PASS, ui-ux applicato
+- [ ] **Genna:** testo Iubenda (guida §3c punto 6), prova della sincronizzazione PC↔telefono, token con permesso di scrittura, anteprime Cloudflare disattivate, prove su iPhone (spec 19 §6 e 20 §6.14)
+- [x] T2/3-4 (25/09) Accordatore e Metronomo (spec 21): ultima corda ricordata; preset nominati sincronizzati con rinomina e Annulla, battuta d'attacco, «Avanti» in scaletta; validator PASS, ui-ux applicato
+- [x] T2/5-6 (25/09) Pianificatore e Calcolatore (spec 22): bozza del modulo che sopravvive (con «Riprendi» dopo 2 ore), Veloce/Completa col numero di tappe, badge scadenze/ritardi e ordine nella lista piani; icona di copia in ogni cella; 416 e2e verdi
+- [x] **T2 chiuso** (25/09): tutti gli strumenti a «completo»; restano le prove su iPhone di Genna
 - [ ] Da provare su iPhone: Penna v2 (download in standalone, condividi `.txt`, tastiera aperta, stampa) e PBKDF2 200k iterazioni (spec 17 §6.9)
 - [ ] Trasposizione (T3, solo se la qualità regge). Checklist consegna e Split sheet: **scartati** il 22/09 (utili solo al flusso dello studio)
 - [ ] Prima del merge su `main`: informative Iubenda, prova completa su iPhone (vedi `guida-genna.md` §2)
 
-## 7. Stato aggiornato al 20 settembre 2026
+## 7. Stato aggiornato al 25 settembre 2026
 
 Routine di Genna e istruzioni pratiche (rimario, cookie, merge): `docs/toolbox/guida-genna.md`.
-Validazione: ogni giro passa da `scripts/check.mjs` e dai test e2e (`scripts/e2e/`, 124 test,
+Validazione: ogni giro passa da `scripts/check.mjs` e dai test e2e (`scripts/e2e/`, ~370 test,
 tocchi reali a 390×844 e 1366×768) prima della consegna; su GitHub girano da soli a ogni push.
 Consegna (finché il token non consente il push dal container): i file arrivano nella cartella
 TEMPLE di Genna; il ponte a volte riscrive la versione precedente di un file già consegnato e

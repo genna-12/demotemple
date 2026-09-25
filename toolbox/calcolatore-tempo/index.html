@@ -257,6 +257,15 @@
 
                 <table id="calc-table" class="calc-table">
                     <caption data-i18n="calc-tab-delay">Delay e riverbero</caption>
+                    <!-- table-layout:fixed (validator 521cdd3, punto 1): le tre
+                         colonne dei valori si dividono lo spazio rimasto in
+                         parti uguali, sempre, cosi' la tabella non cresce mai
+                         oltre il 100% qualunque sia il BPM (ai BPM bassi i
+                         millisecondi arrivano a 5 cifre). -->
+                    <colgroup>
+                        <col class="calc-col-label">
+                        <col><col><col>
+                    </colgroup>
                     <thead>
                         <tr>
                             <th scope="col" data-i18n="calc-div">Suddivisione</th>
@@ -462,6 +471,10 @@
 
                 <table id="calc-table-sc" class="calc-table">
                     <caption data-i18n="calc-tab-sidechain">Sidechain</caption>
+                    <colgroup>
+                        <col class="calc-col-label calc-col-label--sc">
+                        <col><col>
+                    </colgroup>
                     <thead>
                         <tr>
                             <th scope="col" data-i18n="calc-lfo-rate">Frequenza LFO</th>

@@ -28,7 +28,6 @@ export default {
         'dna-key': 'Tonalità',
         'dna-major': 'maggiore',
         'dna-minor': 'minore',
-        'dna-compat': 'Compatibili',
         'dna-bpm-fold-aria': "Correggi l'ottava",
         'dna-fold-half': 'Dimezza',
         'dna-fold-double': 'Raddoppia',
@@ -70,8 +69,8 @@ export default {
         'dna-long-warning': "File lungo: l'analisi potrebbe metterci di più",
 
         'dna-del-one': 'Elimina',
-        'dna-clear': 'Svuota storico',
-        'dna-clear-ask': 'Cancello tutto lo storico?',
+        'dna-clear': 'Svuota Recenti',
+        'dna-clear-ask': 'Cancello tutti i Recenti?',
         'dna-clear-yes': 'Svuota',
         'dna-clear-no': 'Annulla',
         'dna-history-empty': 'Nessuna analisi ancora',
@@ -89,7 +88,62 @@ export default {
         'dna-mic-note': 'Stima dal microfono: un buon punto di partenza, non sostituisce il file audio.',
         'dna-mic-info-title': 'Stima dal microfono',
         'dna-mic-info-text': "BPM e tonalità possono essere sbagliati, anche di molto: dal microfono l'analisi è una stima. Per un risultato affidabile usa il file.",
-        'dna-target-label': 'Target {platform}: {lufs} LUFS'
+        'dna-target-label': 'Target {platform}: {lufs} LUFS',
+
+        /* Spec 20 (DNA «completo») + revisione ui-ux: router, Recenti anche
+           nel risultato, ricerca, filtro per compatibili, confronto, esporta,
+           condividi. Un solo termine in tutta la pagina per questa sezione:
+           «Recenti», mai «storico» (coerente con l’h2 di #dna-history-wrap). */
+        'dna-saved': 'Salvato nei Recenti',
+        'dna-gone': 'Analisi non trovata',
+
+        'dna-search': 'Cerca nei Recenti',
+        'dna-search-empty': 'Nessun risultato per la ricerca',
+        'dna-filter-label': 'Brani in {camelot}',
+        'dna-filter-clear-aria': 'Togli il filtro',
+        'dna-filter-empty': 'Nessun altro brano in {camelot} nei Recenti',
+        'dna-export': 'Esporta .csv',
+        'dna-share': 'Condividi',
+        /* «Mostra tutte» sotto un risultato (revisione ui-ux): lo storico si
+           accorcia a 5 voci, dna.js crea #dna-history-more col testo qui. */
+        'dna-history-more': 'Mostra tutte ({n})',
+
+        /* Sopra i chip Camelot (revisione ui-ux, non più solo «Compatibili»
+           affiancata): spiega anche cosa fare col tocco. */
+        'dna-compat-hint': 'Compatibili · tocca per filtrare',
+
+        'dna-fold-hint': 'Forse è la metà o il doppio?',
+        'dna-lufs-hint': 'I LUFS misurano il volume medio percepito: tocca la i',
+
+        'dna-compare-title': 'Confronto',
+        'dna-compare-tip': 'Confronta',
+        'dna-compare-current': 'Questa',
+        'dna-compare-other': 'Altra',
+        'dna-compare-compatible': 'compatibile',
+        'dna-compare-incompatible': 'non compatibile',
+        /* Newline finale (revisione ui-ux): con .dna-compare-delta in
+           white-space:pre-line manda «· compatibile/non compatibile» su una
+           riga propria sotto i semitoni, senza toccare dna.js (che unisce le
+           due parti con «space middot space»). meno() nei test normalizza
+           gli spazi, quindi l’a capo non cambia le stringhe attese lì. */
+        'dna-compare-semitone': '{n} semitono',
+        'dna-compare-semitones': '{n} semitoni',
+
+        'dna-csv-name': 'Nome',
+        'dna-csv-date': 'Data',
+        'dna-csv-bpm': 'BPM',
+        'dna-csv-key': 'Tonalità',
+        'dna-csv-camelot': 'Camelot',
+        'dna-csv-lufs': 'LUFS',
+        'dna-csv-tp': 'dBTP',
+        'dna-csv-lra': 'LRA',
+        'dna-csv-duration': 'Durata (s)',
+        'dna-csv-source': 'Fonte',
+        'dna-csv-copied': 'CSV copiato negli appunti',
+        'dna-csv-fail': 'Impossibile esportare il CSV',
+
+        'dna-src-file': 'File',
+        'dna-src-mic': 'Microfono'
     },
     en: {
         'dna-title': 'Track DNA',
@@ -111,7 +165,6 @@ export default {
         'dna-key': 'Key',
         'dna-major': 'major',
         'dna-minor': 'minor',
-        'dna-compat': 'Compatible',
         'dna-bpm-fold-aria': 'Fix the octave',
         'dna-fold-half': 'Halve',
         'dna-fold-double': 'Double',
@@ -153,8 +206,8 @@ export default {
         'dna-long-warning': 'Long file: analysis may take a bit longer',
 
         'dna-del-one': 'Delete',
-        'dna-clear': 'Clear history',
-        'dna-clear-ask': 'Clear the whole history?',
+        'dna-clear': 'Clear Recent',
+        'dna-clear-ask': 'Clear everything in Recent?',
         'dna-clear-yes': 'Clear',
         'dna-clear-no': 'Cancel',
         'dna-history-empty': 'No analyses yet',
@@ -172,6 +225,61 @@ export default {
         'dna-mic-note': "Microphone estimate: a good starting point, not a substitute for the audio file.",
         'dna-mic-info-title': 'Microphone estimate',
         'dna-mic-info-text': "BPM and key can be wrong, sometimes by a lot: from the microphone the analysis is only an estimate. For a reliable result, use the file.",
-        'dna-target-label': 'Target {platform}: {lufs} LUFS'
+        'dna-target-label': 'Target {platform}: {lufs} LUFS',
+
+        /* Spec 20 (DNA «complete») + ui-ux revision: router, Recent under the
+           result, search, compatible-key filter, compare, export, share. One
+           single term for this section everywhere on the page (Recent,
+           never history), matching the h2 on #dna-history-wrap. */
+        'dna-saved': 'Added to Recent',
+        'dna-gone': 'Analysis not found',
+
+        'dna-search': 'Search Recent',
+        'dna-search-empty': 'No results for this search',
+        'dna-filter-label': '{camelot} tracks',
+        'dna-filter-clear-aria': 'Clear the filter',
+        'dna-filter-empty': 'No other {camelot} tracks in Recent',
+        'dna-export': 'Export .csv',
+        'dna-share': 'Share',
+        /* «Show all» under a result (ui-ux revision): the list shortens to
+           5 entries, dna.js builds #dna-history-more with this text. */
+        'dna-history-more': 'Show all ({n})',
+
+        /* Above the Camelot chips (ui-ux revision, no longer just the word
+           Compatible alongside them): also explains what a tap does. */
+        'dna-compat-hint': 'Compatible · tap to filter',
+
+        'dna-fold-hint': 'Could be half or double?',
+        'dna-lufs-hint': 'LUFS measure average perceived loudness: tap the i',
+
+        'dna-compare-title': 'Compare',
+        'dna-compare-tip': 'Compare',
+        'dna-compare-current': 'This one',
+        'dna-compare-other': 'Other',
+        'dna-compare-compatible': 'compatible',
+        'dna-compare-incompatible': 'not compatible',
+        /* Trailing newline (ui-ux revision): with .dna-compare-delta in
+           white-space:pre-line this puts compatible/not compatible on its
+           own line under the semitones, without touching dna.js (it joins
+           the two parts with a middot). Tests normalise whitespace, so the
+           newline does not change the strings they expect. */
+        'dna-compare-semitone': '{n} semitone',
+        'dna-compare-semitones': '{n} semitones',
+
+        'dna-csv-name': 'Name',
+        'dna-csv-date': 'Date',
+        'dna-csv-bpm': 'BPM',
+        'dna-csv-key': 'Key',
+        'dna-csv-camelot': 'Camelot',
+        'dna-csv-lufs': 'LUFS',
+        'dna-csv-tp': 'dBTP',
+        'dna-csv-lra': 'LRA',
+        'dna-csv-duration': 'Duration (s)',
+        'dna-csv-source': 'Source',
+        'dna-csv-copied': 'CSV copied to the clipboard',
+        'dna-csv-fail': 'Could not export the CSV',
+
+        'dna-src-file': 'File',
+        'dna-src-mic': 'Microphone'
     }
 };

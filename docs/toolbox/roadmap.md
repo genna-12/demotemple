@@ -74,12 +74,12 @@ qualunque artista, non solo a chi lavora con Tiny Temple.
 
 | ordine | strumento | cosa entra | giri |
 |---|---|---|---|
-| 1 | Penna | assonanze coerenti nei colori, ricerca fra i testi, sillabe nell'elenco, filtri del rimario che sopravvivono, prova su iPhone | 1 |
-| 2 | DNA | storico sincronizzato e rinominabile, esporta, tonalità compatibili cliccabili, glossario al primo risultato, prova su brani veri | 1 |
-| 3 | Accordatore | accordature personalizzate con nome nell'archivio (oggi solo in una preferenza locale), ultima corda ricordata | 0,75 |
-| 4 | Metronomo | preset nominati (bpm, battuta, suddivisione, suono, volume), count-in, setlist | 0,75 |
-| 5 | Pianificatore | resta com'è, generico (tappe dalle guide dei distributori, non dal flusso dello studio); solo affidabilità: bozza che sopravvive, più uscite in parallelo, calendario se avanza tempo | 0,5 |
-| 6 | Calcolatore | celle copiabili, eyebrow sulle schede | 0,5 |
+| 1 | Penna | **fatto 25/09 (spec 19)** — rime piene/assonanze vuote per famiglia, [Strofa], Prova, Annulla, Duplica, filtri ricordati, esporta tutto; resta la prova su iPhone | 1 |
+| 2 | DNA | **fatto 25/09 (spec 20)** — riapertura, Recenti con ricerca, chip Camelot, confronto, esporta `.csv`, condividi, glossario; restano la prova su iPhone e la prova su brani veri (nel repo solo audio sintetico: servono file da Genna) | 1 |
+| 3 | Accordatore | **fatto 25/09 (spec 21)** — accordature con nome già nell'archivio da T1; ultima corda ricordata, microcopy, e2e a due contesti | 0,75 |
+| 4 | Metronomo | **fatto 25/09 (spec 21)** — preset nominati sincronizzati, battuta d'attacco, «Avanti» in scaletta | 0,75 |
+| 5 | Pianificatore | **fatto 25/09 (spec 22)** — bozza che sopravvive, badge scadenze per piano nella lista, Veloce/Completa spiegati; calendario mensile lasciato fuori | 0,5 |
+| 6 | Calcolatore | **fatto 25/09 (spec 22)** — icona di copia in ogni cella (l'intro per scheda c'era già) | 0,5 |
 
 **Come si valida:** per ogni strumento un e2e che crea il dato, ricarica, lo ritrova, lo
 sincronizza su un secondo contesto e lo elimina su entrambi; «Come funziona» in IT ed EN;

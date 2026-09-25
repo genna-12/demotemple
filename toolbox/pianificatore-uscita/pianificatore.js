@@ -24,6 +24,13 @@
  *     #pia-copy #pia-edit #pia-delete #pia-status
  *   [data-pia-panel="piani"] > #pia-plans-empty + #pia-plans-list
  *   #pia-sheet #pia-sheet-scrim #pia-sheet-title #pia-sheet-body
+ *   Spec 22: #pia-profile-hint (.pia-field-hint, sotto #pia-profile; il JS
+ *     ne scrive il testo e toglie un eventuale data-i18n, perche' ha {n});
+ *     #pia-draft (p.tb-status.pia-draft, «Bozza ripresa»): se index.html
+ *     non lo ha, il JS lo crea come primo figlio di #pia-form.
+ *     #pia-draft-resume (p.tb-status.pia-draft-resume > span + button
+ *     #pia-draft-open.tb-btn.tb-btn--ghost «Riprendi»): in testa a #pia-plan
+ *     finche' c'e' una bozza di piano nuovo; se manca il JS la crea.
  *
  * STATI. `data-pia-state` su `#pianificatore`: `vuoto` (nessun piano),
  * `modifica` (modulo aperto), `piano` (piano aperto), `piani` (lista). Il
@@ -45,6 +52,11 @@
  *     `aria-description` sulla casella quando lo stato va detto a parole.
  *   #pia-plans-list: <li class="pia-plan-row"> con
  *     button.pia-plan-open[data-pia-plan] > .pia-plan-name + .pia-plan-sub
+ *       (+ span.pia-plan-badge[data-pia-badge="ritardo|scadenza"] con le
+ *        tappe in ritardo/in scadenza di quel piano, spec 22 §3; assente se
+ *        zero). Ordine: ritardo, scadenza, futuri, usciti; dentro ogni
+ *        gruppo per data di uscita. La riga porta
+ *        data-pia-plan-state="ritardo|scadenza|uscito|futuro".
  *   #pia-sheet-body: fogli "i", menu per tappa (.pia-sheet-menu), moduli
  *     rinomina/sposta/aggiungi (.pia-field + .pia-sheet-actions), conferme.
  *
@@ -62,12 +74,19 @@
  *   pia-recalc-ask pia-recalc-done pia-share-fail pia-copy pia-copied
  *   pia-copy-manual pia-plans-empty pia-no-upcoming pia-distro-label
  *   pia-distro-<valore> pia-all pia-upcoming, piu' `info-aria` (comune).
+ *   Spec 22: pia-draft-restored pia-profile-hint-fast pia-profile-hint-full
+ *   pia-due-soon pia-overdue (queste quattro con {n}), pia-draft-pending
+ *   pia-draft-open.
  *
  * SALVATAGGIO (spec §4, archivio della spec 18 §3). collezione 'uscite', <id>, {
  *   titolo, tipo, data, profilo, distributore, note, rimosse,
  *   tappe: [{ id, titolo, testo, data, fatta, origine, chiaveTitolo,
  *            chiaveTesto, chiaveFoglio, vars, anticipo, spostata, peso }],
  *   creato, modificato }). Prefs: tt.pianificatore.{ultimo, profilo, vista}.
+ * Bozza del modulo (spec 22 §3): pref LOCALE tt.pianificatore-uscita.bozza =
+ *   { titolo, tipo, data, profilo, distributore, note, modifica: <id|null>,
+ *     quando: <ms> }
+ *   (fuori da PORTABILI di shared/archivio.js: non si sincronizza).
  * Su una tappa di serie `titolo`/`testo` restano `null` finche' l'utente non
  * li cambia: cosi' cambiando lingua cambiano anche loro (criterio §6.10).
  */
@@ -83,7 +102,7 @@ import { mountSelects } from '/shared/select.js';
 import { openSheet, closeSheet } from '/shared/sheet.js';
 import { prefs, leggi, scrivi, elenca, elimina, onChange as onArchivio } from '/shared/archivio.js';
 import { avviaPagina as avviaSync } from '/shared/sync.js';
-import { TIPI, PROFILI } from '/pianificatore-uscita/tappe.js';
+import { TIPI, PROFILI, conta } from '/pianificatore-uscita/tappe.js';
 import {
     generaTappe, nuovaPersonale, ricalcola, decora, conteggio, prossime,
     ordina, oggiIso, valida
@@ -165,6 +184,21 @@ export function mountPianificatore() {
     const distroIn = el('pia-distro');
     const notesIn = el('pia-notes');
     const formError = el('pia-form-error');
+    const profileHint = el('pia-profile-hint');
+    if (profileHint) profileHint.removeAttribute('data-i18n'); // ha {n}: lo scrive il JS
+    const draftBox = el('pia-draft') || creaDraftBox();
+
+    /* «Bozza ripresa» sopra i campi: se il markup non lo porta, lo si crea */
+    function creaDraftBox() {
+        if (!form) return null;
+        const p = document.createElement('p');
+        p.id = 'pia-draft';
+        p.className = 'tb-status pia-draft';
+        p.setAttribute('role', 'status');
+        p.hidden = true;
+        form.insertBefore(p, form.firstChild);
+        return p;
+    }
 
     const planBox = el('pia-plan');
     const planTitle = el('pia-plan-title');
@@ -185,6 +219,7 @@ export function mountPianificatore() {
     const sheet = el('pia-sheet');
     const sheetTitle = el('pia-sheet-title');
     const sheetBody = el('pia-sheet-body');
+    const resumeBox = creaRigaRiprendi();   // «Riprendi» la bozza, spec 22 §3
 
     const prefProfilo = prefs.get(TOOL, 'profilo', 'completa');
 
@@ -196,7 +231,12 @@ export function mountPianificatore() {
         profilo: PROFILI.indexOf(prefProfilo) >= 0 ? prefProfilo : 'completa',
         tipo: 'singolo',
         tutti: [],
-        oggi: oggiIso()
+        oggi: oggiIso(),
+        /* modulo: valori di partenza (JSON), piano in modifica, debounce bozza */
+        formBase: null,
+        formModifica: null,
+        bozzaTimer: 0,
+        ritorno: null                        // piano da cui si e' premuto «Riprendi»
     };
 
     /* ---------------- stati ---------------- */
@@ -212,8 +252,27 @@ export function mountPianificatore() {
 
     /* ---------------- modulo ---------------- */
 
-    function apriForm(piano) {
+    /**
+     * Apre il modulo con i valori di `piano` (null = piano nuovo). Se c'e'
+     * una bozza dello STESSO modulo (nuovo piano, o modifica di questo
+     * piano: spec 22 §3) i suoi valori prendono il posto di quelli di
+     * partenza e compare «Bozza ripresa». `{ bozza: false }` la ignora.
+     */
+    function apriForm(piano, { bozza = true } = {}) {
         const p = piano || pianoVuoto();
+        riempiForm(p);
+        /* il «valore di partenza» del modulo: una bozza uguale non si scrive */
+        ui.formBase = JSON.stringify(leggiForm());
+        ui.formModifica = piano ? ui.id : null;
+        const b = bozza ? bozzaPer(ui.formModifica) : null;
+        if (b) riempiForm(b);
+        mostraBozzaRipresa(!!b);
+        pulisciErrore();
+        setStato('modifica');
+        if (titleIn) titleIn.focus();
+    }
+
+    function riempiForm(p) {
         if (titleIn) titleIn.value = p.titolo || '';
         if (dateIn) dateIn.value = p.data || '';
         if (notesIn) notesIn.value = p.note || '';
@@ -222,9 +281,141 @@ export function mountPianificatore() {
         segna(typeBox, 'data-pia-type', ui.tipo);
         segna(profileBox, 'data-pia-profile', ui.profilo);
         setDistro(p.distributore);
-        pulisciErrore();
-        setStato('modifica');
-        if (titleIn) titleIn.focus();
+        aggiornaHint();
+    }
+
+    /** I campi del modulo come stanno ora (forma della bozza, senza `modifica`). */
+    function leggiForm() {
+        return {
+            titolo: titleIn ? titleIn.value : '',
+            tipo: ui.tipo,
+            data: dateIn ? dateIn.value : '',
+            profilo: ui.profilo,
+            distributore: distroIn ? distroIn.value : '',
+            note: notesIn ? notesIn.value : ''
+        };
+    }
+
+    /* «Veloce: 11 tappe…» / «Completa: 13 tappe…»: {n} da tappe.js */
+    function aggiornaHint() {
+        if (!profileHint) return;
+        const chiave = ui.profilo === 'veloce' ? 'pia-profile-hint-fast' : 'pia-profile-hint-full';
+        profileHint.textContent = t(chiave, { n: conta(ui.profilo, ui.tipo) });
+    }
+
+    /* ---------------- bozza del modulo (spec 22 §3) ---------------- */
+
+    const BOZZA = 'bozza';                   // tt.pianificatore-uscita.bozza, locale
+    const leggiBozza = () => {
+        const b = prefs.get(SLUG, BOZZA, null);
+        return b && typeof b === 'object' ? b : null;
+    };
+
+    /** La bozza se appartiene al modulo che si sta aprendo, altrimenti null. */
+    function bozzaPer(modifica) {
+        const b = leggiBozza();
+        if (!b) return null;
+        return (b.modifica || null) === (modifica || null) ? b : null;
+    }
+
+    /** Toglie la bozza; `soloDelModulo` = solo se e' quella del modulo aperto
+        (Annulla/Salva di una modifica non buttano la bozza di un piano nuovo). */
+    function cancellaBozza(soloDelModulo = false) {
+        clearTimeout(ui.bozzaTimer);
+        ui.bozzaTimer = 0;
+        const b = soloDelModulo ? bozzaPer(ui.formModifica) : leggiBozza();
+        if (b) prefs.set(SLUG, BOZZA, undefined);
+    }
+
+    /** Scrive (o toglie, se il modulo e' tornato com'era) la bozza. */
+    function scriviBozza() {
+        clearTimeout(ui.bozzaTimer);
+        ui.bozzaTimer = 0;
+        if (ui.stato !== 'modifica') return;
+        const campi = leggiForm();
+        if (JSON.stringify(campi) === ui.formBase) { cancellaBozza(true); return; }
+        prefs.set(SLUG, BOZZA, { ...campi, modifica: ui.formModifica || null, quando: Date.now() });
+    }
+
+    /* una bozza di piano nuovo piu' vecchia di cosi' non scavalca `ultimo` */
+    const BOZZA_FRESCA_MS = 2 * 60 * 60 * 1000;
+    const bozzaFresca = (b) => !!b && Number.isFinite(b.quando) && Date.now() - b.quando < BOZZA_FRESCA_MS;
+
+    /**
+     * «Hai una bozza di un nuovo piano» + «Riprendi», in testa al piano
+     * aperto, finche' c'e' una bozza di piano nuovo (spec 22 §3). Se il
+     * markup non porta la riga, la si crea come primo figlio di #pia-plan.
+     */
+    function creaRigaRiprendi() {
+        let riga = el('pia-draft-resume');
+        let btn = el('pia-draft-open');
+        if (!riga && planBox) {
+            riga = document.createElement('p');
+            riga.id = 'pia-draft-resume';
+            riga.className = 'tb-status pia-draft-resume';
+            riga.hidden = true;
+            const testo = document.createElement('span');
+            testo.setAttribute('data-i18n', 'pia-draft-pending');
+            testo.textContent = t('pia-draft-pending');
+            riga.appendChild(testo);
+            planBox.insertBefore(riga, planBox.firstChild);
+        }
+        if (riga && !btn) {
+            btn = document.createElement('button');
+            btn.type = 'button';
+            btn.id = 'pia-draft-open';
+            btn.className = 'tb-btn tb-btn--ghost';
+            btn.setAttribute('data-i18n', 'pia-draft-open');
+            btn.textContent = t('pia-draft-open');
+            riga.appendChild(btn);
+        }
+        if (btn) {
+            btn.addEventListener('click', () => {
+                ui.ritorno = ui.id;             // Annulla riporta a questo piano
+                ui.id = null;
+                ui.piano = null;
+                apriForm(null);
+            });
+        }
+        return riga;
+    }
+
+    function mostraRiprendi() {
+        if (!resumeBox) return;
+        const b = leggiBozza();
+        resumeBox.hidden = !(b && !b.modifica);
+    }
+
+    function bozzaTra() {
+        if (ui.stato !== 'modifica') return;
+        clearTimeout(ui.bozzaTimer);
+        ui.bozzaTimer = setTimeout(scriviBozza, 250);
+    }
+
+    /**
+     * Il piano della bozza, se e' la modifica di un piano: `null` (e bozza
+     * cancellata) se quel piano non esiste piu'. `undefined` = niente bozza
+     * di modifica. Un errore di lettura non cancella niente.
+     */
+    async function bozzaViva() {
+        const b = leggiBozza();
+        if (!b || !b.modifica) return undefined;
+        let piano;
+        try { piano = await get(TOOL, b.modifica); } catch (e) { return undefined; }
+        if (piano) return piano;
+        cancellaBozza();
+        return null;
+    }
+
+    function mostraBozzaRipresa(si) {
+        if (!draftBox) return;
+        draftBox.hidden = !si;
+        if (si) {
+            draftBox.setAttribute('data-i18n', 'pia-draft-restored');
+            draftBox.textContent = t('pia-draft-restored');
+        } else {
+            draftBox.textContent = '';
+        }
     }
 
     /* `setStatus` non cancella il testo se non gli si da' una chiave: qui
@@ -333,6 +524,7 @@ export function mountPianificatore() {
         }
         segna(viewBox, 'data-pia-view', ui.vista);
         renderLista();
+        mostraRiprendi();
         setStato('piano');
     }
 
@@ -480,15 +672,54 @@ export function mountPianificatore() {
 
     /* ---------------- lista dei piani ---------------- */
 
+    /**
+     * Ordine della lista (spec 22 §3), quattro gruppi: 1 con tappe in
+     * ritardo, 2 con tappe in scadenza, 3 futuri senza scadenze, 4 gia'
+     * usciti (senza ritardi ne' scadenze); dentro ogni gruppo per data di
+     * uscita crescente. A pari gruppo e data vale l'ordine di prima (il piu'
+     * recente in cima).
+     */
+    function ordinaPiani(tutti) {
+        return tutti.slice().reverse().map((rec, i) => {
+            const piano = rec.value || {};
+            const n = conteggio(piano.tappe || [], ui.oggi);
+            const data = valida(piano.data) ? piano.data : '';
+            const uscito = !!data && data < ui.oggi;
+            const gruppo = n.inRitardo ? 0 : (n.inScadenza ? 1 : (uscito ? 3 : 2));
+            return { rec, piano, n, data, uscito, gruppo, i };
+        }).sort((a, b) => {
+            if (a.gruppo !== b.gruppo) return a.gruppo - b.gruppo;
+            if (a.data !== b.data) {
+                if (!a.data) return 1;
+                if (!b.data) return -1;
+                return a.data < b.data ? -1 : 1;
+            }
+            return a.i - b.i;
+        });
+    }
+
+    /* «1 in ritardo · 2 in scadenza»: niente se zero (stessa regola di #pia-badge) */
+    function badgePiano(n) {
+        const parti = [];
+        if (n.inRitardo) parti.push(t('pia-overdue', { n: n.inRitardo }));
+        if (n.inScadenza) parti.push(t('pia-due-soon', { n: n.inScadenza }));
+        if (!parti.length) return null;
+        const span = document.createElement('span');
+        span.className = 'pia-plan-badge';
+        span.setAttribute('data-pia-badge', n.inRitardo ? 'ritardo' : 'scadenza');
+        span.textContent = parti.join(' · ');
+        return span;
+    }
+
     function renderPiani() {
         if (!plansList) return;
         plansList.textContent = '';
         if (plansEmpty) plansEmpty.hidden = ui.tutti.length > 0;
-        ui.tutti.slice().reverse().forEach((rec) => {
-            const piano = rec.value || {};
-            const n = conteggio(piano.tappe || [], ui.oggi);
+        ordinaPiani(ui.tutti).forEach(({ rec, piano, n, uscito }) => {
             const li = document.createElement('li');
             li.className = 'pia-plan-row';
+            li.setAttribute('data-pia-plan-state',
+                n.inRitardo ? 'ritardo' : (n.inScadenza ? 'scadenza' : (uscito ? 'uscito' : 'futuro')));
             const apriBtn = document.createElement('button');
             apriBtn.type = 'button';
             apriBtn.className = 'pia-plan-open';
@@ -501,6 +732,8 @@ export function mountPianificatore() {
             sotto.textContent = [fmtData(piano.data), t('pia-done-count', { n: n.fatte, tot: n.totale })]
                 .filter(Boolean).join(' · ');
             apriBtn.append(nome, sotto);
+            const quanti = badgePiano(n);
+            if (quanti) apriBtn.appendChild(quanti);
             apriBtn.addEventListener('click', () => apri(rec.id, piano));
             li.appendChild(apriBtn);
             plansList.appendChild(li);
@@ -836,6 +1069,9 @@ export function mountPianificatore() {
         base.note = notesIn ? notesIn.value : '';
         prefs.set(TOOL, 'profilo', ui.profilo);
         pulisciErrore();
+        cancellaBozza(true);
+        mostraBozzaRipresa(false);
+        ui.ritorno = null;
 
         if (nuovo) {
             base.tappe = generaTappe(base);
@@ -938,19 +1174,33 @@ export function mountPianificatore() {
         form.noValidate = true;
         form.setAttribute('novalidate', '');
         form.addEventListener('submit', salvaForm);
+        /* bozza (spec 22 §3): ogni battuta, con 250 ms di respiro */
+        form.addEventListener('input', bozzaTra);
+        form.addEventListener('change', bozzaTra);
     }
+    /* chiudendo l'app (iOS) il debounce potrebbe non arrivare: si scrive subito */
+    const scriviOra = () => { if (ui.bozzaTimer) scriviBozza(); };
+    window.addEventListener('pagehide', scriviOra);
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'hidden') scriviOra();
+    });
     const saveBtn = el('pia-save');
     if (saveBtn && saveBtn.type !== 'submit') saveBtn.addEventListener('click', salvaForm);
     const cancelBtn = el('pia-cancel');
     if (cancelBtn) {
         cancelBtn.addEventListener('click', () => {
+            cancellaBozza(true);
+            mostraBozzaRipresa(false);
+            const torna = ui.ritorno ? ui.tutti.find((r) => r.id === ui.ritorno) : null;
+            ui.ritorno = null;
             if (ui.piano) render();
+            else if (torna) apri(torna.id, torna.value);
             else setStato(ui.tutti.length ? 'piani' : 'vuoto');
         });
     }
 
     const newBtn = el('pia-new');
-    if (newBtn) newBtn.addEventListener('click', () => { ui.id = null; ui.piano = null; apriForm(null); });
+    if (newBtn) newBtn.addEventListener('click', () => { ui.ritorno = null; ui.id = null; ui.piano = null; apriForm(null); });
     const editBtn = el('pia-edit');
     if (editBtn) editBtn.addEventListener('click', () => apriForm(ui.piano));
     const plansBtn = el('pia-plans');
@@ -962,6 +1212,8 @@ export function mountPianificatore() {
             if (!b) return;
             ui.tipo = b.getAttribute('data-pia-type');
             segna(typeBox, 'data-pia-type', ui.tipo);
+            aggiornaHint();
+            bozzaTra();
         });
     }
     if (profileBox) {
@@ -970,6 +1222,8 @@ export function mountPianificatore() {
             if (!b) return;
             ui.profilo = b.getAttribute('data-pia-profile');
             segna(profileBox, 'data-pia-profile', ui.profilo);
+            aggiornaHint();
+            bozzaTra();
         });
     }
     if (viewBox) {
@@ -999,12 +1253,15 @@ export function mountPianificatore() {
     if (delBtn) delBtn.addEventListener('click', () => chiediEliminaPiano(ui.id, ui.piano, delBtn));
 
     /* cambiando lingua cambiano titoli delle tappe, date e parole di stato */
-    onChange(() => { if (ui.stato === 'piano') render(); else renderPiani(); });
+    onChange(() => { aggiornaHint(); if (ui.stato === 'piano') render(); else renderPiani(); });
 
     /* piani arrivati (o tolti) dalla sincronizzazione (spec 18 §4): l'elenco
        si rilegge; il piano aperto si riapre se e' cambiato, si chiude se
        non c'e' piu'. Il modulo di modifica aperto non si tocca. */
     onArchivio(USCITE, async (m) => {
+        /* la bozza della modifica di un piano che non c'e' piu' si scarta
+           (spec 22 §6.2), da qualunque parte arrivi l'eliminazione */
+        await bozzaViva();
         if (!m || m.origine !== 'sync') return;
         const prima = ui.piano ? JSON.stringify(ui.piano) : null;
         await caricaTutti();
@@ -1039,19 +1296,32 @@ export function mountPianificatore() {
     segna(typeBox, 'data-pia-type', ui.tipo);
     segna(profileBox, 'data-pia-profile', ui.profilo);
     segna(viewBox, 'data-pia-view', ui.vista);
+    aggiornaHint();
     setStato('vuoto');
 
     const pronto = (async () => {
         await caricaTutti();
+        /* bozza del modulo (spec 22 §3). Modifica di un piano che c'e' ->
+           si riprende sempre (ha sempre `ultimo` = quel piano). Piano nuovo
+           -> il modulo si riapre se la bozza ha meno di 2 ore o se non c'e'
+           un `ultimo` valido; altrimenti si apre `ultimo` e in testa al
+           piano compare «Riprendi» (mostraRiprendi, in render). */
+        const bozza = leggiBozza();
+        const suo = await bozzaViva();
+        if (suo) { apri(bozza.modifica, suo); apriForm(ui.piano); return; }
         const ultimo = prefs.get(TOOL, 'ultimo', null);
+        let pianoUltimo = null;
         if (ultimo) {
             const rec = ui.tutti.find((r) => r.id === ultimo);
-            if (rec) { apri(rec.id, rec.value); return; }
-            try {
-                const piano = await get(TOOL, ultimo);
-                if (piano) { apri(ultimo, piano); return; }
-            } catch (e) { /* il piano non c'e' piu' */ }
+            if (rec) pianoUltimo = rec.value;
+            else {
+                try { pianoUltimo = (await get(TOOL, ultimo)) || null; } catch (e) { /* il piano non c'e' piu' */ }
+            }
         }
+        if (bozza && !bozza.modifica && (!pianoUltimo || bozzaFresca(bozza))) {
+            ui.id = null; ui.piano = null; apriForm(null); return;
+        }
+        if (pianoUltimo) { apri(ultimo, pianoUltimo); return; }
         setStato(ui.tutti.length ? 'piani' : 'vuoto');
     })();
 

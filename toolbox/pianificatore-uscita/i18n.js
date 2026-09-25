@@ -34,6 +34,11 @@ export default {
         'pia-cancel': 'Annulla',
         'pia-save': 'Crea il piano',
         'pia-date-bad': 'Scegli una data di uscita valida',
+        'pia-draft-restored': 'Bozza ripresa',
+        'pia-draft-pending': 'Hai una bozza di un nuovo piano',
+        'pia-draft-open': 'Riprendi',
+        'pia-profile-hint-fast': "Veloce: {n} tappe, se l'uscita è a meno di 4 settimane",
+        'pia-profile-hint-full': 'Completa: {n} tappe, con l\'anticipo che i distributori consigliano',
 
         /* nomi dei distributori (marchi DistroKid/TuneCore/Amuse/Believe
            invariati: la chiave esiste comunque perche' pianificatore.js
@@ -52,6 +57,8 @@ export default {
         'pia-progress-aria': 'Avanzamento del piano',
         'pia-due': 'in scadenza',
         'pia-late': 'in ritardo',
+        'pia-due-soon': '{n} in scadenza',
+        'pia-overdue': '{n} in ritardo',
         'pia-today': 'oggi',
         'pia-in-days': 'fra {n} giorni',
         'pia-days-ago': '{n} giorni fa',
@@ -169,6 +176,11 @@ export default {
         'pia-cancel': 'Cancel',
         'pia-save': 'Create the plan',
         'pia-date-bad': 'Pick a valid release date',
+        'pia-draft-restored': 'Draft restored',
+        'pia-draft-pending': 'You have a draft of a new plan',
+        'pia-draft-open': 'Resume',
+        'pia-profile-hint-fast': 'Fast: {n} steps, when the release is under 4 weeks away',
+        'pia-profile-hint-full': 'Full: {n} steps, with the lead time distributors recommend',
 
         'pia-distro-nessuno': 'Not chosen yet',
         'pia-distro-distrokid': 'DistroKid',
@@ -182,6 +194,8 @@ export default {
         'pia-progress-aria': 'Plan progress',
         'pia-due': 'due soon',
         'pia-late': 'overdue',
+        'pia-due-soon': '{n} due soon',
+        'pia-overdue': '{n} overdue',
         'pia-today': 'today',
         'pia-in-days': 'in {n} days',
         'pia-days-ago': '{n} days ago',

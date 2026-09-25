@@ -31,6 +31,10 @@ export default {
         {
             t: 'Condividi e Stampa',
             d: 'Condividi manda il piano come testo (utile per un promoter o un collega); Stampa prepara una versione pulita da salvare in PDF o stampare su carta.'
+        },
+        {
+            t: 'Bozza e più piani',
+            d: 'Se chiudi il modulo a metà lo ritrovi com’era la prossima volta. Nella lista dei piani, un’etichetta mostra le tappe in ritardo o in scadenza di ognuno.'
         }
     ],
     en: [
@@ -57,6 +61,10 @@ export default {
         {
             t: 'Share and Print',
             d: 'Share sends the plan as text (handy for a promoter or a bandmate); Print prepares a clean version to save as a PDF or print on paper.'
+        },
+        {
+            t: 'Draft and several plans',
+            d: 'Close the form halfway through and you’ll find it just as you left it next time. In the plans list, a label shows each plan’s overdue or upcoming steps.'
         }
     ],
     hint: {

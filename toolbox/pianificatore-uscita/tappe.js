@@ -132,3 +132,17 @@ export const TAPPE_ALBUM = [
     { id: 'singolo-2', anticipo: { completa: 56, veloce: 56 }, titolo: 'pia-step-singolo-titolo', testo: 'pia-step-singolo-testo', vars: { n: 2 } },
     { id: 'singolo-3', anticipo: { completa: 35, veloce: 35 }, titolo: 'pia-step-singolo-titolo', testo: 'pia-step-singolo-testo', vars: { n: 3 } }
 ];
+
+/**
+ * Quante tappe di serie genera un piano nuovo con questo profilo e tipo
+ * (spec 22 §3, riga «Veloce / Completa»): le tappe che esistono nel profilo
+ * (anticipo non null) piu', per l'album, i singoli di lancio. Pura: e' la
+ * stessa regola di `generaTappe` in timeline.js, senza date. Profilo o tipo
+ * sconosciuti valgono 'completa' / 'singolo', come la' dentro.
+ */
+export function conta(profilo, tipo) {
+    const p = PROFILI.indexOf(profilo) >= 0 ? profilo : 'completa';
+    const t = TIPI.indexOf(tipo) >= 0 ? tipo : 'singolo';
+    const esiste = (voce) => !!voce.anticipo && voce.anticipo[p] !== null && voce.anticipo[p] !== undefined;
+    return TAPPE.filter(esiste).length + (t === 'album' ? TAPPE_ALBUM.filter(esiste).length : 0);
+}

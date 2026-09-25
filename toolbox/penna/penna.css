@@ -24,6 +24,11 @@
     --pen-c3: #d8a6f0;
     --pen-c4: #e8d268;
     --pen-c5: #f0a0bc;
+    /* Revisione (validator): sei tinte non bastavano (due famiglie diverse
+       arrivavano allo stesso colore); ciano e magenta restano distinguibili
+       dalle sei sopra (e fra loro) anche su sfondo scuro. */
+    --pen-c6: #4fd1c5;
+    --pen-c7: #e0559a;
     /* Collaudo 23/09 #4/#5: buffer riservato ai due lati di ogni verso per
        la barra colorata di rima (sinistra) e la lettera di rima (destra),
        cosi' il testo non ci finisce mai sotto. Stesso valore su .pen-text
@@ -31,7 +36,10 @@
        andare a capo negli stessi punti (test "textarea <-> mirror"), quindi
        ogni pixel di riserva qui va aggiunto identico a entrambe. */
     --pen-edge-l: 0.4em;
-    --pen-edge-r: 1.6em;
+    /* 2.1em: la lettera col pedice ("A2", spec 19) e' larga ~1.8em piu' i
+       2px di margine; con 1.6em sporgeva di 3px sul testo (e2e penna-stress,
+       "non copre la fine dei versi lunghi"). */
+    --pen-edge-r: 2.1em;
 }
 
 .tb-page-header {
@@ -91,6 +99,13 @@
 }
 
 #penna:not([data-pen-vista="editor"]) #pen-editor {
+    display: none !important;
+}
+
+/* Terzo fratello (spec 19 §3): la vista prova. #pen-prova parte anche
+   [hidden] nel markup (degrado se il CSS non e' ancora arrivato); penna.js
+   toglie [hidden] insieme a data-pen-vista="prova". */
+#penna:not([data-pen-vista="prova"]) #pen-prova {
     display: none !important;
 }
 
@@ -303,40 +318,104 @@ button.pen-n::before {
     border-radius: 3px;
 }
 
-/* BLOCCANTE (revisione): era inline-block + vertical-align:super, e un box
-   inline alza il line-box che lo contiene di ~1px per riga rimata. Su 55
-   versi #pen-lines finiva piu' alta della textarea (scollamento del
-   gutter). Fuori dal flusso (position:absolute rispetto a .pen-line, che
-   ora e' position:relative): non puo' piu' influire sull'altezza della
-   riga, ne' qui ne' nel mirror che penna.js misura. */
+/* Due livelli di lettera (spec 19 §3, criterio 11: pieno/vuoto si legge
+   ANCHE senza colore, non solo dal colore): non piu' semplice testo colorato
+   ma una pastiglia vera, spostata fuori dal flusso (BLOCCANTE storico: un
+   box inline alzava il line-box che lo contiene di ~1px per riga rimata, su
+   55 versi #pen-lines finiva piu' alta della textarea, gutter scollato).
+   position:absolute rispetto a .pen-line (position:relative) resta quindi
+   obbligatorio: non puo' mai influire sull'altezza della riga ne' qui ne'
+   nel mirror che penna.js misura. */
 .pen-lettera {
     position: absolute;
-    top: 0;
-    right: 4px;
+    top: 1px;
+    right: 2px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1px;
+    min-width: 1.5em;
+    height: 1.4em;
+    padding: 0 0.35em;
+    border-radius: var(--r-pill);
     font-style: normal;
     font-weight: 700;
-    font-size: 0.7em;
-    line-height: 1.6;
-    color: var(--text-muted);
+    /* Revisione (validator): 0.7em sui 0.95rem della riga scendeva sotto i
+       12px minimi leggibili. 0.85em li tiene sopra con un margine. */
+    font-size: 0.85em;
+    line-height: 1;
     pointer-events: none;
 }
 
-/* Alfa dimezzata (revisione, feedback orchestratore: "da demo"): la lettera
-   (.pen-lettera, colore pieno) resta il riferimento leggibile, lo sfondo
-   qui e' solo un richiamo debole dietro al testo bianco. */
-.pen-rima-0 { background: rgba(232, 147, 95, 0.08); box-shadow: inset 3px 0 var(--pen-c0); }
-.pen-rima-1 { background: rgba(111, 179, 224, 0.08); box-shadow: inset 3px 0 var(--pen-c1); }
-.pen-rima-2 { background: rgba(143, 209, 143, 0.08); box-shadow: inset 3px 0 var(--pen-c2); }
-.pen-rima-3 { background: rgba(216, 166, 240, 0.08); box-shadow: inset 3px 0 var(--pen-c3); }
-.pen-rima-4 { background: rgba(232, 210, 104, 0.08); box-shadow: inset 3px 0 var(--pen-c4); }
-.pen-rima-5 { background: rgba(240, 160, 188, 0.08); box-shadow: inset 3px 0 var(--pen-c5); }
+/* Pedice del secondo/terzo gruppo perfetto della stessa famiglia ("A₂",
+   "A₃"): solo <b class="pen-lettera-n"> quando indice >= 2 (contratto
+   penna.js, spec 19 §4), niente qui se il gruppo e' il primo ("A"). Il
+   pedice e' dentro un flex (.pen-lettera): vertical-align non ha effetto
+   sui figli flex, l'abbassamento vero lo fa position:relative + top. */
+.pen-lettera-n {
+    position: relative;
+    top: 0.18em;
+    font-style: normal;
+    font-weight: 700;
+    font-size: 0.72em;
+    line-height: 1;
+}
 
-.pen-rima-0 .pen-lettera { color: var(--pen-c0); }
-.pen-rima-1 .pen-lettera { color: var(--pen-c1); }
-.pen-rima-2 .pen-lettera { color: var(--pen-c2); }
-.pen-rima-3 .pen-lettera { color: var(--pen-c3); }
-.pen-rima-4 .pen-lettera { color: var(--pen-c4); }
-.pen-rima-5 .pen-lettera { color: var(--pen-c5); }
+/* Colore di famiglia (indice % 8, spec 19 §3, alzato dai 6 originali:
+   revisione validator, "mai" e "spiegarmi" finivano sullo stesso arancio;
+   --pen-c6/--pen-c7 sono le due tinte nuove, aggiunte anche in :root. Il
+   modulo lo alza schema.js (implementer), qui solo il ponte colore). */
+.pen-line.pen-rima-0 { --pen-line-color: var(--pen-c0); }
+.pen-line.pen-rima-1 { --pen-line-color: var(--pen-c1); }
+.pen-line.pen-rima-2 { --pen-line-color: var(--pen-c2); }
+.pen-line.pen-rima-3 { --pen-line-color: var(--pen-c3); }
+.pen-line.pen-rima-4 { --pen-line-color: var(--pen-c4); }
+.pen-line.pen-rima-5 { --pen-line-color: var(--pen-c5); }
+.pen-line.pen-rima-6 { --pen-line-color: var(--pen-c6); }
+.pen-line.pen-rima-7 { --pen-line-color: var(--pen-c7); }
+
+/* Piena = rima perfetta (stessa `rima`, non solo stessa famiglia): fascia e
+   barra laterale piene, lettera a pastiglia colorata con testo scuro. */
+.pen-line.is-rima {
+    background: color-mix(in srgb, var(--pen-line-color) 10%, transparent);
+    box-shadow: inset 3px 0 var(--pen-line-color);
+}
+
+.pen-line.is-rima .pen-lettera {
+    background: var(--pen-line-color);
+    border: 1.5px solid var(--pen-line-color);
+    color: var(--bg-color);
+}
+
+/* Vuota = assonanza (stessa famiglia, nessun compagno perfetto): fascia piu'
+   tenue, barra tratteggiata a meta' opacita', lettera col solo bordo nel
+   colore e interno trasparente (leggibile su sfondo scuro senza bisogno del
+   colore, criterio 11). La barra qui NON puo' essere un box-shadow (non fa
+   tratteggi) ne' un border-left vero (allargherebbe il box del mirror
+   rispetto alla textarea, gutter scollato: la stessa trappola di sopra):
+   un secondo strato di background risolve senza toccare il box model. */
+.pen-line.is-assonanza {
+    background:
+        repeating-linear-gradient(to bottom, color-mix(in srgb, var(--pen-line-color) 60%, transparent) 0 6px, transparent 6px 11px) left / 3px 100% no-repeat,
+        color-mix(in srgb, var(--pen-line-color) 5%, transparent);
+}
+
+.pen-line.is-assonanza .pen-lettera {
+    background: transparent;
+    border: 1.5px solid var(--pen-line-color);
+    color: var(--pen-line-color);
+}
+
+/* Marcatore di sezione ("[Ritornello]"...): niente lettera ne' numero (il
+   gutter resta vuoto su questa riga, contratto penna.js), solo una fascia
+   neutra che lo distingue a colpo d'occhio dai versi rimati. Il testo VERO
+   che l'utente legge e' quello della textarea sopra (sempre colore normale,
+   un <textarea> non puo' colorare una riga sola): qui non si puo' quindi
+   "colorare" il marcatore come fosse un eyebrow vero, solo la sua fascia. */
+.pen-line.pen-sezione {
+    background: var(--surface-1);
+    box-shadow: inset 3px 0 var(--glass-border);
+}
 
 /* Spec 16 §4 punto 7: #pen-lines si disegna SEMPRE (e' il righello che
    penna.js misura riga per riga per allineare il gutter, non solo il
@@ -1042,6 +1121,15 @@ body:has(#pen-pack-sheet:not([hidden])) .pen-pack-scrim {
     color: var(--text-muted);
 }
 
+/* Verso trovato dalla ricerca (spec 19 §3, elenco.js `versoTrovato`): quando
+   il termine non e' nel titolo, questa stessa riga mostra il primo verso che
+   lo contiene, col termine dentro <mark>. */
+.pen-card-verse mark {
+    background: rgba(207, 92, 54, 0.35);
+    color: var(--text-primary);
+    border-radius: 3px;
+}
+
 .pen-card-meta {
     display: flex;
     flex-wrap: wrap;
@@ -1217,6 +1305,128 @@ body:has(#pen-pack-sheet:not([hidden])) .pen-pack-scrim {
    Qui resta solo il rimando .tb-settings-link, gia' definito sotto. */
 
 /* ============================================================
+   Vista prova (spec 19 §3): a tutto schermo, testo grande, sola lettura,
+   per il palco/la sala. Sopra a tutto il resto (position:fixed), niente
+   gutter/lettere/colori/barre: sono un'altra struttura di markup (<p>/<h3>
+   dentro #pen-prova-body), non i .pen-line dell'editor.
+   ============================================================ */
+body.pen-prova-attiva {
+    overflow: hidden;
+}
+
+/* "Barra ridotta" (spec 19 §3/CSS): mentre la prova e' attiva la barra
+   globale (logo/menu), l'intestazione "Penna", l'aiuto in-app e il piede
+   pagina spariscono: restano solo i tre controlli di .pen-prova-bar. */
+body.pen-prova-attiva .tb-bar,
+body.pen-prova-attiva .tb-page-header,
+body.pen-prova-attiva .tb-help,
+body.pen-prova-attiva #tb-hint,
+body.pen-prova-attiva .tb-footer {
+    display: none !important;
+}
+
+.pen-prova {
+    position: fixed;
+    inset: 0;
+    z-index: 60;
+    display: flex;
+    flex-direction: column;
+    background: var(--bg-color);
+    color: var(--text-primary);
+}
+
+.pen-prova[hidden] {
+    display: none;
+}
+
+/* Barra ridotta: A−/A+ a sinistra, "Fine" ben visibile a destra (spec 19
+   §3: "uscita ben visibile"), mai fuori schermo (flex-shrink:0, non scorre
+   con #pen-prova-scroll sotto). */
+.pen-prova-bar {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    gap: var(--sp-2);
+    padding: calc(var(--sp-3) + var(--tb-safe-t)) calc(var(--sp-3) + var(--tb-safe-r)) var(--sp-2) calc(var(--sp-3) + var(--tb-safe-l));
+    border-bottom: 1px solid var(--glass-border);
+}
+
+.pen-prova-size {
+    font-family: var(--font-title);
+    font-weight: 700;
+}
+
+.pen-prova-exit {
+    margin-left: auto;
+}
+
+.pen-prova-scroll {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding: var(--sp-5) calc(var(--sp-4) + var(--tb-safe-r)) calc(var(--sp-5) + var(--tb-safe-b)) calc(var(--sp-4) + var(--tb-safe-l));
+}
+
+.pen-prova-title {
+    max-width: 68ch;
+    margin: 0 auto var(--sp-4);
+    font-family: var(--font-title);
+    font-size: clamp(1.4rem, 4vw, 2rem);
+    font-weight: 700;
+    text-align: center;
+    overflow-wrap: anywhere;
+}
+
+.pen-prova-body {
+    max-width: 68ch;
+    margin: 0 auto;
+}
+
+/* Testo grande (spec: >= 1.35rem); la dimensione vera la sceglie penna.js
+   con --pen-prova-size (5 passi, pref `provaCorpo`), il valore qui e' solo
+   il ripiego prima che il JS lo scriva. Revisione (validator): 1.7 di
+   interlinea + 0.7em di margine rendevano il ritorno a capo DENTRO un
+   verso quasi indistinguibile dal verso successivo; l'interlinea resta
+   stretta (~1.3), lo stacco fra un verso e l'altro lo fa solo il margine. */
+.pen-prova-verso {
+    margin: 0 0 0.7em;
+    font-family: var(--font-text);
+    font-size: var(--pen-prova-size, 1.75rem);
+    line-height: 1.3;
+    overflow-wrap: anywhere;
+}
+
+.pen-prova-verso:last-child {
+    margin-bottom: 0;
+}
+
+/* Riga vuota del testo originale (contratto penna.js: un <div
+   class="pen-prova-stacco" aria-hidden> per ogni riga bianca): solo uno
+   stacco fra strofe, niente contenuto. */
+.pen-prova-stacco {
+    height: 0.8em;
+}
+
+/* Marcatore di sezione in prova (<h3 class="pen-prova-sezione">, contratto
+   penna.js): niente numero ne' lettera qui, e' gia' un titolo di paragrafo
+   separato dal testo dei versi. Revisione (validator): 0.85rem fisso
+   restava piccolissimo (13,6px) contro un verso da 28px o piu'; la
+   dimensione segue quella del verso (~0.6, non sotto i 16px). */
+.pen-prova-sezione {
+    margin: 0.6em 0 0.5em;
+    font-family: var(--font-text);
+    font-size: max(16px, calc(var(--pen-prova-size, 1.75rem) * 0.6));
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--accent-orange);
+}
+
+.pen-prova-sezione:first-child {
+    margin-top: 0;
+}
+
+/* ============================================================
    Stampa (spec 16 §4 punto 11, stesso principio di pianificatore.css):
    resta solo .pen-write (titolo e versi), via tutto il resto. Il gutter
    e' aria-hidden gia' in schermo, in stampa sparisce anche visivamente;
@@ -1236,6 +1446,8 @@ body:has(#pen-pack-sheet:not([hidden])) .pen-pack-scrim {
     #pen-list,
     #pen-back,
     .pen-settings-open,
+    #pen-prova-open,
+    #pen-prova,
     #pen-share,
     #pen-delete,
     #pen-status,

@@ -27,6 +27,10 @@ export default {
         {
             t: 'Riferimento A4',
             d: 'Il “La” usato per il calcolo nota-frequenza: 440 Hz è lo standard, cambialo solo se lavori su un riferimento diverso.'
+        },
+        {
+            t: 'L’icona di copia',
+            d: 'La piccola icona sul lato destro di ogni cella ricorda che è copiabile; diventa piena per un attimo appena tocchi il valore.'
         }
     ],
     en: [
@@ -49,6 +53,10 @@ export default {
         {
             t: 'A4 reference',
             d: 'The “A” used for the note-to-frequency calculation: 440 Hz is the standard, change it only if you’re working from a different reference.'
+        },
+        {
+            t: 'The copy icon',
+            d: 'The small icon on the right of every cell is a reminder it’s copyable; it turns solid for a moment as soon as you tap the value.'
         }
     ],
     hint: {

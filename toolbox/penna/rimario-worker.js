@@ -321,12 +321,17 @@ export function creaRimario({ radice = '' } = {}) {
      * metrico dell'editor li preferisce alle regole, perche' vengono dal
      * Wikizionario (IT: "pa-u-ra" = 3), dal CMU (EN) o dall'IPA (FR).
      * `stimato` vuol dire "accento e sillabe dalle regole", cioe' niente di
-     * meglio di quanto l'editor sa gia' fare da solo.
+     * meglio di quanto l'editor sa gia' fare da solo. `rima` (spec 19): la
+     * chiave di rima dell'indice inverso, quando la lingua lo ha — la
+     * fonte migliore per le lettere colorate dell'editor.
      */
     function trattiDiParola(parola) {
         if (!pronto) return null;
         const i = indiceDiParola.get(parola);
-        return i === undefined ? null : { sillabe: sillabeDi(i), classe: classeDi(i), stimato: stimatoDi(i) };
+        if (i === undefined) return null;
+        const tr = { sillabe: sillabeDi(i), classe: classeDi(i), stimato: stimatoDi(i) };
+        if (rimaDi && rimaDi[i]) tr.rima = rimaDi[i];
+        return tr;
     }
 
     /** Lo stesso, a lotti: una mappa parola -> tratti (solo le note). */

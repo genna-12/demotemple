@@ -6,6 +6,6 @@
  * e `node scripts/check.mjs` lo verifica. Si alzano insieme, con la data.
  */
 
-export const VERSIONE = 'tb-v39';
+export const VERSIONE = 'tb-v50';
 /** Giorno della versione (AAAA-MM-GG), scritto a mano: nessun build step. */
-export const DATA_VERSIONE = '2026-09-24';
+export const DATA_VERSIONE = '2026-09-25';

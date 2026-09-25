@@ -17,7 +17,15 @@ export default {
         },
         {
             t: 'Lettere colorate a fine verso',
-            d: 'Quando “Rime a colori” è attivo, ogni lettera indica lo schema delle rime (A, B, A…): versi con la stessa lettera fanno rima fra loro, e prendono lo stesso colore.'
+            d: 'Quando “Rime a colori” è attivo, ogni lettera indica lo schema delle rime (A, B, A…): versi con la stessa lettera e colore appartengono alla stessa famiglia. Lettera piena (pastiglia colorata) = rima perfetta; lettera vuota (solo il bordo) = assonanza nella stessa famiglia, senza un compagno perfetto.'
+        },
+        {
+            t: 'Sezioni',
+            d: 'Una riga con solo “[Ritornello]”, “[Strofa]” e simili fra parentesi quadre non conta come verso: resta senza numero e senza lettera, segnata a parte.'
+        },
+        {
+            t: 'Modalità prova',
+            d: 'Il pulsante “Prova” nella barra dell’editor porta il testo a schermo intero, a caratteri grandi, per leggerlo sul palco o in sala: “A−”/“A+” cambiano la dimensione, lo schermo resta acceso finché non esci.'
         },
         {
             t: 'Metrico o Grammaticale',
@@ -30,6 +38,10 @@ export default {
         {
             t: 'Pacchetti lingua',
             d: 'La prima volta che apri una lingua nel rimario, la scarica (circa 1 MB): da lì in poi funziona anche offline. Le lingue già scaricate hanno il pallino verde.'
+        },
+        {
+            t: 'Annulla',
+            d: 'Eliminando un testo, per 6 secondi puoi toccare “Annulla” nell’avviso e ricomparirà com’era: passato quel tempo l’eliminazione è definitiva.'
         },
         {
             t: 'Sincronizzare i testi',
@@ -47,7 +59,15 @@ export default {
         },
         {
             t: 'Coloured letters at line end',
-            d: 'When “Rhymes in colour” is on, each letter shows the rhyme scheme (A, B, A…): lines sharing a letter rhyme with each other, and share a colour.'
+            d: 'When “Rhymes in colour” is on, each letter shows the rhyme scheme (A, B, A…): lines sharing a letter and colour belong to the same family. A solid letter (filled badge) means a perfect rhyme; a hollow letter (outline only) means an assonance in that family, with no perfect match.'
+        },
+        {
+            t: 'Sections',
+            d: 'A line with just “[Chorus]”, “[Verse]” and the like in square brackets isn’t counted as a line: no number, no letter, marked apart instead.'
+        },
+        {
+            t: 'Stage mode',
+            d: 'The “Stage” button in the editor bar shows the lyric full-screen in large type, for reading on stage or in the room: “A−”/“A+” change the size, and the screen stays on until you leave.'
         },
         {
             t: 'Metric or Grammatical',
@@ -60,6 +80,10 @@ export default {
         {
             t: 'Language packs',
             d: 'The first time you open a language in the rhyme dictionary, it downloads it (about 1 MB): from then on it also works offline. Downloaded languages show a green dot.'
+        },
+        {
+            t: 'Undo',
+            d: 'After deleting a lyric, you have 6 seconds to tap “Undo” in the notice and it comes back as it was: past that, the deletion is final.'
         },
         {
             t: 'Syncing your lyrics',

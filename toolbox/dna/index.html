@@ -212,31 +212,6 @@
 
                     <p class="dna-formats" data-i18n="dna-formats">MP3, WAV, M4A, AAC, OGG, FLAC — fino a 15 minuti</p>
                 </div>
-
-                <!-- Vuoto: dna.js lo riempie con <li class="dna-history-row">
-                     <button class="dna-history-item" data-dna-id="...">nome ·
-                     BPM · key · LUFS</button><button class="dna-history-rename
-                     tb-btn--icon" data-dna-rename="...">(matita)</button>
-                     <button class="dna-history-del tb-btn--icon"
-                     data-dna-del="...">&times;</button></li> per record, fino
-                     a 200 (spec 13 §4 + NOVITA' in testa a dna.js: storico
-                     rinominabile, .dna-history-rename/.dna-history-input qui
-                     solo come classi CSS), o col testo di dna-history-empty se
-                     non ce n'e' ancora nessuno. -->
-                <div class="dna-history-wrap">
-                    <div class="dna-history-head">
-                        <h2 class="dna-history-title" data-i18n="dna-recent">Recenti</h2>
-                        <button type="button" id="dna-clear" class="tb-btn tb-btn--ghost" hidden data-i18n="dna-clear">Svuota storico</button>
-                    </div>
-                    <ul id="dna-history" class="dna-history"></ul>
-                    <!-- Conferma inline (niente confirm() del browser, stesso
-                         principio dell'accordatura personalizzata). -->
-                    <div id="dna-clear-confirm" class="dna-clear-confirm" hidden>
-                        <span data-i18n="dna-clear-ask">Cancello tutto lo storico?</span>
-                        <button type="button" id="dna-clear-yes" class="tb-btn" data-i18n="dna-clear-yes">Svuota</button>
-                        <button type="button" id="dna-clear-no" class="tb-btn tb-btn--ghost" data-i18n="dna-clear-no">Annulla</button>
-                    </div>
-                </div>
             </div>
 
             <!-- ---------- Stato 2: registrazione (solo microfono) ---------- -->
@@ -335,6 +310,8 @@
                         <button type="button" class="tb-segment-btn" data-dna-fold="0.5" data-i18n-aria="dna-fold-half" aria-label="Dimezza">÷2</button>
                         <button type="button" class="tb-segment-btn" data-dna-fold="2" data-i18n-aria="dna-fold-double" aria-label="Raddoppia">×2</button>
                     </div>
+                    <!-- Va e viene col segment qui sopra (dna.js, spec 20 §3). -->
+                    <p id="dna-fold-hint" class="dna-fold-hint" data-i18n="dna-fold-hint" hidden>Forse è la metà o il doppio?</p>
                 </section>
 
                 <!-- Tonalita' + Camelot + compatibili. -->
@@ -343,10 +320,14 @@
                     <span id="dna-key" class="dna-card-value">—</span>
                     <span id="dna-camelot" class="dna-card-camelot"></span>
                     <span id="dna-key-conf" class="dna-card-sub"></span>
-                    <p class="dna-key-compat-row">
-                        <span class="dna-card-sub-label" data-i18n="dna-compat">Compatibili</span>
+                    <div class="dna-key-compat-row">
+                        <!-- Etichetta sopra i chip (revisione ui-ux), non piu'
+                             affiancata: spiega cosa sono E cosa fare. Il primo
+                             chip (la Camelot della voce stessa) ha .is-self
+                             (dna.js): solo bordo, nessun riempimento. -->
+                        <p class="dna-card-sub-label dna-compat-hint" data-i18n="dna-compat-hint">Compatibili · tocca per filtrare</p>
                         <span id="dna-key-compat" class="dna-card-sub"></span>
-                    </p>
+                    </div>
                 </section>
 
                 <!-- LUFS/true peak verso il target della piattaforma. -->
@@ -363,6 +344,15 @@
                             <span class="tb-info-glyph" aria-hidden="true">i</span>
                         </button>
                     </div>
+
+                    <!-- Glossario riga (spec 20 §3, non un foglio automatico):
+                         visibile finche' "tt.dna.glossario-visto" e' falso;
+                         "×" o la "i" qui sopra lo rendono vero (dna.js). -->
+                    <p id="dna-lufs-hint" class="tb-hint dna-lufs-hint" hidden>
+                        <span class="tb-hint-text" data-i18n="dna-lufs-hint">I LUFS misurano il volume medio percepito: tocca la i</span>
+                        <button type="button" id="dna-lufs-hint-close" class="tb-hint-close"
+                            data-i18n-aria="hint-close-aria" aria-label="Chiudi il suggerimento">&times;</button>
+                    </p>
 
                     <div class="dna-target-row">
                         <!-- .tb-select (spec 03 §2/§6, contratto in shared/components.css):
@@ -459,7 +449,64 @@
 
                 <div class="dna-result-actions">
                     <button type="button" id="dna-copy" class="tb-btn" data-i18n="dna-copy">Copia</button>
+                    <button type="button" id="dna-share" class="tb-btn" hidden data-i18n="dna-share">Condividi</button>
                     <button type="button" id="dna-again" class="tb-btn tb-btn--primary" data-i18n="dna-again">Analizza un altro</button>
+                </div>
+            </div>
+
+            <!-- ---------- Storico (spec 20 §3): fuori da #dna-drop, dopo
+                 #dna-result, visibile negli stati "vuoto" e "risultato"
+                 (dna.js lo mostra/nasconde, CONTRATTO in testa a dna.js).
+                 dna.js riempie #dna-history con <li class="dna-history-row">
+                 <button class="dna-history-item" data-dna-id="...">nome ·
+                 BPM · key · LUFS</button><button class="dna-history-rename
+                 tb-btn--icon" data-dna-rename="...">(matita)</button>
+                 [<button class="dna-history-compare tb-btn--icon"
+                 data-dna-compare="...">(confronta, solo in "risultato" e mai
+                 sulla voce aperta)</button>]<button class="dna-history-del
+                 tb-btn--icon" data-dna-del="...">&times;</button></li>, fino
+                 a 200 voci, o una <li class="dna-history-none"> col testo
+                 giusto (storico vuoto, filtro o ricerca senza risultati). -->
+            <div id="dna-history-wrap" class="dna-history-wrap">
+                <div class="dna-history-head">
+                    <h2 class="dna-history-title" data-i18n="dna-recent">Recenti</h2>
+                    <div class="dna-history-head-actions">
+                        <button type="button" id="dna-export" class="tb-btn tb-btn--ghost" hidden data-i18n="dna-export">Esporta .csv</button>
+                        <button type="button" id="dna-clear" class="tb-btn tb-btn--ghost" hidden data-i18n="dna-clear">Svuota Recenti</button>
+                    </div>
+                </div>
+
+                <!-- Filtro per Camelot (chip in #dna-key-compat, spec 20 §3):
+                     dna.js scrive il testo in #dna-filter-label e mostra la
+                     barra finche' un chip e' acceso; "×" lo toglie. -->
+                <div id="dna-filter" class="dna-filter" hidden>
+                    <span id="dna-filter-label" class="dna-filter-label"></span>
+                    <button type="button" id="dna-filter-clear" class="dna-filter-clear tb-btn--icon"
+                        data-i18n-aria="dna-filter-clear-aria" aria-label="Togli il filtro">&times;</button>
+                </div>
+
+                <!-- Ricerca per nome (spec 20 §3): dna.js mostra
+                     .dna-search-wrap solo da 6 voci in su e la nasconde di
+                     nuovo (svuotando il campo) se i Recenti scendono sotto. -->
+                <div class="dna-search-wrap" hidden>
+                    <label class="dna-search-row">
+                        <span class="sr-only" data-i18n="dna-search">Cerca nei Recenti</span>
+                        <input type="search" id="dna-search" class="dna-search" autocomplete="off"
+                            data-i18n-placeholder="dna-search" placeholder="Cerca nei Recenti">
+                    </label>
+                </div>
+
+                <ul id="dna-history" class="dna-history"></ul>
+                <!-- «Mostra tutte ({n})» (revisione ui-ux, dna.js): sotto un
+                     risultato lo storico si accorcia a 5 voci; dna.js crea
+                     #dna-history-more (.tb-btn.tb-btn--ghost) e lo inserisce
+                     dopo #dna-history, niente markup statico da dare qui. -->
+                <!-- Conferma inline (niente confirm() del browser, stesso
+                     principio dell'accordatura personalizzata). -->
+                <div id="dna-clear-confirm" class="dna-clear-confirm" hidden>
+                    <span data-i18n="dna-clear-ask">Cancello tutti i Recenti?</span>
+                    <button type="button" id="dna-clear-yes" class="tb-btn" data-i18n="dna-clear-yes">Svuota</button>
+                    <button type="button" id="dna-clear-no" class="tb-btn tb-btn--ghost" data-i18n="dna-clear-no">Annulla</button>
                 </div>
             </div>
 
@@ -511,6 +558,19 @@
             <button type="button" class="tb-sheet-close" data-i18n-aria="sheet-close" aria-label="Chiudi">&times;</button>
         </div>
         <div class="tb-sheet-body" data-i18n="dna-lufs-info-text">I LUFS misurano quanto un brano suona forte in media nel tempo, come lo sente l'orecchio; il picco reale (true peak, dBTP) è invece il valore assoluto più alto del segnale. Le piattaforme di streaming abbassano da sole i brani troppo forti fino al loro livello di riferimento: Spotify punta a −14 LUFS, Apple Music a −16 LUFS, YouTube a −14 LUFS e Tidal a −14 LUFS, tutte con un picco reale massimo di −1 dBTP. Se questo strumento consiglia di alzare di X dB, il brano è più piano del target: alzando il volume in fase di mastering ti avvicini al livello scelto dalla piattaforma. Se consiglia di abbassare di X dB, il brano è più forte del target e verrà comunque abbassato in streaming: conviene farlo prima, mantenendo il controllo sul suono finale.</div>
+    </div>
+
+    <!-- Foglio del confronto (spec 20 §3): dna.js riempie #dna-compare-table
+         (thead + tbody) a ogni apertura e lo chiude a ogni hashchange. -->
+    <div class="tb-sheet-scrim" id="dna-compare-scrim" hidden></div>
+    <div class="tb-sheet" id="dna-compare" role="dialog" aria-modal="true" aria-labelledby="dna-compare-title" hidden>
+        <div class="tb-sheet-head">
+            <h2 id="dna-compare-title" data-i18n="dna-compare-title">Confronto</h2>
+            <button type="button" class="tb-sheet-close" data-i18n-aria="sheet-close" aria-label="Chiudi">&times;</button>
+        </div>
+        <div class="tb-sheet-body">
+            <table id="dna-compare-table" class="dna-compare-table"></table>
+        </div>
     </div>
 
     <script type="module" src="/dna/dna.js"></script>
